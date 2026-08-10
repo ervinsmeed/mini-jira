@@ -1,0 +1,349 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState } from "react";
+import {
+  Sun,
+  Moon,
+  EyeOff,
+  Trash2,
+  GripVertical,
+  LogOut,
+  SidebarIcon,
+} from "lucide-react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { SignOutButton } from "@clerk/clerk-react";
+
+export default function Sidebar({
+  currentBoard,
+  onBoardSelect,
+  onCreateBoard,
+  theme,
+  onThemeToggle,
+  isCollapsed,
+  onToggleCollapsed,
+}: any) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const boards: any[] = (useQuery(api.boards.list) ?? []) as any[];
+  const deleteBoard = useMutation(api.boards.remove);
+  const updateBoardOrder = useMutation(api.boards.updateOrder);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+  const handleDeleteBoard = async (boardId: any) => {
+    await deleteBoard({ id: boardId });
+    setShowDeleteConfirm(null);
+
+    if (currentBoard?._id === boardId) {
+      const remainingBoards = boards.filter((b) => b._id !== boardId);
+      if (remainingBoards.length > 0) {
+        onBoardSelect(remainingBoards[0]);
+      } else {
+        onBoardSelect(null);
+      }
+    }
+  };
+
+  const handleDragEnd = async (event: any) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const oldIndex = boards.findIndex((board) => board._id === active.id);
+      const newIndex = boards.findIndex((board) => board._id === over.id);
+
+      const reorderBoards = arrayMove(boards, oldIndex, newIndex);
+
+      for (let i = 0; i < reorderBoards.length; i++) {
+        await updateBoardOrder({
+          boardId: reorderBoards[i]._id,
+          newOrder: i,
+        });
+      }
+    }
+  };
+  if (isCollapsed) {
+    return (
+      <div
+        className={`w-16 flex flex-col items-center py-4 border-r transition-colors ${
+          theme === "dark"
+            ? "bg-slate-950 border-slate-800"
+            : "bg-white border-slate-200"
+        }`}
+      >
+        <div className="flex flex-col items-center space-y-4 flex-1">
+          <div className="flex items-center justify-center size-10 bg-purple-500 rounded text-white font-bold text-sm">
+            |||
+          </div>
+          <div className="flex flex-col items-center space-y-2 flex-1 overflow-y-auto">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={boards.map((b: any) => b._id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {boards.map((board: any) => (
+                  <SortableBoardItem
+                    key={board._id}
+                    board={board}
+                    currentBoard={currentBoard}
+                    onBoardSelect={onBoardSelect}
+                    showDeleteConfirm={showDeleteConfirm}
+                    setShowDeleteConfirm={setShowDeleteConfirm}
+                    handleDeleteBoard={handleDeleteBoard}
+                    isCollapsed={true}
+                    theme={theme}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          </div>
+        </div>
+        <button
+          onClick={onToggleCollapsed}
+          className="p-2 text-slate-400 hover:text-slate-100 transition-colors"
+        >
+          <SidebarIcon className={"size-4"} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`w-72 flex flex-col h-screen fixed left-0 top-0 z-40 border-r transition-colors ${
+        theme === "dark"
+          ? "bg-slate-950 border-slate-800"
+          : "bg-white border-slate-200"
+      }`}
+    >
+      <div
+        className={`p-6 border-b transition-colors ${theme === "dark" ? "border-slate-800" : "border-slate-200"}`}
+      >
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-center size-8 bg-purple-500 rounded text-white font-bold text-sm">
+            |||
+          </div>
+
+          <h1
+            className={`text-xl font-bold transition-colors ${theme === "dark" ? "text-slate-100" : "text-slate-900"}`}
+          >
+            Kanban
+          </h1>
+        </div>
+      </div>
+      {/* Boards */}
+      <div className="flex-1 p-6 overflow-y-auto">
+        <div
+          className={`text-xs font-semibold uppercase tracking-wider mb-4 transition-colors ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}
+        >
+          All Boards ({boards.length})
+        </div>
+
+        <button
+          onClick={onCreateBoard}
+          className={`w-full flex items-center justify-center space-x-3 p-3 rounded-r-full transition-all mb-2 shadow-sm ${theme === "dark" ? "bg-purple-600 text-white hover:bg-purple-700" : "bg-purple-500 text-white hover:bg-purple-600"}`}
+        >
+          <span className="font-semibold">Create New Board</span>
+        </button>
+
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="space-y-2">
+            <SortableContext
+              items={boards.map((b: any) => b._id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {boards.map((board: any) => (
+                <SortableBoardItem
+                  key={board._id}
+                  board={board}
+                  currentBoard={currentBoard}
+                  onBoardSelect={onBoardSelect}
+                  showDeleteConfirm={showDeleteConfirm}
+                  setShowDeleteConfirm={setShowDeleteConfirm}
+                  handleDeleteBoard={handleDeleteBoard}
+                  isCollapsed={false}
+                  theme={theme}
+                />
+              ))}
+            </SortableContext>
+          </div>
+        </DndContext>
+      </div>
+      <div
+        className={`flex items-center justify-center space-x-2 rounded-lg p-2 transition-colors ${
+          theme === "dark" ? "bg-slate-900" : "bg-slate-100"
+        }`}
+      >
+        <Sun
+          className={`size-4 ${
+            theme === "light" ? "text-purple-500" : "text-slate-400"
+          }`}
+        />
+
+        <button
+          onClick={onThemeToggle}
+          className="relative w-12 h-6 bg-purple-500 rounded-full transition-colors"
+        >
+          <div
+            className={`absolute size-5 bg-white rounded-full top-0.5 transition-transform ${
+              theme === "dark"
+                ? "transform translate-x-6"
+                : "transform translate-x-0.5"
+            }`}
+          />
+        </button>
+
+        <Moon
+          className={`size-4 ${
+            theme === "dark" ? "text-purple-500" : "text-slate-400"
+          }`}
+        />
+      </div>
+
+      <button
+        onClick={onToggleCollapsed}
+        className={`flex items-center space-x-3 px-2 py-1 transition-colors ${theme === "dark" ? "text-slate-400 hover:text-slate-100" : "text-slate-500 hover:text-slate-900"}`}
+      >
+        <EyeOff className="size-4" />
+        <span className="text-sm font-medium">Hide Sidebar</span>
+      </button>
+
+      <SignOutButton>
+        <div
+          className={`flex items-center space-x-3 px-2 py-1 transition-colors ${theme === "dark" ? "text-slate-400 hover:text-slate-100" : "text-slate-500 hover:text-slate-900"}`}
+        >
+          <LogOut className="size-4" />
+          <span className="text-sm font-medium">Log out</span>
+        </div>
+      </SignOutButton>
+    </div>
+  );
+}
+
+function SortableBoardItem({
+  board,
+  currentBoard,
+  onBoardSelect,
+  showDeleteConfirm,
+  setShowDeleteConfirm,
+  handleDeleteBoard,
+  isCollapsed,
+  theme,
+}: any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: board._id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const getInitials = (name: any) => {
+    const words = name.trim().split(" ");
+    return words.length > 1
+      ? words
+          .map((w: any) => w[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase()
+      : name.slice(0, 2).toUpperCase();
+  };
+
+  if (isCollapsed) {
+    return (
+      <div ref={setNodeRef} style={style} className="mb-2 px-4">
+        <button
+          onClick={() => onBoardSelect(board)}
+          className={`size-10 flex items-center justify-center text-xs font-bold transition-colors ${currentBoard?._id === board._id ? "bg-purple-500 text-white" : theme === "dark" ? "bg-slate-900 text-slate-300 hover:bg-purple-600 hover:text-white" : "bg-slate-100 text-slate-700 hover:bg-purple-600 hover:text-white"}`}
+          title={board.name}
+        >
+          {getInitials(board.name)}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group w-full flex items-center justify-between px-4 py-3 rounded-r-full transition-colors ${
+        currentBoard?._id === board._id
+          ? "bg-purple-500 text-white"
+          : theme === "dark"
+            ? "text-slate-400 hover:text-slate-100 hover:bg-purple-600/20"
+            : "text-slate-500 hover:text-slate-900 hover:bg-purple-100"
+      }`}
+    >
+      <button
+        onClick={() => onBoardSelect(board)}
+        className="flex items-center space-x-3 flex-1"
+      >
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing inline-flex"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical className="size-4" />
+        </div>
+        <span className="font-medium truncate">{board.name}</span>
+      </button>
+      {showDeleteConfirm === board._id ? (
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={() => handleDeleteBoard(board._id)}
+            className="p-1 text-red-400 hover:text-red-500 text-xs"
+          >
+            Yes
+          </button>
+          <button onClick={() => setShowDeleteConfirm(null)} className="p-1">
+            No
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowDeleteConfirm(board._id)}
+          className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-all"
+        >
+          <Trash2 className="size-3" />
+        </button>
+      )}
+    </div>
+  );
+}
