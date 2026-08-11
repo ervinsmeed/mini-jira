@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {
@@ -10,6 +9,7 @@ import { useMutation } from "convex/react";
 
 import { api } from "../../../convex/_generated/api";
 import TaskCard from "../TaskCard";
+import { useTranslation } from "react-i18next";
 
 import {
   DropdownMenu,
@@ -42,6 +42,7 @@ export default function Column({
   onEditColumn,
   theme,
 }: any) {
+  const { t } = useTranslation();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const deleteColumn = useMutation(api.columns.remove);
@@ -56,7 +57,7 @@ export default function Column({
     });
 
     setShowDeleteConfirm(false);
-    toast.success("Column deleted");
+    toast.success(t("column.deleted"));
   };
 
   return (
@@ -110,7 +111,7 @@ export default function Column({
                 }`}
               >
                 <Edit className="mr-2 size-3" />
-                <span>Edit</span>
+                <span>{t("column.edit")}</span>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator
@@ -129,7 +130,7 @@ export default function Column({
                   }`}
                 >
                   <Trash2 className="mr-2 size-3" />
-                  <span>Delete</span>
+                  <span>{t("column.delete")}</span>
                 </DialogTrigger>
 
                 <DialogContent
@@ -141,7 +142,7 @@ export default function Column({
                 >
                   <DialogHeader>
                     <DialogTitle className="text-lg!">
-                      Delete Column?
+                      {t("column.deleteTitle")}
                     </DialogTitle>
                   </DialogHeader>
 
@@ -150,7 +151,7 @@ export default function Column({
                       theme === "dark" ? "text-slate-400" : "text-slate-600"
                     }
                   >
-                    This column will no longer appear in this board. Continue?
+                    {t("column.deleteDescription")}
                   </DialogDescription>
 
                   <DialogFooter>
@@ -160,7 +161,7 @@ export default function Column({
                         onClick={handleDeleteColumn}
                         variant="destructive"
                       >
-                        Yes
+                        {t("common.yes")}
                       </Button>
 
                       <DialogClose asChild>
@@ -173,7 +174,7 @@ export default function Column({
                               : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                           }
                         >
-                          No
+                          {t("common.no")}
                         </Button>
                       </DialogClose>
                     </div>

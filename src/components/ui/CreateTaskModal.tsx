@@ -3,7 +3,7 @@ import { X, GripVertical } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
-
+import { useTranslation } from "react-i18next";
 import {
   DndContext,
   closestCenter,
@@ -60,6 +60,7 @@ function SortableSubTask({
   onChange,
   theme,
 }: SortableSubTaskProps) {
+  const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id: `subtask-${index}`,
@@ -92,7 +93,7 @@ function SortableSubTask({
         type="text"
         value={subtask}
         onChange={(e) => onChange(index, e.target.value)}
-        placeholder="e.g Make coffee"
+        placeholder={t("createTask.subtaskPlaceholder")}
         className={`flex-1 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
           theme === "dark"
             ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
@@ -122,6 +123,7 @@ export default function CreateTaskModal({
   columns = [],
   theme = "dark",
 }: CreateTaskModalProps) {
+  const { t } = useTranslation();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
@@ -214,7 +216,7 @@ export default function CreateTaskModal({
 
     onClose();
 
-    toast.success("New task added");
+    toast.success(t("createTask.created"));
   };
 
   return (
@@ -228,7 +230,7 @@ export default function CreateTaskModal({
       >
         <DialogHeader>
           <DialogTitle className="text-lg! font-semibold">
-            Add New Task
+            {t("createTask.title")}
           </DialogTitle>
         </DialogHeader>
 
@@ -239,14 +241,14 @@ export default function CreateTaskModal({
                 theme === "dark" ? "text-slate-300" : "text-slate-700"
               }`}
             >
-              Title
+              {t("createTask.taskTitle")}
             </label>
 
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g Take coffee break"
+              placeholder={t("createTask.titlePlaceholder")}
               className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
                 theme === "dark"
                   ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
@@ -262,13 +264,13 @@ export default function CreateTaskModal({
                 theme === "dark" ? "text-slate-300" : "text-slate-700"
               }`}
             >
-              Description
+              {t("createTask.description")}
             </label>
 
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g It 's always good to take a break."
+              placeholder={t("createTask.descriptionPlaceholder")}
               rows={4}
               className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition resize-none ${
                 theme === "dark"
@@ -284,7 +286,7 @@ export default function CreateTaskModal({
                 theme === "dark" ? "text-slate-300" : "text-slate-700"
               }`}
             >
-              Subtasks
+              {t("createTask.subtasks")}
             </label>
 
             <DndContext
@@ -316,10 +318,10 @@ export default function CreateTaskModal({
                     className={`w-full py-2 border-2 border-dashed rounded-md font-medium transition ${
                       theme === "dark"
                         ? "border-slate-800 text-purple-400 hover:bg-slate-900"
-                        : "border-slate-300 text-purple-600 hover:bg-slate-500"
+                        : "border-slate-300 text-purple-600 hover:bg-slate-100"
                     }`}
                   >
-                    + Add New Subtask
+                    + {t("createTask.addSubtask")}
                   </button>
                 </div>
               </div>
@@ -333,7 +335,7 @@ export default function CreateTaskModal({
                   theme === "dark" ? "text-slate-300" : "text-slate-700"
                 }`}
               >
-                Priority
+                {t("createTask.priority")}
               </label>
 
               <Select value={priority} onValueChange={setPriority}>
@@ -345,7 +347,7 @@ export default function CreateTaskModal({
                   }`}
                 >
                   <SelectValue
-                    placeholder="Select priority"
+                    placeholder={t("createTask.selectPriority")}
                     className="w-full"
                   />
                 </SelectTrigger>
@@ -360,21 +362,21 @@ export default function CreateTaskModal({
                   <SelectItem value="high">
                     <div className="flex items-center space-x-2">
                       <div className="size-2 rounded-full bg-red-500" />
-                      <span>High</span>
+                      <span>{t("priority.high")}</span>
                     </div>
                   </SelectItem>
 
                   <SelectItem value="medium">
                     <div className="flex items-center space-x-2">
                       <div className="size-2 rounded-full bg-yellow-500" />
-                      <span>Medium</span>
+                      <span>{t("priority.medium")}</span>
                     </div>
                   </SelectItem>
 
                   <SelectItem value="low">
                     <div className="flex items-center space-x-2">
                       <div className="size-2 rounded-full bg-green-500" />
-                      <span>Low</span>
+                      <span>{t("priority.low")}</span>
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -387,7 +389,7 @@ export default function CreateTaskModal({
                   theme === "dark" ? "text-slate-300" : "text-slate-700"
                 }`}
               >
-                Column
+                {t("createTask.column")}
               </label>
 
               <Select
@@ -400,7 +402,10 @@ export default function CreateTaskModal({
                       : "bg-white border-slate-300 text-slate-900"
                   }`}
                 >
-                  <SelectValue placeholder="Select column" className="w-full" />
+                  <SelectValue
+                    placeholder={t("createTask.selectColumn")}
+                    className="w-full"
+                  />
                 </SelectTrigger>
 
                 <SelectContent
@@ -428,7 +433,7 @@ export default function CreateTaskModal({
                 : "bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500"
             }`}
           >
-            Create Task
+            {t("createTask.create")}
           </button>
         </form>
       </DialogContent>

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 
 import { GripVertical, X } from "lucide-react";
@@ -6,6 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 
 import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
+import { useTranslation } from "react-i18next";
 
 import {
   closestCenter,
@@ -67,6 +67,7 @@ function SortableSubTask({
   onChange,
   theme,
 }: SortableSubTaskProps) {
+  const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id: `subtask-${index}`,
@@ -100,7 +101,7 @@ function SortableSubTask({
         type="text"
         value={subtask.text}
         onChange={(event) => onChange(index, event.target.value)}
-        placeholder="e.g Make coffee"
+        placeholder={t("editTask.subtaskPlaceholder")}
         className={`flex-1 rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
           theme === "dark"
             ? "border-slate-800 bg-slate-900 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
@@ -128,6 +129,7 @@ export default function EditTaskModal({
   onClose,
   theme,
 }: EditTaskModalProps) {
+  const { t } = useTranslation();
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || "");
   const [priority, setPriority] = useState(task.priority || "medium");
@@ -138,10 +140,9 @@ export default function EditTaskModal({
 
   const updateTask = useMutation(api.tasks.update);
 
-  const columns: any[] =
-    (useQuery(api.columns.list, {
-      boardId: task.boardId,
-    }) ?? []) as any[];
+  const columns: any[] = (useQuery(api.columns.list, {
+    boardId: task.boardId,
+  }) ?? []) as any[];
 
   /* При обновлении пропа task нужно обновлять локальный state полей формы.
      Правило ESLint иногда ругается на синхронный setState внутри эффекта — это ожидаемое поведение здесь
@@ -259,7 +260,7 @@ export default function EditTaskModal({
     });
 
     onClose();
-    toast.success("Task updated");
+    toast.success(t("editTask.updated"));
   };
 
   return (
@@ -279,7 +280,9 @@ export default function EditTaskModal({
         }`}
       >
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold">Edit Task</DialogTitle>
+          <DialogTitle className="text-lg font-semibold">
+            {t("editTask.title")}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="mt-2 space-y-6">
@@ -289,7 +292,7 @@ export default function EditTaskModal({
                 theme === "dark" ? "text-slate-300" : "text-slate-700"
               }`}
             >
-              Title
+              {t("editTask.taskTitle")}
             </label>
 
             <input
@@ -312,13 +315,13 @@ export default function EditTaskModal({
                 theme === "dark" ? "text-slate-300" : "text-slate-700"
               }`}
             >
-              Description
+              {t("editTask.description")}
             </label>
 
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Enter task description"
+              placeholder={t("editTask.descriptionPlaceholder")}
               rows={4}
               className={`w-full resize-none rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
                 theme === "dark"
@@ -334,7 +337,7 @@ export default function EditTaskModal({
                 theme === "dark" ? "text-slate-300" : "text-slate-700"
               }`}
             >
-              Subtasks
+              {t("editTask.subtasks")}
             </label>
 
             <DndContext
@@ -368,7 +371,7 @@ export default function EditTaskModal({
                       : "border-slate-300 text-purple-600 hover:bg-slate-100"
                   }`}
                 >
-                  + Add New Subtask
+                  + {t("editTask.addSubtask")}
                 </button>
               </div>
             </DndContext>
@@ -381,7 +384,7 @@ export default function EditTaskModal({
                   theme === "dark" ? "text-slate-300" : "text-slate-700"
                 }`}
               >
-                Priority
+                {t("editTask.priority")}
               </label>
 
               <Select value={priority} onValueChange={setPriority}>
@@ -392,7 +395,7 @@ export default function EditTaskModal({
                       : "border-slate-300 bg-white text-slate-900"
                   }`}
                 >
-                  <SelectValue placeholder="Select priority" />
+                  <SelectValue placeholder={t("editTask.selectPriority")} />
                 </SelectTrigger>
 
                 <SelectContent
@@ -405,21 +408,21 @@ export default function EditTaskModal({
                   <SelectItem value="high">
                     <div className="flex items-center space-x-2">
                       <div className="size-2 rounded-full bg-red-500" />
-                      <span>High</span>
+                      <span>{t("priority.high")}</span>
                     </div>
                   </SelectItem>
 
                   <SelectItem value="medium">
                     <div className="flex items-center space-x-2">
                       <div className="size-2 rounded-full bg-yellow-500" />
-                      <span>Medium</span>
+                      <span>{t("priority.medium")}</span>
                     </div>
                   </SelectItem>
 
                   <SelectItem value="low">
                     <div className="flex items-center space-x-2">
                       <div className="size-2 rounded-full bg-green-500" />
-                      <span>Low</span>
+                      <span>{t("priority.low")}</span>
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -432,7 +435,7 @@ export default function EditTaskModal({
                   theme === "dark" ? "text-slate-300" : "text-slate-700"
                 }`}
               >
-                Column
+                {t("editTask.column")}
               </label>
 
               <Select
@@ -446,7 +449,7 @@ export default function EditTaskModal({
                       : "border-slate-300 bg-white text-slate-900"
                   }`}
                 >
-                  <SelectValue placeholder="Select column" />
+                  <SelectValue placeholder={t("editTask.selectColumn")} />
                 </SelectTrigger>
 
                 <SelectContent
@@ -476,14 +479,14 @@ export default function EditTaskModal({
                   : "border-slate-300 text-slate-700 hover:bg-slate-100"
               }`}
             >
-              Cancel
+              {t("editTask.cancel")}
             </button>
 
             <button
               type="submit"
               className="flex-1 rounded-lg bg-purple-600 py-2 text-white transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
-              Update Task
+              {t("editTask.updateTask")}
             </button>
           </div>
         </form>

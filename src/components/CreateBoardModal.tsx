@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function CreateBoardModal({
   isOpen,
@@ -11,6 +11,7 @@ export default function CreateBoardModal({
   onBoardCreated,
   theme,
 }: any) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const createBoard = useMutation(api.boards.create);
 
@@ -27,7 +28,11 @@ export default function CreateBoardModal({
     onClose();
     onBoardCreated(board);
 
-    toast.success(`Board ${name} created`);
+    toast.success(
+      t("createBoardModal.created", {
+        name,
+      }),
+    );
   };
 
   return (
@@ -41,7 +46,7 @@ export default function CreateBoardModal({
       >
         <DialogHeader>
           <DialogTitle className="text-xl! font-semibold">
-            Create New Board
+            {t("createBoardModal.title")}
           </DialogTitle>
         </DialogHeader>
 
@@ -52,14 +57,14 @@ export default function CreateBoardModal({
                 theme === "dark" ? "text-slate-300" : "text-slate-700"
               }`}
             >
-              Board Name
+              {t("createBoardModal.boardName")}
             </label>
 
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g Web Design"
+              placeholder={t("createBoardModal.placeholder")}
               className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 transition ${
                 theme === "dark"
                   ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
@@ -77,7 +82,7 @@ export default function CreateBoardModal({
                 : "bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500"
             }`}
           >
-            Create Board
+            {t("createBoardModal.create")}
           </button>
         </form>
       </DialogContent>
