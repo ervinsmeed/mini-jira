@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
-
+import { useTranslation } from "react-i18next";
 import EditTaskModal from "../EditTaskModal";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./Dialog";
@@ -20,6 +19,7 @@ import { Checkbox } from "./checkbox";
 import { Edit, MoreVertical, Trash2 } from "lucide-react";
 
 export default function TaskModal({ task: initialTask, onClose, theme }: any) {
+  const { t } = useTranslation();
   const [columnId, setColumnId] = useState(initialTask.columnId);
   const [showActions, setShowActions] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -47,13 +47,14 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
   };
 
   const handleSubtaskToggle = async (subtaskIndex: number) => {
-    const updatedSubtasks = (task.subtasks ?? []).map((subtask: any, index: number) =>
-      index === subtaskIndex
-        ? {
-            ...subtask,
-            completed: !subtask.completed,
-          }
-        : subtask,
+    const updatedSubtasks = (task.subtasks ?? []).map(
+      (subtask: any, index: number) =>
+        index === subtaskIndex
+          ? {
+              ...subtask,
+              completed: !subtask.completed,
+            }
+          : subtask,
     );
 
     await updateTask({
@@ -68,7 +69,7 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
     });
 
     onClose();
-    toast.success("Task deleted!");
+    toast.success(t("taskModal.deleted"));
   };
 
   const completedSubtasks = task.subtasks
@@ -144,7 +145,7 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
                   }`}
                 >
                   <Edit className="size-3" />
-                  <span>Edit Task</span>
+                  {t("taskModal.editTask")}
                 </button>
 
                 {showDeleteConfirm ? (
@@ -154,7 +155,7 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
                         theme === "dark" ? "text-slate-400" : "text-slate-500"
                       }`}
                     >
-                      Delete task?
+                      {t("taskModal.deleteQuestion")}
                     </p>
 
                     <div className="flex space-x-2">
@@ -162,7 +163,7 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
                         onClick={handleDeleteTask}
                         className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                       >
-                        Yes
+                        {t("common.yes")}
                       </button>
 
                       <button
@@ -173,7 +174,7 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
                             : "bg-slate-100 text-slate-900 hover:bg-slate-200"
                         }`}
                       >
-                        No
+                        {t("common.no")}
                       </button>
                     </div>
                   </div>
@@ -187,7 +188,7 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
                     }`}
                   >
                     <Trash2 className="size-3" />
-                    <span>Delete Task</span>
+                    {t("taskModal.deleteTask")}
                   </button>
                 )}
               </div>
@@ -216,7 +217,10 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
                     theme === "dark" ? "text-slate-100" : "text-slate-900"
                   }`}
                 >
-                  Subtasks ({completedSubtasks} of {totalSubtasks})
+                  {t("taskModal.subtasks", {
+                    completed: completedSubtasks,
+                    total: totalSubtasks,
+                  })}
                 </h4>
 
                 <div className="space-y-3">
@@ -258,7 +262,7 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
                 theme === "dark" ? "text-slate-100" : "text-slate-900"
               }`}
             >
-              Column
+              {t("taskModal.column")}
             </label>
 
             <Select value={columnId} onValueChange={handleColumnChange}>
@@ -269,7 +273,7 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
                     : "bg-white text-slate-900 border-slate-300"
                 }`}
               >
-                <SelectValue placeholder="Select column" />
+                <SelectValue placeholder={t("taskModal.selectColumn")} />
               </SelectTrigger>
 
               <SelectContent

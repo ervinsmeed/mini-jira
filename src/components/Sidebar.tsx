@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
+
 import {
   Sun,
   Moon,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { useTranslation } from "react-i18next";
 import {
   DndContext,
   closestCenter,
@@ -62,6 +64,7 @@ export default function Sidebar({
       }
     }
   };
+  const { t, i18n } = useTranslation();
 
   const handleDragEnd = async (event: any) => {
     const { active, over } = event;
@@ -122,7 +125,11 @@ export default function Sidebar({
         </div>
         <button
           onClick={onToggleCollapsed}
-          className="p-2 text-slate-400 hover:text-slate-100 transition-colors"
+          className={`p-2 transition-colors ${
+            theme === "dark"
+              ? "text-slate-400 hover:text-slate-100"
+              : "text-slate-500 hover:text-slate-900"
+          }`}
         >
           <SidebarIcon className={"size-4"} />
         </button>
@@ -149,7 +156,7 @@ export default function Sidebar({
           <h1
             className={`text-xl font-bold transition-colors ${theme === "dark" ? "text-slate-100" : "text-slate-900"}`}
           >
-            Kanban
+            {t("kanban")}
           </h1>
         </div>
       </div>
@@ -158,14 +165,14 @@ export default function Sidebar({
         <div
           className={`text-xs font-semibold uppercase tracking-wider mb-4 transition-colors ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}
         >
-          All Boards ({boards.length})
+          {t("allBoards")} ({boards.length})
         </div>
 
         <button
           onClick={onCreateBoard}
           className={`w-full flex items-center justify-center space-x-3 p-3 rounded-r-full transition-all mb-2 shadow-sm ${theme === "dark" ? "bg-purple-600 text-white hover:bg-purple-700" : "bg-purple-500 text-white hover:bg-purple-600"}`}
         >
-          <span className="font-semibold">Create New Board</span>
+          <span className="font-semibold">{t("createBoard")}</span>
         </button>
 
         <DndContext
@@ -226,20 +233,55 @@ export default function Sidebar({
         />
       </div>
 
+      <div
+        className={`flex items-center justify-center gap-2 px-2 py-2 ${
+          theme === "dark" ? "text-slate-300" : "text-slate-700"
+        }`}
+      >
+        <button
+          onClick={() => i18n.changeLanguage("en")}
+          className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
+            i18n.resolvedLanguage?.startsWith("en")
+              ? "bg-purple-500 text-white"
+              : theme === "dark"
+                ? "bg-slate-900 hover:bg-slate-800"
+                : "bg-slate-100 hover:bg-slate-200"
+          }`}
+        >
+          EN
+        </button>
+        <button
+          onClick={() => i18n.changeLanguage("ru")}
+          className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
+            i18n.resolvedLanguage?.startsWith("ru")
+              ? "bg-purple-500 text-white"
+              : theme === "dark"
+                ? "bg-slate-900 hover:bg-slate-800"
+                : "bg-slate-100 hover:bg-slate-200"
+          }`}
+        >
+          RU
+        </button>
+      </div>
+
       <button
         onClick={onToggleCollapsed}
         className={`flex items-center space-x-3 px-2 py-1 transition-colors ${theme === "dark" ? "text-slate-400 hover:text-slate-100" : "text-slate-500 hover:text-slate-900"}`}
       >
         <EyeOff className="size-4" />
-        <span className="text-sm font-medium">Hide Sidebar</span>
+        <span className="text-sm font-medium">{t("hideSidebar")}</span>
       </button>
 
       <SignOutButton>
         <div
-          className={`flex items-center space-x-3 px-2 py-1 transition-colors ${theme === "dark" ? "text-slate-400 hover:text-slate-100" : "text-slate-500 hover:text-slate-900"}`}
+          className={`flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${
+            theme === "dark"
+              ? "text-slate-400 hover:text-slate-100 hover:bg-slate-900"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          }`}
         >
           <LogOut className="size-4" />
-          <span className="text-sm font-medium">Log out</span>
+          <span className="text-sm font-medium">{t("logout")}</span>
         </div>
       </SignOutButton>
     </div>

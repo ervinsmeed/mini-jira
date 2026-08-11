@@ -5,7 +5,7 @@ import App from "./App.tsx";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ConvexReactClient } from "convex/react";
-
+import "./i18n";
 // 1. Создаем клиент Convex (он будет слушать изменения в базе через WebSocket)
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
 

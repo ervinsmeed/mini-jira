@@ -11,6 +11,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { useTranslation } from "react-i18next";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -45,6 +46,7 @@ export default function Board({ board, theme }: BoardProps) {
   );
 
   const [activeTask, setActiveTask] = useState<Doc<"tasks"> | null>(null);
+  const { t } = useTranslation();
 
   /*
    * Важно: проверяем именно board?._id.
@@ -187,11 +189,11 @@ export default function Board({ board, theme }: BoardProps) {
               theme === "dark" ? "text-slate-100" : "text-slate-900"
             }`}
           >
-            Welcome to your Kanban Board
+            {t("board.welcome")}
           </h2>
 
           <p className={theme === "dark" ? "text-slate-400" : "text-slate-500"}>
-            Create or select a board to get started
+            {t("board.getStarted")}
           </p>
         </div>
       </div>
@@ -225,7 +227,7 @@ export default function Board({ board, theme }: BoardProps) {
           >
             <Plus className="size-4" />
 
-            <span>Add New Task</span>
+            <span>{t("board.addTask")}</span>
           </button>
 
           <UserButton />
@@ -268,13 +270,18 @@ export default function Board({ board, theme }: BoardProps) {
               >
                 <Plus className="size-6" />
 
-                <span>New Column</span>
+                {t("board.newColumn")}
               </button>
             </div>
 
             <DragOverlay>
               {activeTask ? (
-                <TaskCard task={activeTask} isDragging={true} onClick={() => {}} theme={theme} />
+                <TaskCard
+                  task={activeTask}
+                  isDragging={true}
+                  onClick={() => {}}
+                  theme={theme}
+                />
               ) : null}
             </DragOverlay>
           </DndContext>

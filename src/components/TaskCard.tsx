@@ -1,15 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { Progress } from "./ui/progress";
-
+import { useTranslation } from "react-i18next";
 export default function TaskCard({
   task,
   onClick,
   isDragging = false,
   theme,
 }: any) {
+  const { t } = useTranslation();
   const {
     attributes,
     listeners,
@@ -111,7 +111,10 @@ export default function TaskCard({
               theme === "dark" ? "text-slate-400" : "text-slate-500"
             }`}
           >
-            {completedSubtasks} of {totalSubtasks} subtasks
+            {t("taskCard.subtasksProgress", {
+              completed: completedSubtasks,
+              total: totalSubtasks,
+            })}
           </p>
 
           <Progress value={percentageCompletion} />
