@@ -20,6 +20,7 @@ import { Edit, MoreVertical, Trash2 } from "lucide-react";
 
 export default function TaskModal({ task: initialTask, onClose, theme }: any) {
   const { t } = useTranslation();
+
   const [columnId, setColumnId] = useState(initialTask.columnId);
   const [showActions, setShowActions] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -69,6 +70,7 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
     });
 
     onClose();
+
     toast.success(t("taskModal.deleted"));
   };
 
@@ -145,6 +147,7 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
                   }`}
                 >
                   <Edit className="size-3" />
+
                   {t("taskModal.editTask")}
                 </button>
 
@@ -188,6 +191,7 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
                     }`}
                   >
                     <Trash2 className="size-3" />
+
                     {t("taskModal.deleteTask")}
                   </button>
                 )}
@@ -206,6 +210,28 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
               >
                 {task.description}
               </p>
+            </div>
+          )}
+
+          {task.storyPoints !== undefined && (
+            <div>
+              <h4
+                className={`text-sm font-medium mb-2 ${
+                  theme === "dark" ? "text-slate-100" : "text-slate-900"
+                }`}
+              >
+                {t("taskModal.storyPoints")}
+              </h4>
+
+              <span
+                className={`inline-flex items-center rounded-md px-3 py-1.5 text-sm font-semibold ${
+                  theme === "dark"
+                    ? "bg-slate-800 text-purple-300"
+                    : "bg-slate-100 text-purple-700"
+                }`}
+              >
+                {task.storyPoints} SP
+              </span>
             </div>
           )}
 

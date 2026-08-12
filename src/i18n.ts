@@ -57,6 +57,7 @@ i18n
             subtasks: "Subtasks ({{completed}} of {{total}})",
             column: "Column",
             selectColumn: "Select column",
+            storyPoints: "Story Points",
           },
           editTask: {
             updated: "Task updated",
@@ -73,6 +74,8 @@ i18n
             cancel: "Cancel",
             updateTask: "Update Task",
             subtaskPlaceholder: "e.g Make coffee",
+            storyPoints: "Story Points",
+            selectStoryPoints: "Select Story Points",
           },
 
           createTask: {
@@ -90,6 +93,8 @@ i18n
             column: "Column",
             selectColumn: "Select column",
             create: "Create Task",
+            storyPoints: "Story Points",
+            selectStoryPoints: "Select Story Points",
           },
           editColumn: {
             updated: "Column Updated",
@@ -164,6 +169,7 @@ i18n
             subtasks: "Подзадачи ({{completed}} из {{total}})",
             column: "Колонка",
             selectColumn: "Выберите колонку",
+            storyPoints: "Story Points",
           },
 
           createTask: {
@@ -181,6 +187,8 @@ i18n
             column: "Колонка",
             selectColumn: "Выберите колонку",
             create: "Создать задачу",
+            storyPoints: "Story Points",
+            selectStoryPoints: "Выберите Story Points",
           },
 
           priority: {
@@ -211,6 +219,8 @@ i18n
             cancel: "Отмена",
             updateTask: "Обновить задачу",
             subtaskPlaceholder: "Например, приготовить кофе",
+            storyPoints: "Story Points",
+            selectStoryPoints: "Выберите Story Points",
           },
           editColumn: {
             updated: "Колонка обновлена",

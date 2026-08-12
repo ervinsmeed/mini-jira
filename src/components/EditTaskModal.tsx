@@ -68,6 +68,7 @@ function SortableSubTask({
   theme,
 }: SortableSubTaskProps) {
   const { t } = useTranslation();
+
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id: `subtask-${index}`,
@@ -130,10 +131,12 @@ export default function EditTaskModal({
   theme,
 }: EditTaskModalProps) {
   const { t } = useTranslation();
+
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || "");
   const [priority, setPriority] = useState(task.priority || "medium");
 
+  const [storyPoints, setStoryPoints] = useState(String(task.storyPoints ?? 1));
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
 
   const [columnId, setColumnId] = useState(task.columnId);
@@ -144,14 +147,11 @@ export default function EditTaskModal({
     boardId: task.boardId,
   }) ?? []) as any[];
 
-  /* При обновлении пропа task нужно обновлять локальный state полей формы.
-     Правило ESLint иногда ругается на синхронный setState внутри эффекта — это ожидаемое поведение здесь
-     потому что компонент представляет собой контролируемую форму. Отключаем правило для этого эффекта. */
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setTitle(task.title);
     setDescription(task.description ?? "");
     setPriority(task.priority ?? "medium");
+    setStoryPoints(String(task.storyPoints ?? 1));
     setColumnId(task.columnId);
 
     if (task.subtasks && task.subtasks.length > 0) {
@@ -164,7 +164,7 @@ export default function EditTaskModal({
         },
       ]);
     }
-  }, [task]);
+  }, [task._id]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const sensors = useSensors(
@@ -255,11 +255,13 @@ export default function EditTaskModal({
       title: title.trim(),
       description: description.trim(),
       priority,
+      storyPoints: Number(storyPoints) as 1 | 2 | 3 | 5 | 8 | 13 | 21,
       subtasks: validSubtasks,
       columnId,
     });
 
     onClose();
+
     toast.success(t("editTask.updated"));
   };
 
@@ -467,6 +469,42 @@ export default function EditTaskModal({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div>
+            <label
+              className={`mb-2 block text-sm font-medium ${
+                theme === "dark" ? "text-slate-300" : "text-slate-700"
+              }`}
+            >
+              {t("editTask.storyPoints")}
+            </label>
+
+            <Select value={storyPoints} onValueChange={setStoryPoints}>
+              <SelectTrigger
+                className={`w-full transition-colors ${
+                  theme === "dark"
+                    ? "border-slate-800 bg-slate-900 text-slate-100"
+                    : "border-slate-300 bg-white text-slate-900"
+                }`}
+              >
+                <SelectValue placeholder={t("editTask.selectStoryPoints")} />
+              </SelectTrigger>
+
+              <SelectContent
+                className={`transition-colors ${
+                  theme === "dark"
+                    ? "border-slate-800 bg-slate-900 text-slate-100"
+                    : "border-slate-200 bg-white text-slate-900"
+                }`}
+              >
+                {[1, 2, 3, 5, 8, 13, 21].map((points) => (
+                  <SelectItem key={points} value={points.toString()}>
+                    {points} SP
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex gap-3">

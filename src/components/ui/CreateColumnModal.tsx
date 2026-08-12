@@ -55,7 +55,12 @@ export default function CreateColumnModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent
         className={`max-w-md border ${
           theme === "dark"
@@ -120,7 +125,7 @@ export default function CreateColumnModal({
 
           <button
             type="submit"
-            className="w-full py-2 bg-purple-500 text-white rounded-m font-medium hover:bg-purple-600 transition-colors"
+            className="w-full py-2 bg-purple-500 text-white rounded-md font-medium hover:bg-purple-600 transition-colors"
           >
             {t("createColumn.create")}
           </button>
