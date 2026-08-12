@@ -30,6 +30,17 @@ export default defineSchema({
     columnId: v.id("columns"),
     order: v.number(),
     priority: v.optional(v.string()),
+    storyPoints: v.optional(
+      v.union(
+        v.literal(1),
+        v.literal(2),
+        v.literal(3),
+        v.literal(5),
+        v.literal(8),
+        v.literal(13),
+        v.literal(21),
+      ),
+    ),
     subtasks: v.optional(
       v.array(
         v.object({

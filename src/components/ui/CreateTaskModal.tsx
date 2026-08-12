@@ -4,6 +4,7 @@ import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "react-i18next";
+
 import {
   DndContext,
   closestCenter,
@@ -61,6 +62,7 @@ function SortableSubTask({
   theme,
 }: SortableSubTaskProps) {
   const { t } = useTranslation();
+
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id: `subtask-${index}`,
@@ -124,9 +126,15 @@ export default function CreateTaskModal({
   theme = "dark",
 }: CreateTaskModalProps) {
   const { t } = useTranslation();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
+
+  const [storyPoints, setStoryPoints] = useState<1 | 2 | 3 | 5 | 8 | 13 | 21>(
+    1,
+  );
+
   const [subtasks, setSubtasks] = useState(["", ""]);
   const [columnId, setColumnId] = useState<Id<"columns"> | "">("");
 
@@ -203,6 +211,7 @@ export default function CreateTaskModal({
       title: title.trim(),
       description: description.trim(),
       priority,
+      storyPoints,
       subtasks: validSubtasks,
       columnId,
       boardId,
@@ -211,6 +220,7 @@ export default function CreateTaskModal({
     setTitle("");
     setDescription("");
     setPriority("medium");
+    setStoryPoints(1);
     setSubtasks(["", ""]);
     setColumnId(columns[0]?._id ?? "");
 
@@ -423,6 +433,48 @@ export default function CreateTaskModal({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* STORY POINTS */}
+          <div>
+            <label
+              className={`block text-sm font-medium mb-2 ${
+                theme === "dark" ? "text-slate-300" : "text-slate-700"
+              }`}
+            >
+              {t("createTask.storyPoints")}
+            </label>
+
+            <Select
+              value={storyPoints.toString()}
+              onValueChange={(value) =>
+                setStoryPoints(Number(value) as 1 | 2 | 3 | 5 | 8 | 13 | 21)
+              }
+            >
+              <SelectTrigger
+                className={`w-full transition-colors ${
+                  theme === "dark"
+                    ? "bg-slate-900 border-slate-800 text-slate-100"
+                    : "bg-white border-slate-300 text-slate-900"
+                }`}
+              >
+                <SelectValue placeholder={t("createTask.selectStoryPoints")} />
+              </SelectTrigger>
+
+              <SelectContent
+                className={`transition-colors ${
+                  theme === "dark"
+                    ? "bg-slate-900 border-slate-800 text-slate-100"
+                    : "bg-white border-slate-200 text-slate-900"
+                }`}
+              >
+                {[1, 2, 3, 5, 8, 13, 21].map((points) => (
+                  <SelectItem key={points} value={points.toString()}>
+                    {points} SP
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <button

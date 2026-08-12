@@ -7,6 +7,17 @@ export const create = mutation({
     description: v.optional(v.string()),
     columnId: v.id("columns"),
     priority: v.optional(v.string()),
+    storyPoints: v.optional(
+      v.union(
+        v.literal(1),
+        v.literal(2),
+        v.literal(3),
+        v.literal(5),
+        v.literal(8),
+        v.literal(13),
+        v.literal(21),
+      ),
+    ),
     subtasks: v.optional(
       v.array(
         v.object({
@@ -61,6 +72,7 @@ export const create = mutation({
       title: args.title,
       description: args.description,
       priority: args.priority || "medium",
+      storyPoints: args.storyPoints,
       subtasks: args.subtasks || [],
       columnId: args.columnId,
       order: maxOrder + 1,
@@ -161,6 +173,17 @@ export const update = mutation({
     title: v.optional(v.string()),
     description: v.optional(v.string()),
     priority: v.optional(v.string()),
+    storyPoints: v.optional(
+      v.union(
+        v.literal(1),
+        v.literal(2),
+        v.literal(3),
+        v.literal(5),
+        v.literal(8),
+        v.literal(13),
+        v.literal(21),
+      ),
+    ),
     columnId: v.optional(v.id("columns")),
     order: v.optional(v.number()),
     subtasks: v.optional(
@@ -205,6 +228,9 @@ export const update = mutation({
 
     if (args.priority !== undefined) {
       updates.priority = args.priority;
+    }
+    if (args.storyPoints !== undefined) {
+      updates.storyPoints = args.storyPoints;
     }
 
     if (args.columnId !== undefined) {

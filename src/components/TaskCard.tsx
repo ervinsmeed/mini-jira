@@ -3,6 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { Progress } from "./ui/progress";
 import { useTranslation } from "react-i18next";
+
 export default function TaskCard({
   task,
   onClick,
@@ -10,6 +11,7 @@ export default function TaskCard({
   theme,
 }: any) {
   const { t } = useTranslation();
+
   const {
     attributes,
     listeners,
@@ -39,10 +41,13 @@ export default function TaskCard({
     switch (priority) {
       case "high":
         return "border-l-red-500";
+
       case "medium":
         return "border-l-yellow-500";
+
       case "low":
         return "border-l-green-500";
+
       default:
         return "border-l-yellow-500";
     }
@@ -52,10 +57,13 @@ export default function TaskCard({
     switch (priority) {
       case "high":
         return "bg-red-500";
+
       case "medium":
         return "bg-yellow-500";
+
       case "low":
         return "bg-green-500";
+
       default:
         return "bg-yellow-500";
     }
@@ -102,6 +110,20 @@ export default function TaskCard({
         >
           {task.description}
         </p>
+      )}
+
+      {task.storyPoints !== undefined && (
+        <div className="mb-3">
+          <span
+            className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold ${
+              theme === "dark"
+                ? "bg-slate-800 text-purple-300"
+                : "bg-slate-100 text-purple-700"
+            }`}
+          >
+            {task.storyPoints} SP
+          </span>
+        </div>
       )}
 
       {totalSubtasks > 0 && (
