@@ -121,22 +121,36 @@ export const initializeDefaultColumns = mutation({
     if (existingColumns.length > 0) {
       return existingColumns.sort((a, b) => a.order - b.order);
     }
-
     const defaultColumns = [
       {
-        name: "TODO",
-        color: "#22d3ee",
+        name: "Backlog",
+        color: "#64748b",
         order: 0,
       },
       {
-        name: "DOING",
-        color: "#8b5cf6",
+        name: "To Do",
+        color: "#22d3ee",
         order: 1,
       },
       {
-        name: "DONE",
-        color: "#22c55e",
+        name: "In Progress",
+        color: "#8b5cf6",
         order: 2,
+      },
+      {
+        name: "Review",
+        color: "#f59e0b",
+        order: 3,
+      },
+      {
+        name: "Testing",
+        color: "#3b82f6",
+        order: 4,
+      },
+      {
+        name: "Done",
+        color: "#22c55e",
+        order: 5,
       },
     ];
 
