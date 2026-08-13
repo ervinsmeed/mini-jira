@@ -7,6 +7,7 @@ export const create = mutation({
     description: v.optional(v.string()),
     columnId: v.id("columns"),
     priority: v.optional(v.string()),
+
     storyPoints: v.optional(
       v.union(
         v.literal(1),
@@ -18,6 +19,9 @@ export const create = mutation({
         v.literal(21),
       ),
     ),
+
+    deadline: v.optional(v.number()),
+
     subtasks: v.optional(
       v.array(
         v.object({
@@ -26,6 +30,7 @@ export const create = mutation({
         }),
       ),
     ),
+
     boardId: v.id("boards"),
   },
 
@@ -73,6 +78,7 @@ export const create = mutation({
       description: args.description,
       priority: args.priority || "medium",
       storyPoints: args.storyPoints,
+      deadline: args.deadline,
       subtasks: args.subtasks || [],
       columnId: args.columnId,
       order: maxOrder + 1,
@@ -127,7 +133,6 @@ export const list = query({
 
       return tasks.sort((a, b) => {
         const aPriority = priorityOrder[a.priority || "medium"];
-
         const bPriority = priorityOrder[b.priority || "medium"];
 
         if (aPriority !== bPriority) {
@@ -152,7 +157,6 @@ export const list = query({
 
       return tasks.sort((a, b) => {
         const aPriority = priorityOrder[a.priority || "medium"];
-
         const bPriority = priorityOrder[b.priority || "medium"];
 
         if (aPriority !== bPriority) {
@@ -173,6 +177,7 @@ export const update = mutation({
     title: v.optional(v.string()),
     description: v.optional(v.string()),
     priority: v.optional(v.string()),
+
     storyPoints: v.optional(
       v.union(
         v.literal(1),
@@ -184,8 +189,12 @@ export const update = mutation({
         v.literal(21),
       ),
     ),
+
+    deadline: v.optional(v.number()),
+
     columnId: v.optional(v.id("columns")),
     order: v.optional(v.number()),
+
     subtasks: v.optional(
       v.array(
         v.object({
@@ -217,7 +226,9 @@ export const update = mutation({
     if (!task || task.userId !== user._id) {
       throw new Error("Task not found");
     }
+
     const updates = {};
+
     if (args.title !== undefined) {
       updates.title = args.title;
     }
@@ -229,8 +240,13 @@ export const update = mutation({
     if (args.priority !== undefined) {
       updates.priority = args.priority;
     }
+
     if (args.storyPoints !== undefined) {
       updates.storyPoints = args.storyPoints;
+    }
+
+    if (args.deadline !== undefined) {
+      updates.deadline = args.deadline;
     }
 
     if (args.columnId !== undefined) {

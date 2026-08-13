@@ -41,6 +41,7 @@ export default defineSchema({
         v.literal(21),
       ),
     ),
+    deadline: v.optional(v.number()),
     subtasks: v.optional(
       v.array(
         v.object({
