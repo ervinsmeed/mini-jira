@@ -16,7 +16,13 @@ import {
 } from "./select";
 
 import { Checkbox } from "./checkbox";
-import { Edit, MoreVertical, Trash2 } from "lucide-react";
+import {
+  Edit,
+  MoreVertical,
+  Trash2,
+  CalendarDays,
+  X,
+} from "lucide-react";
 
 export default function TaskModal({ task: initialTask, onClose, theme }: any) {
   const { t } = useTranslation();
@@ -80,6 +86,12 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
 
   const totalSubtasks = task.subtasks ? task.subtasks.length : 0;
 
+  const isOverdue = task.deadline !== undefined && task.deadline < Date.now();
+
+  const formattedDeadline = task.deadline
+    ? new Date(task.deadline).toLocaleDateString()
+    : "";
+
   if (showEditModal) {
     return (
       <EditTaskModal
@@ -100,6 +112,7 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
       }}
     >
       <DialogContent
+        showCloseButton={false}
         className={`max-w-lg max-h-[600px] overflow-auto transition-colors border ${
           theme === "dark"
             ? "bg-slate-950 text-slate-100 border-slate-800"
@@ -107,96 +120,123 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
         }`}
       >
         <DialogHeader>
-          <div className="relative flex items-start justify-between">
+          <div className="relative flex items-start justify-between gap-4 pr-12">
             <DialogTitle
-              className={`!text-xl font-semibold pr-8 ${
+              className={`!text-xl font-semibold pr-2 ${
                 theme === "dark" ? "text-slate-100" : "text-slate-900"
               }`}
             >
               {task.title}
             </DialogTitle>
 
-            <button
-              onClick={() => setShowActions(!showActions)}
-              className={`p-1 transition-colors ${
-                theme === "dark"
-                  ? "text-slate-400 hover:text-slate-100"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              <MoreVertical className="size-4" />
-            </button>
-
-            {showActions && (
-              <div
-                className={`absolute right-0 top-8 rounded-lg shadow-lg py-1 z-10 min-w-[120px] border transition-colors ${
-                  theme === "dark"
-                    ? "bg-slate-800 border-slate-700"
-                    : "bg-white border-slate-200"
-                }`}
-              >
+            <div className="absolute right-0 top-0 z-20 flex items-center gap-[10px]">
+              <div className="relative">
                 <button
-                  onClick={() => {
-                    setShowEditModal(true);
-                    setShowActions(false);
-                  }}
-                  className={`flex items-center space-x-2 w-full px-3 py-2 text-sm transition-colors ${
+                  type="button"
+                  onClick={() => setShowActions(!showActions)}
+                  className={`flex h-8 w-8 items-center justify-center rounded-md border border-transparent transition-colors outline-none focus-visible:ring-1 focus-visible:ring-slate-500 focus-visible:ring-offset-0 ${
                     theme === "dark"
-                      ? "text-slate-100 hover:bg-slate-900"
-                      : "text-slate-900 hover:bg-slate-50"
+                      ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
+                      : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                   }`}
+                  aria-label="Open task actions"
                 >
-                  <Edit className="size-3" />
-
-                  {t("taskModal.editTask")}
+                  <MoreVertical className="size-4" />
                 </button>
 
-                {showDeleteConfirm ? (
-                  <div className="px-3 py-2">
-                    <p
-                      className={`text-xs py-2 ${
-                        theme === "dark" ? "text-slate-400" : "text-slate-500"
-                      }`}
-                    >
-                      {t("taskModal.deleteQuestion")}
-                    </p>
-
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={handleDeleteTask}
-                        className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                      >
-                        {t("common.yes")}
-                      </button>
-
-                      <button
-                        onClick={() => setShowDeleteConfirm(false)}
-                        className={`text-xs px-2 py-1 rounded transition-colors ${
-                          theme === "dark"
-                            ? "bg-slate-950 text-slate-100 hover:bg-slate-900"
-                            : "bg-slate-100 text-slate-900 hover:bg-slate-200"
-                        }`}
-                      >
-                        {t("common.no")}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className={`flex items-center space-x-2 w-full py-2 px-3 text-sm transition-colors ${
+                {showActions && (
+                  <div
+                    className={`absolute right-0 top-8 z-20 w-[210px] rounded-lg border shadow-lg ${
                       theme === "dark"
-                        ? "text-red-400 hover:bg-red-900"
-                        : "text-red-500 hover:bg-red-50"
+                        ? "border-slate-700 bg-slate-900"
+                        : "border-slate-200 bg-white"
                     }`}
                   >
-                    <Trash2 className="size-3" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEditModal(true);
+                        setShowActions(false);
+                      }}
+                      className={`flex w-full items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+                        theme === "dark"
+                          ? "text-slate-100 hover:bg-slate-800"
+                          : "text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <Edit className={`size-3.5 shrink-0 ${
+                        theme === "dark" ? "text-slate-400" : "text-slate-500"
+                      }`} />
+                      <span>{t("taskModal.editTask")}</span>
+                    </button>
 
-                    {t("taskModal.deleteTask")}
-                  </button>
+                    <div className="border-t border-slate-700" />
+
+                    {showDeleteConfirm ? (
+                      <div className="px-3 py-2">
+                        <p
+                          className={`text-xs py-2 ${
+                            theme === "dark" ? "text-slate-400" : "text-slate-500"
+                          }`}
+                        >
+                          {t("taskModal.deleteQuestion")}
+                        </p>
+
+                        <div className="flex space-x-2">
+                          <button
+                            type="button"
+                            onClick={handleDeleteTask}
+                            className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                          >
+                            {t("common.yes")}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setShowDeleteConfirm(false)}
+                            className={`text-xs px-2 py-1 rounded transition-colors ${
+                              theme === "dark"
+                                ? "bg-slate-950 text-slate-100 hover:bg-slate-800"
+                                : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+                            }`}
+                          >
+                            {t("common.no")}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className={`flex w-full items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+                          theme === "dark"
+                            ? "text-red-400 hover:bg-red-950/50"
+                            : "text-red-500 hover:bg-red-50"
+                        }`}
+                      >
+                        <Trash2 className={`size-3.5 shrink-0 ${
+                          theme === "dark" ? "text-red-400" : "text-red-500"
+                        }`} />
+                        <span>{t("taskModal.deleteTask")}</span>
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
+
+              <button
+                type="button"
+                onClick={onClose}
+                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
+                  theme === "dark"
+                    ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
+                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+                aria-label="Close task modal"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
           </div>
         </DialogHeader>
 
@@ -232,6 +272,31 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
               >
                 {task.storyPoints} SP
               </span>
+            </div>
+          )}
+
+          {task.deadline !== undefined && (
+            <div>
+              <h4
+                className={`text-sm font-medium mb-2 ${
+                  theme === "dark" ? "text-slate-100" : "text-slate-900"
+                }`}
+              >
+                {t("taskModal.deadline")}
+              </h4>
+
+              <div
+                className={`flex items-center gap-2 text-sm font-medium ${
+                  isOverdue
+                    ? "text-red-500"
+                    : theme === "dark"
+                      ? "text-slate-400"
+                      : "text-slate-600"
+                }`}
+              >
+                <CalendarDays className="size-4" />
+                <span>{formattedDeadline}</span>
+              </div>
             </div>
           )}
 

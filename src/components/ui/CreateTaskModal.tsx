@@ -134,6 +134,7 @@ export default function CreateTaskModal({
   const [storyPoints, setStoryPoints] = useState<1 | 2 | 3 | 5 | 8 | 13 | 21>(
     1,
   );
+  const [deadline, setDeadline] = useState("");
 
   const [subtasks, setSubtasks] = useState(["", ""]);
   const [columnId, setColumnId] = useState<Id<"columns"> | "">("");
@@ -148,17 +149,14 @@ export default function CreateTaskModal({
   );
 
   useEffect(() => {
-    const getDefaultColumns = () => {
-      const firstColumn = columns[0];
+    const firstColumn = columns[0];
 
-      if (firstColumn && !columnId) {
-        setColumnId(firstColumn._id);
-      }
-    };
+    const columnExists = columns.some((column) => column._id === columnId);
 
-    getDefaultColumns();
+    if (firstColumn && (!columnId || !columnExists)) {
+      setColumnId(firstColumn._id);
+    }
   }, [columns, columnId]);
-
   const handleAddSubtask = () => {
     setSubtasks([...subtasks, ""]);
   };
@@ -212,6 +210,9 @@ export default function CreateTaskModal({
       description: description.trim(),
       priority,
       storyPoints,
+      deadline: deadline
+        ? new Date(`${deadline}T23:59:59`).getTime()
+        : undefined,
       subtasks: validSubtasks,
       columnId,
       boardId,
@@ -221,6 +222,7 @@ export default function CreateTaskModal({
     setDescription("");
     setPriority("medium");
     setStoryPoints(1);
+    setDeadline("");
     setSubtasks(["", ""]);
     setColumnId(columns[0]?._id ?? "");
 
@@ -401,8 +403,8 @@ export default function CreateTaskModal({
               >
                 {t("createTask.column")}
               </label>
-
               <Select
+                value={columnId}
                 onValueChange={(value) => setColumnId(value as Id<"columns">)}
               >
                 <SelectTrigger
@@ -475,6 +477,28 @@ export default function CreateTaskModal({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* DEADLINE */}
+          <div>
+            <label
+              className={`block text-sm font-medium mb-2 ${
+                theme === "dark" ? "text-slate-300" : "text-slate-700"
+              }`}
+            >
+              {t("createTask.deadline")}
+            </label>
+
+            <input
+              type="date"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+              className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
+                theme === "dark"
+                  ? "bg-slate-900 border-slate-800 text-slate-100 focus:ring-purple-400"
+                  : "bg-white border-slate-300 text-slate-900 focus:ring-purple-500"
+              }`}
+            />
           </div>
 
           <button

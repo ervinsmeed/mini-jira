@@ -58,6 +58,7 @@ i18n
             column: "Column",
             selectColumn: "Select column",
             storyPoints: "Story Points",
+            deadline: "Deadline",
           },
           editTask: {
             updated: "Task updated",
@@ -76,6 +77,7 @@ i18n
             subtaskPlaceholder: "e.g Make coffee",
             storyPoints: "Story Points",
             selectStoryPoints: "Select Story Points",
+            deadline: "Deadline",
           },
 
           createTask: {
@@ -95,6 +97,7 @@ i18n
             create: "Create Task",
             storyPoints: "Story Points",
             selectStoryPoints: "Select Story Points",
+            deadline: "Deadline",
           },
           editColumn: {
             updated: "Column Updated",
@@ -170,6 +173,7 @@ i18n
             column: "Колонка",
             selectColumn: "Выберите колонку",
             storyPoints: "Story Points",
+            deadline: "Срок выполнения",
           },
 
           createTask: {
@@ -189,6 +193,7 @@ i18n
             create: "Создать задачу",
             storyPoints: "Story Points",
             selectStoryPoints: "Выберите Story Points",
+            deadline: "Срок выполнения",
           },
 
           priority: {
@@ -221,6 +226,7 @@ i18n
             subtaskPlaceholder: "Например, приготовить кофе",
             storyPoints: "Story Points",
             selectStoryPoints: "Выберите Story Points",
+            deadline: "Срок выполнения",
           },
           editColumn: {
             updated: "Колонка обновлена",

@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { GripVertical, CalendarDays } from "lucide-react";
 import { Progress } from "./ui/progress";
 import { useTranslation } from "react-i18next";
 
@@ -33,6 +33,11 @@ export default function TaskCard({
     : 0;
 
   const totalSubtasks = task.subtasks ? task.subtasks.length : 0;
+  const isOverdue = task.deadline !== undefined && task.deadline < Date.now();
+
+  const formattedDeadline = task.deadline
+    ? new Date(task.deadline).toLocaleDateString()
+    : "";
 
   const percentageCompletion =
     totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
@@ -126,6 +131,20 @@ export default function TaskCard({
         </div>
       )}
 
+      {task.deadline !== undefined && (
+        <div
+          className={`mb-3 flex items-center gap-2 text-xs font-medium ${
+            isOverdue
+              ? "text-red-500"
+              : theme === "dark"
+                ? "text-slate-400"
+                : "text-slate-600"
+          }`}
+        >
+          <CalendarDays className="size-4" />
+          <span>{formattedDeadline}</span>
+        </div>
+      )}
       {totalSubtasks > 0 && (
         <>
           <p

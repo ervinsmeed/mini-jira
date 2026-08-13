@@ -137,6 +137,9 @@ export default function EditTaskModal({
   const [priority, setPriority] = useState(task.priority || "medium");
 
   const [storyPoints, setStoryPoints] = useState(String(task.storyPoints ?? 1));
+  const [deadline, setDeadline] = useState(
+    task.deadline ? new Date(task.deadline).toISOString().split("T")[0] : "",
+  );
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
 
   const [columnId, setColumnId] = useState(task.columnId);
@@ -152,6 +155,9 @@ export default function EditTaskModal({
     setDescription(task.description ?? "");
     setPriority(task.priority ?? "medium");
     setStoryPoints(String(task.storyPoints ?? 1));
+    setDeadline(
+      task.deadline ? new Date(task.deadline).toISOString().split("T")[0] : "",
+    );
     setColumnId(task.columnId);
 
     if (task.subtasks && task.subtasks.length > 0) {
@@ -256,10 +262,14 @@ export default function EditTaskModal({
       description: description.trim(),
       priority,
       storyPoints: Number(storyPoints) as 1 | 2 | 3 | 5 | 8 | 13 | 21,
+
+      deadline: deadline
+        ? new Date(`${deadline}T23:59:59`).getTime()
+        : undefined,
+
       subtasks: validSubtasks,
       columnId,
     });
-
     onClose();
 
     toast.success(t("editTask.updated"));
@@ -505,6 +515,27 @@ export default function EditTaskModal({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          {/* DEADLINE */}
+          <div>
+            <label
+              className={`mb-2 block text-sm font-medium ${
+                theme === "dark" ? "text-slate-300" : "text-slate-700"
+              }`}
+            >
+              {t("editTask.deadline")}
+            </label>
+
+            <input
+              type="date"
+              value={deadline}
+              onChange={(event) => setDeadline(event.target.value)}
+              className={`w-full rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
+                theme === "dark"
+                  ? "border-slate-800 bg-slate-900 text-slate-100 focus:ring-purple-400"
+                  : "border-slate-300 bg-white text-slate-900 focus:ring-purple-500"
+              }`}
+            />
           </div>
 
           <div className="flex gap-3">
