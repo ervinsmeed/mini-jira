@@ -12,6 +12,7 @@ import type * as boards from "../boards.js";
 import type * as columns from "../columns.js";
 import type * as tasks from "../tasks.js";
 import type * as users from "../users.js";
+import type * as workspaces from "../workspaces.js";
 
 import type {
   ApiFromModules,
@@ -24,6 +25,7 @@ declare const fullApi: ApiFromModules<{
   columns: typeof columns;
   tasks: typeof tasks;
   users: typeof users;
+  workspaces: typeof workspaces;
 }>;
 
 /**

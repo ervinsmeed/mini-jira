@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
@@ -46,12 +45,17 @@ export default function Board({ board, theme }: BoardProps) {
   );
 
   const [activeTask, setActiveTask] = useState<Doc<"tasks"> | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [priorityFilter, setPriorityFilter] = useState<
+    "all" | "high" | "medium" | "low"
+  >("all");
+
+  const [sortBy, setSortBy] = useState<
+    "manual" | "deadline" | "storyPoints" | "priority"
+  >("manual");
   const { t } = useTranslation();
 
-  /*
-   * Важно: проверяем именно board?._id.
-   * Если доска ещё не выбрана, Convex-запрос пропускается.
-   */
   const tasksResult = useQuery(
     api.tasks.list,
     board?._id
@@ -72,6 +76,70 @@ export default function Board({ board, theme }: BoardProps) {
 
   const tasks: any[] = (tasksResult ?? []) as any[];
   const columns: any[] = (columnsResult ?? []) as any[];
+  const visibleTasks = tasks
+    .filter((task) => {
+      const search = searchQuery.trim().toLowerCase();
+
+      if (!search) {
+        return true;
+      }
+
+      return (
+        task.title.toLowerCase().includes(search) ||
+        (task.description ?? "").toLowerCase().includes(search)
+      );
+    })
+    .filter((task) => {
+      if (priorityFilter === "all") {
+        return true;
+      }
+
+      return task.priority === priorityFilter;
+    })
+    .sort((firstTask, secondTask) => {
+      if (sortBy === "deadline") {
+        if (
+          firstTask.deadline === undefined &&
+          secondTask.deadline === undefined
+        ) {
+          return firstTask.order - secondTask.order;
+        }
+
+        if (firstTask.deadline === undefined) {
+          return 1;
+        }
+
+        if (secondTask.deadline === undefined) {
+          return -1;
+        }
+
+        return firstTask.deadline - secondTask.deadline;
+      }
+
+      if (sortBy === "storyPoints") {
+        return (secondTask.storyPoints ?? -1) - (firstTask.storyPoints ?? -1);
+      }
+
+      if (sortBy === "priority") {
+        const priorityOrder = {
+          high: 0,
+          medium: 1,
+          low: 2,
+        };
+
+        const firstPriority =
+          priorityOrder[firstTask.priority as keyof typeof priorityOrder] ?? 1;
+
+        const secondPriority =
+          priorityOrder[secondTask.priority as keyof typeof priorityOrder] ?? 1;
+
+        if (firstPriority !== secondPriority) {
+          return firstPriority - secondPriority;
+        }
+      }
+
+      return firstTask.order - secondTask.order;
+    });
 
   const initializeColumns = useMutation(api.columns.initializeDefaultColumns);
 
@@ -101,11 +169,13 @@ export default function Board({ board, theme }: BoardProps) {
       .filter((task) => task.columnId === columnId)
       .sort((firstTask, secondTask) => firstTask.order - secondTask.order);
   };
-
-  const getTaskCount = (columnId: Id<"columns">) => {
-    return getTasksByColumn(columnId).length;
+  const getVisibleTasksByColumn = (columnId: Id<"columns">) => {
+    return visibleTasks.filter((task) => task.columnId === columnId);
   };
 
+  const getTaskCount = (columnId: Id<"columns">) => {
+    return getVisibleTasksByColumn(columnId).length;
+  };
   const handleDragStart = (event: DragStartEvent) => {
     const task = tasks.find((item) => item._id === event.active.id);
 
@@ -218,6 +288,58 @@ export default function Board({ board, theme }: BoardProps) {
         >
           {board.name}
         </h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t("board.searchTasks")}
+            className={`w-56 rounded-md border px-3 py-2 text-sm outline-none transition ${
+              theme === "dark"
+                ? "border-slate-700 bg-slate-900 text-slate-100 placeholder-slate-500 focus:border-purple-500"
+                : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-purple-500"
+            }`}
+          />
+
+          <select
+            value={priorityFilter}
+            onChange={(event) =>
+              setPriorityFilter(
+                event.target.value as "all" | "high" | "medium" | "low",
+              )
+            }
+            className={`rounded-md border px-3 py-2 text-sm outline-none ${
+              theme === "dark"
+                ? "border-slate-700 bg-slate-900 text-slate-100"
+                : "border-slate-300 bg-white text-slate-900"
+            }`}
+          >
+            <option value="all">{t("board.allPriorities")}</option>
+            <option value="high">{t("priority.high")}</option>
+            <option value="medium">{t("priority.medium")}</option>
+            <option value="low">{t("priority.low")}</option>
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={(event) =>
+              setSortBy(
+                event.target.value as
+                  "manual" | "deadline" | "storyPoints" | "priority",
+              )
+            }
+            className={`rounded-md border px-3 py-2 text-sm outline-none ${
+              theme === "dark"
+                ? "border-slate-700 bg-slate-900 text-slate-100"
+                : "border-slate-300 bg-white text-slate-900"
+            }`}
+          >
+            <option value="manual">{t("board.manualOrder")}</option>
+            <option value="deadline">{t("board.sortDeadline")}</option>
+            <option value="storyPoints">{t("board.sortStoryPoints")}</option>
+            <option value="priority">{t("board.sortPriority")}</option>
+          </select>
+        </div>
 
         <div className="flex items-center space-x-4">
           <button
@@ -243,13 +365,13 @@ export default function Board({ board, theme }: BoardProps) {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={tasks.map((task) => task._id)}>
+            <SortableContext items={visibleTasks.map((task) => task._id)}>
               {columns.map((column) => (
                 <Column
                   key={column._id}
                   column={column}
                   taskCount={getTaskCount(column._id)}
-                  tasks={getTasksByColumn(column._id)}
+                  tasks={getVisibleTasksByColumn(column._id)}
                   onTaskClick={setSelectedTask}
                   onEditColumn={setEditingColumn}
                   theme={theme}

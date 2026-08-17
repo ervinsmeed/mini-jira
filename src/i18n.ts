@@ -22,6 +22,12 @@ i18n
             getStarted: "Create or select a board to get started",
             addTask: "Add New Task",
             newColumn: "New Column",
+            searchTasks: "Search tasks...",
+            allPriorities: "All priorities",
+            manualOrder: "Manual order",
+            sortDeadline: "By deadline",
+            sortStoryPoints: "By Story Points",
+            sortPriority: "By priority",
           },
           createBoardModal: {
             title: "Create New Board",
@@ -99,6 +105,16 @@ i18n
             selectStoryPoints: "Select Story Points",
             deadline: "Deadline",
           },
+
+          createWorkspaceModal: {
+            title: "Create Workspace",
+            workspaceName: "Workspace Name",
+            namePlaceholder: "Enter workspace name",
+            description: "Description",
+            descriptionPlaceholder: "Enter workspace description",
+            create: "Create Workspace",
+            created: 'Workspace "{{name}}" created successfully',
+          },
           editColumn: {
             updated: "Column Updated",
             title: "Edit Column",
@@ -114,6 +130,13 @@ i18n
             placeholder: "e.g. In Review",
             color: "Column Color",
             create: "Create Column",
+          },
+          editWorkspaceModal: {
+            title: "Edit Workspace",
+            workspaceName: "Workspace Name",
+            description: "Description",
+            save: "Save Changes",
+            updated: "Workspace updated successfully",
           },
 
           priority: {
@@ -137,6 +160,29 @@ i18n
             getStarted: "Создайте или выберите доску, чтобы начать",
             addTask: "Добавить задачу",
             newColumn: "Новая колонка",
+            searchTasks: "Поиск задач...",
+            allPriorities: "Все приоритеты",
+            manualOrder: "Ручной порядок",
+            sortDeadline: "По сроку",
+            sortStoryPoints: "По Story Points",
+            sortPriority: "По приоритету",
+          },
+          editWorkspaceModal: {
+            title: "Редактировать Workspace",
+            workspaceName: "Название",
+            description: "Описание",
+            save: "Сохранить изменения",
+            updated: "Workspace успешно обновлён",
+          },
+
+          createWorkspaceModal: {
+            title: "Создать рабочее пространство",
+            workspaceName: "Название",
+            namePlaceholder: "Введите название рабочего пространства",
+            description: "Описание",
+            descriptionPlaceholder: "Введите описание рабочего пространства",
+            create: "Создать Workspace",
+            created: 'Workspace "{{name}}" успешно создан',
           },
 
           column: {
