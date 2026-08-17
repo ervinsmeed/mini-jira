@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 
 import {
@@ -9,6 +8,7 @@ import {
   GripVertical,
   LogOut,
   SidebarIcon,
+  Pencil,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -30,18 +30,38 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { SignOutButton } from "@clerk/clerk-react";
-
 export default function Sidebar({
   currentBoard,
   onBoardSelect,
   onCreateBoard,
+  currentWorkspace,
+  workspaces = [],
+  onWorkspaceSelect,
+  onCreateWorkspace,
+  onEditWorkspace,
+  onDeleteWorkspace,
   theme,
   onThemeToggle,
   isCollapsed,
   onToggleCollapsed,
 }: any) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  const boards: any[] = (useQuery(api.boards.list) ?? []) as any[];
+  const [showDeleteWorkspaceConfirm, setShowDeleteWorkspaceConfirm] =
+    useState(null);
+  const allBoardsResult = useQuery(api.boards.list);
+
+  const workspaceBoardsResult = useQuery(
+    api.boards.listByWorkspace,
+    currentWorkspace?._id
+      ? {
+          workspaceId: currentWorkspace._id,
+        }
+      : "skip",
+  );
+
+  const boards: any[] = ((currentWorkspace?._id
+    ? workspaceBoardsResult
+    : allBoardsResult) ?? []) as any[];
   const deleteBoard = useMutation(api.boards.remove);
   const updateBoardOrder = useMutation(api.boards.updateOrder);
 
@@ -162,6 +182,105 @@ export default function Sidebar({
       </div>
       {/* Boards */}
       <div className="flex-1 p-6 overflow-y-auto">
+        {/* Workspaces */}
+        <div className="mb-6">
+          <div
+            className={`text-xs font-semibold uppercase tracking-wider mb-3 ${
+              theme === "dark" ? "text-slate-400" : "text-slate-500"
+            }`}
+          >
+            Workspaces ({workspaces.length})
+          </div>
+
+          <button
+            type="button"
+            onClick={onCreateWorkspace}
+            className={`w-full flex items-center justify-center p-3 rounded-r-full transition-all mb-2 shadow-sm ${
+              theme === "dark"
+                ? "bg-slate-900 text-slate-100 hover:bg-slate-800"
+                : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+            }`}
+          >
+            <span className="font-semibold">
+              {t("createWorkspaceModal.title")}
+            </span>
+          </button>
+
+          <div className="space-y-1">
+            {workspaces.map((workspace: any) => (
+              <div
+                key={workspace._id}
+                className={`group flex w-full items-center rounded-r-full transition-colors ${
+                  currentWorkspace?._id === workspace._id
+                    ? "bg-purple-500 text-white"
+                    : theme === "dark"
+                      ? "text-slate-400 hover:bg-purple-600/20 hover:text-slate-100"
+                      : "text-slate-600 hover:bg-purple-100 hover:text-slate-900"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => onWorkspaceSelect(workspace)}
+                  className="min-w-0 flex-1 truncate px-4 py-2 text-left text-sm font-medium"
+                >
+                  {workspace.name}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    console.log("EDIT WORKSPACE:", workspace);
+                    onEditWorkspace(workspace);
+                  }}
+                  className="relative z-10 mr-3 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
+                  title="Edit Workspace"
+                >
+                  <Pencil className="size-3.5" />
+                </button>
+
+                {showDeleteWorkspaceConfirm === workspace._id ? (
+                  <div className="mr-2 flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDeleteWorkspace(workspace._id);
+                        setShowDeleteWorkspaceConfirm(null);
+                      }}
+                      className="text-xs text-red-400 hover:text-red-500"
+                    >
+                      Yes
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setShowDeleteWorkspaceConfirm(null);
+                      }}
+                      className="text-xs"
+                    >
+                      No
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setShowDeleteWorkspaceConfirm(workspace._id);
+                    }}
+                    className="relative z-10 mr-3 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400"
+                    title="Delete Workspace"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
         <div
           className={`text-xs font-semibold uppercase tracking-wider mb-4 transition-colors ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}
         >

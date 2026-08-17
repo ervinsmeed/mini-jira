@@ -8,13 +8,34 @@ export default defineSchema({
     name: v.string(),
   }).index("by_clerk_id", ["clerkId"]),
 
+  workspaces: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    ownerId: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_owner", ["ownerId"]),
+
   boards: defineTable({
     name: v.string(),
     userId: v.id("users"),
+
+    workspaceId: v.optional(v.id("workspaces")),
+
+    status: v.optional(
+      v.union(
+        v.literal("active"),
+        v.literal("completed"),
+        v.literal("archived"),
+      ),
+    ),
+
+    favorite: v.optional(v.boolean()),
+
     order: v.number(),
     createdAt: v.number(),
-  }).index("by_user", ["userId"]),
-
+  })
+    .index("by_user", ["userId"])
+    .index("by_workspace", ["workspaceId"]),
   columns: defineTable({
     name: v.string(),
     color: v.string(),

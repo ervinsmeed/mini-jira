@@ -5,36 +5,40 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-export default function CreateBoardModal({
+export default function CreateWorkspaceModal({
   isOpen,
   onClose,
-  onBoardCreated,
-  workspaceId,
+  onWorkspaceCreated,
   theme,
 }: any) {
   const { t } = useTranslation();
+
   const [name, setName] = useState("");
-  const createBoard = useMutation(api.boards.create);
+  const [description, setDescription] = useState("");
+
+  const createWorkspace = useMutation(api.workspaces.create);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
     if (!name.trim()) return;
 
-    const board = await createBoard({
+    const workspace = await createWorkspace({
       name: name.trim(),
-      workspaceId: workspaceId ?? undefined,
+      description: description.trim() || undefined,
     });
 
-    setName("");
-    onClose();
-    onBoardCreated(board);
-
     toast.success(
-      t("createBoardModal.created", {
+      t("createWorkspaceModal.created", {
         name,
       }),
     );
+
+    setName("");
+    setDescription("");
+
+    onClose();
+    onWorkspaceCreated(workspace);
   };
 
   return (
@@ -48,7 +52,7 @@ export default function CreateBoardModal({
       >
         <DialogHeader>
           <DialogTitle className="text-xl! font-semibold">
-            {t("createBoardModal.title")}
+            {t("createWorkspaceModal.title")}
           </DialogTitle>
         </DialogHeader>
 
@@ -59,20 +63,42 @@ export default function CreateBoardModal({
                 theme === "dark" ? "text-slate-300" : "text-slate-700"
               }`}
             >
-              {t("createBoardModal.boardName")}
+              {t("createWorkspaceModal.workspaceName")}
             </label>
 
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={t("createBoardModal.placeholder")}
+              placeholder={t("createWorkspaceModal.namePlaceholder")}
               className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 transition ${
                 theme === "dark"
                   ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
                   : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
               }`}
               required
+            />
+          </div>
+
+          <div>
+            <label
+              className={`block text-sm font-medium mb-2 ${
+                theme === "dark" ? "text-slate-300" : "text-slate-700"
+              }`}
+            >
+              {t("createWorkspaceModal.description")}
+            </label>
+
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t("createWorkspaceModal.descriptionPlaceholder")}
+              rows={4}
+              className={`w-full resize-none px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 transition ${
+                theme === "dark"
+                  ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
+                  : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
+              }`}
             />
           </div>
 
@@ -84,7 +110,7 @@ export default function CreateBoardModal({
                 : "bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500"
             }`}
           >
-            {t("createBoardModal.create")}
+            {t("createWorkspaceModal.create")}
           </button>
         </form>
       </DialogContent>
