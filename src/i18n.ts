@@ -12,8 +12,8 @@ i18n
       en: {
         translation: {
           kanban: "Kanban",
-          allBoards: "All Boards",
-          createBoard: "Create New Board",
+          allBoards: "PROJECTS",
+          createBoard: "Create Project",
           hideSidebar: "Hide Sidebar",
           logout: "Log out",
 
@@ -139,6 +139,17 @@ i18n
             updated: "Workspace updated successfully",
           },
 
+          editProjectModal: {
+            title: "Edit Project",
+            projectName: "Project Name",
+            status: "Status",
+            active: "Active",
+            completed: "Completed",
+            archived: "Archived",
+            save: "Save Changes",
+            updated: "Project updated successfully",
+          },
+
           priority: {
             high: "High",
             medium: "Medium",
@@ -150,8 +161,8 @@ i18n
       ru: {
         translation: {
           kanban: "Канбан",
-          allBoards: "Все доски",
-          createBoard: "Создать доску",
+          allBoards: "ПРОЕКТЫ",
+          createBoard: "Создать проект",
           hideSidebar: "Скрыть боковую панель",
           logout: "Выйти",
 
@@ -273,6 +284,17 @@ i18n
             storyPoints: "Story Points",
             selectStoryPoints: "Выберите Story Points",
             deadline: "Срок выполнения",
+          },
+
+          editProjectModal: {
+            title: "Редактировать проект",
+            projectName: "Название проекта",
+            status: "Статус",
+            active: "Активный",
+            completed: "Завершён",
+            archived: "Архивный",
+            save: "Сохранить изменения",
+            updated: "Проект успешно обновлён",
           },
           editColumn: {
             updated: "Колонка обновлена",

@@ -9,6 +9,7 @@ import {
   LogOut,
   SidebarIcon,
   Pencil,
+  Star,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -40,6 +41,7 @@ export default function Sidebar({
   onCreateWorkspace,
   onEditWorkspace,
   onDeleteWorkspace,
+  onEditProject,
   theme,
   onThemeToggle,
   isCollapsed,
@@ -64,6 +66,7 @@ export default function Sidebar({
     : allBoardsResult) ?? []) as any[];
   const deleteBoard = useMutation(api.boards.remove);
   const updateBoardOrder = useMutation(api.boards.updateOrder);
+  const updateProject = useMutation(api.boards.update);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -77,12 +80,20 @@ export default function Sidebar({
 
     if (currentBoard?._id === boardId) {
       const remainingBoards = boards.filter((b) => b._id !== boardId);
+
       if (remainingBoards.length > 0) {
         onBoardSelect(remainingBoards[0]);
       } else {
         onBoardSelect(null);
       }
     }
+  };
+
+  const handleToggleFavorite = async (board: any) => {
+    await updateProject({
+      id: board._id,
+      favorite: !board.favorite,
+    });
   };
   const { t, i18n } = useTranslation();
 
@@ -132,6 +143,8 @@ export default function Sidebar({
                     board={board}
                     currentBoard={currentBoard}
                     onBoardSelect={onBoardSelect}
+                    onEditProject={onEditProject}
+                    handleToggleFavorite={handleToggleFavorite}
                     showDeleteConfirm={showDeleteConfirm}
                     setShowDeleteConfirm={setShowDeleteConfirm}
                     handleDeleteBoard={handleDeleteBoard}
@@ -311,9 +324,12 @@ export default function Sidebar({
                   currentBoard={currentBoard}
                   onBoardSelect={onBoardSelect}
                   showDeleteConfirm={showDeleteConfirm}
+                  handleToggleFavorite={handleToggleFavorite}
                   setShowDeleteConfirm={setShowDeleteConfirm}
                   handleDeleteBoard={handleDeleteBoard}
                   isCollapsed={false}
+                  onEditProject={onEditProject}
+
                   theme={theme}
                 />
               ))}
@@ -415,6 +431,8 @@ function SortableBoardItem({
   setShowDeleteConfirm,
   handleDeleteBoard,
   isCollapsed,
+  onEditProject,
+  handleToggleFavorite,
   theme,
 }: any) {
   const {
@@ -483,7 +501,41 @@ function SortableBoardItem({
         >
           <GripVertical className="size-4" />
         </div>
-        <span className="font-medium truncate">{board.name}</span>
+        <div className="min-w-0 flex-1 text-left">
+          <div className="font-medium truncate">{board.name}</div>
+
+          <div className="text-[10px] opacity-70">
+            {t(`editProjectModal.${board.status ?? "active"}`)}
+          </div>
+        </div>
+      </button>
+
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          handleToggleFavorite(board);
+        }}
+        className="relative z-10 shrink-0 rounded p-1"
+        title="Favorite Project"
+      >
+        <Star
+          className={`size-3.5 ${
+            board.favorite ? "fill-yellow-400 text-yellow-400" : ""
+          }`}
+        />
+      </button>
+
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onEditProject(board);
+        }}
+        className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
+        title="Edit Project"
+      >
+        <Pencil className="size-3.5" />
       </button>
       {showDeleteConfirm === board._id ? (
         <div className="flex items-center space-x-1">

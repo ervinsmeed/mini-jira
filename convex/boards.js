@@ -113,6 +113,62 @@ export const listByWorkspace = query({
   },
 });
 
+export const update = mutation({
+  args: {
+    id: v.id("boards"),
+    name: v.optional(v.string()),
+    status: v.optional(
+      v.union(
+        v.literal("active"),
+        v.literal("completed"),
+        v.literal("archived"),
+      ),
+    ),
+    favorite: v.optional(v.boolean()),
+  },
+
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const board = await ctx.db.get(args.id);
+
+    if (!board || board.userId !== user._id) {
+      throw new Error("Project not found");
+    }
+
+    const updates = {};
+
+    if (args.name !== undefined) {
+      updates.name = args.name;
+    }
+
+    if (args.status !== undefined) {
+      updates.status = args.status;
+    }
+
+    if (args.favorite !== undefined) {
+      updates.favorite = args.favorite;
+    }
+
+    await ctx.db.patch(args.id, updates);
+
+    return await ctx.db.get(args.id);
+  },
+});
+
 export const updateOrder = mutation({
   args: {
     boardId: v.id("boards"),
@@ -176,7 +232,6 @@ export const remove = mutation({
       throw new Error("Board not found");
     }
 
-    // Delete all the tasks in the board
     const tasks = await ctx.db
       .query("tasks")
       .withIndex("by_board", (q) => q.eq("boardId", args.id))
@@ -186,7 +241,6 @@ export const remove = mutation({
       await ctx.db.delete(task._id);
     }
 
-    // Delete all the columns
     const columns = await ctx.db
       .query("columns")
       .withIndex("by_board", (q) => q.eq("boardId", args.id))
@@ -196,7 +250,6 @@ export const remove = mutation({
       await ctx.db.delete(column._id);
     }
 
-    // Delete the board
     await ctx.db.delete(args.id);
   },
 });
