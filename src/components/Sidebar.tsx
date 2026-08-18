@@ -435,6 +435,7 @@ function SortableBoardItem({
   handleToggleFavorite,
   theme,
 }: any) {
+  const { t } = useTranslation();
   const {
     attributes,
     listeners,
