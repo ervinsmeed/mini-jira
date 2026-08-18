@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { useUser } from "@clerk/clerk-react";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
@@ -8,6 +6,7 @@ import Sidebar from "./Sidebar";
 import Board from "./Board";
 import CreateBoardModal from "./CreateBoardModal";
 import CreateWorkspaceModal from "./CreateWorkspaceModal";
+import EditProjectModal from "./EditProjectModal";
 import EditWorkspaceModal from "./EditWorkspaceModal";
 
 import { api } from "../../convex/_generated/api";
@@ -16,6 +15,7 @@ export default function AuthenticatedApp() {
   const [currentBoard, setCurrentBoard] = useState(null);
   const [currentWorkspace, setCurrentWorkspace] = useState(null);
   const [editingWorkspace, setEditingWorkspace] = useState(null);
+  const [editingProject, setEditingProject] = useState(null);
 
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const saved = localStorage.getItem("kanban-theme");
@@ -145,6 +145,10 @@ export default function AuthenticatedApp() {
     setEditingWorkspace(workspace);
   };
 
+  const handleEditProject = (project: any) => {
+    setEditingProject(project);
+  };
+
   const handleDeleteWorkspace = async (workspaceId: any) => {
     const remainingWorkspaces = (workspaces ?? []).filter(
       (workspace: any) => workspace._id !== workspaceId,
@@ -179,6 +183,7 @@ export default function AuthenticatedApp() {
         onCreateWorkspace={handleOpenCreateWorkspaceModal}
         onEditWorkspace={handleEditWorkspace}
         onDeleteWorkspace={handleDeleteWorkspace}
+        onEditProject={handleEditProject}
         theme={theme}
         onThemeToggle={handleThemeToggle}
         isCollapsed={sidebarCollapsed}
@@ -212,6 +217,14 @@ export default function AuthenticatedApp() {
         <EditWorkspaceModal
           workspace={editingWorkspace}
           onClose={() => setEditingWorkspace(null)}
+          theme={theme}
+        />
+      )}
+
+      {editingProject && (
+        <EditProjectModal
+          project={editingProject}
+          onClose={() => setEditingProject(null)}
           theme={theme}
         />
       )}
