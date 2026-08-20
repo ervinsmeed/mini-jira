@@ -10,6 +10,7 @@ import {
   SidebarIcon,
   Pencil,
   Star,
+  Users,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -40,8 +41,10 @@ export default function Sidebar({
   onWorkspaceSelect,
   onCreateWorkspace,
   onEditWorkspace,
+  onWorkspaceMembers,
   onDeleteWorkspace,
   onEditProject,
+  onProjectMembers,
   theme,
   onThemeToggle,
   isCollapsed,
@@ -144,9 +147,11 @@ export default function Sidebar({
                     currentBoard={currentBoard}
                     onBoardSelect={onBoardSelect}
                     onEditProject={onEditProject}
+                    onProjectMembers={onProjectMembers}
                     handleToggleFavorite={handleToggleFavorite}
                     showDeleteConfirm={showDeleteConfirm}
                     setShowDeleteConfirm={setShowDeleteConfirm}
+
                     handleDeleteBoard={handleDeleteBoard}
                     isCollapsed={true}
                     theme={theme}
@@ -243,7 +248,19 @@ export default function Sidebar({
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    console.log("EDIT WORKSPACE:", workspace);
+                    onWorkspaceMembers(workspace);
+                  }}
+                  className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
+                  title="Workspace Members"
+                >
+                  <Users className="size-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+
                     onEditWorkspace(workspace);
                   }}
                   className="relative z-10 mr-3 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
@@ -323,10 +340,12 @@ export default function Sidebar({
                   board={board}
                   currentBoard={currentBoard}
                   onBoardSelect={onBoardSelect}
+                  onProjectMembers={onProjectMembers}
                   showDeleteConfirm={showDeleteConfirm}
                   handleToggleFavorite={handleToggleFavorite}
                   setShowDeleteConfirm={setShowDeleteConfirm}
                   handleDeleteBoard={handleDeleteBoard}
+
                   isCollapsed={false}
                   onEditProject={onEditProject}
 
@@ -427,6 +446,7 @@ function SortableBoardItem({
   board,
   currentBoard,
   onBoardSelect,
+  onProjectMembers,
   showDeleteConfirm,
   setShowDeleteConfirm,
   handleDeleteBoard,
@@ -525,6 +545,18 @@ function SortableBoardItem({
             board.favorite ? "fill-yellow-400 text-yellow-400" : ""
           }`}
         />
+      </button>
+
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onProjectMembers(board);
+        }}
+        className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
+        title="Project Members"
+      >
+        <Users className="size-3.5" />
       </button>
 
       <button

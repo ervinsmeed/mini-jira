@@ -230,7 +230,6 @@ export default function Board({ board, theme }: BoardProps) {
         newOrder = destinationTasks[0].order - 1;
       } else {
         const beforeTask = destinationTasks[destinationIndex - 1];
-
         const afterTask = destinationTasks[destinationIndex];
 
         newOrder = (beforeTask.order + afterTask.order) / 2;
@@ -245,7 +244,6 @@ export default function Board({ board, theme }: BoardProps) {
       newOrder,
     });
   };
-
   if (!board?._id) {
     return (
       <div
