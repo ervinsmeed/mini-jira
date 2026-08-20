@@ -6,7 +6,14 @@ export default defineSchema({
     clerkId: v.string(),
     email: v.string(),
     name: v.string(),
-  }).index("by_clerk_id", ["clerkId"]),
+
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    avatar: v.optional(v.string()),
+    position: v.optional(v.string()),
+  })
+    .index("by_clerk_id", ["clerkId"])
+    .index("by_email", ["email"]),
 
   workspaces: defineTable({
     name: v.string(),
@@ -14,6 +21,15 @@ export default defineSchema({
     ownerId: v.id("users"),
     createdAt: v.number(),
   }).index("by_owner", ["ownerId"]),
+
+  workspaceMembers: defineTable({
+    workspaceId: v.id("workspaces"),
+    userId: v.id("users"),
+    joinedAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_user", ["userId"])
+    .index("by_workspace_user", ["workspaceId", "userId"]),
 
   boards: defineTable({
     name: v.string(),
@@ -36,6 +52,16 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_workspace", ["workspaceId"]),
+
+  boardMembers: defineTable({
+    boardId: v.id("boards"),
+    userId: v.id("users"),
+    joinedAt: v.number(),
+  })
+    .index("by_board", ["boardId"])
+    .index("by_user", ["userId"])
+    .index("by_board_user", ["boardId", "userId"]),
+
   columns: defineTable({
     name: v.string(),
     color: v.string(),
@@ -51,6 +77,7 @@ export default defineSchema({
     columnId: v.id("columns"),
     order: v.number(),
     priority: v.optional(v.string()),
+
     storyPoints: v.optional(
       v.union(
         v.literal(1),
@@ -62,7 +89,9 @@ export default defineSchema({
         v.literal(21),
       ),
     ),
+
     deadline: v.optional(v.number()),
+
     subtasks: v.optional(
       v.array(
         v.object({
@@ -71,6 +100,7 @@ export default defineSchema({
         }),
       ),
     ),
+
     boardId: v.id("boards"),
     userId: v.id("users"),
     createdAt: v.number(),

@@ -8,7 +8,8 @@ import CreateBoardModal from "./CreateBoardModal";
 import CreateWorkspaceModal from "./CreateWorkspaceModal";
 import EditProjectModal from "./EditProjectModal";
 import EditWorkspaceModal from "./EditWorkspaceModal";
-
+import ProjectMembersModal from "./ProjectMembersModal";
+import WorkspaceMembersModal from "./WorkspaceMembersModal";
 import { api } from "../../convex/_generated/api";
 
 export default function AuthenticatedApp() {
@@ -16,6 +17,8 @@ export default function AuthenticatedApp() {
   const [currentWorkspace, setCurrentWorkspace] = useState(null);
   const [editingWorkspace, setEditingWorkspace] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
+  const [membersProject, setMembersProject] = useState<any>(null);
+  const [membersWorkspace, setMembersWorkspace] = useState<any>(null);
 
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const saved = localStorage.getItem("kanban-theme");
@@ -149,6 +152,14 @@ export default function AuthenticatedApp() {
     setEditingProject(project);
   };
 
+  const handleProjectMembers = (project: any) => {
+    setMembersProject(project);
+  };
+
+  const handleWorkspaceMembers = (workspace: any) => {
+    setMembersWorkspace(workspace);
+  };
+
   const handleDeleteWorkspace = async (workspaceId: any) => {
     const remainingWorkspaces = (workspaces ?? []).filter(
       (workspace: any) => workspace._id !== workspaceId,
@@ -182,8 +193,10 @@ export default function AuthenticatedApp() {
         onWorkspaceSelect={handleWorkspaceSelect}
         onCreateWorkspace={handleOpenCreateWorkspaceModal}
         onEditWorkspace={handleEditWorkspace}
+        onWorkspaceMembers={handleWorkspaceMembers}
         onDeleteWorkspace={handleDeleteWorkspace}
         onEditProject={handleEditProject}
+        onProjectMembers={handleProjectMembers}
         theme={theme}
         onThemeToggle={handleThemeToggle}
         isCollapsed={sidebarCollapsed}
@@ -226,6 +239,20 @@ export default function AuthenticatedApp() {
           project={editingProject}
           onClose={() => setEditingProject(null)}
           theme={theme}
+        />
+      )}
+
+      {membersProject && (
+        <ProjectMembersModal
+          project={membersProject}
+          onClose={() => setMembersProject(null)}
+        />
+      )}
+
+      {membersWorkspace && (
+        <WorkspaceMembersModal
+          workspace={membersWorkspace}
+          onClose={() => setMembersWorkspace(null)}
         />
       )}
     </div>
