@@ -11,6 +11,7 @@ import {
   Pencil,
   Star,
   Users,
+  Shield,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -43,6 +44,7 @@ export default function Sidebar({
   onEditWorkspace,
   onWorkspaceMembers,
   onDeleteWorkspace,
+  onWorkspaceRoles,
   onEditProject,
   onProjectMembers,
   theme,
@@ -254,6 +256,18 @@ export default function Sidebar({
                   title="Workspace Members"
                 >
                   <Users className="size-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onWorkspaceRoles(workspace);
+                  }}
+                  className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
+                  title="Workspace Roles"
+                >
+                  <Shield className="size-3.5" />
                 </button>
 
                 <button

@@ -11,6 +11,7 @@
 import type * as boardMembers from "../boardMembers.js";
 import type * as boards from "../boards.js";
 import type * as columns from "../columns.js";
+import type * as roles from "../roles.js";
 import type * as tasks from "../tasks.js";
 import type * as users from "../users.js";
 import type * as workspaceMembers from "../workspaceMembers.js";
@@ -26,6 +27,7 @@ declare const fullApi: ApiFromModules<{
   boardMembers: typeof boardMembers;
   boards: typeof boards;
   columns: typeof columns;
+  roles: typeof roles;
   tasks: typeof tasks;
   users: typeof users;
   workspaceMembers: typeof workspaceMembers;

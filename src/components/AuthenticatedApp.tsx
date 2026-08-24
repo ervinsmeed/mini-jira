@@ -1,7 +1,7 @@
 import { useUser } from "@clerk/clerk-react";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
-
+import RolesModal from "./RolesModal";
 import Sidebar from "./Sidebar";
 import Board from "./Board";
 import CreateBoardModal from "./CreateBoardModal";
@@ -19,6 +19,7 @@ export default function AuthenticatedApp() {
   const [editingProject, setEditingProject] = useState(null);
   const [membersProject, setMembersProject] = useState<any>(null);
   const [membersWorkspace, setMembersWorkspace] = useState<any>(null);
+  const [rolesWorkspace, setRolesWorkspace] = useState<any>(null);
 
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const saved = localStorage.getItem("kanban-theme");
@@ -160,6 +161,7 @@ export default function AuthenticatedApp() {
     setMembersWorkspace(workspace);
   };
 
+  const handleWorkspaceRoles = (workspace: any) => setRolesWorkspace(workspace);
   const handleDeleteWorkspace = async (workspaceId: any) => {
     const remainingWorkspaces = (workspaces ?? []).filter(
       (workspace: any) => workspace._id !== workspaceId,
@@ -195,6 +197,7 @@ export default function AuthenticatedApp() {
         onEditWorkspace={handleEditWorkspace}
         onWorkspaceMembers={handleWorkspaceMembers}
         onDeleteWorkspace={handleDeleteWorkspace}
+        onWorkspaceRoles={handleWorkspaceRoles}
         onEditProject={handleEditProject}
         onProjectMembers={handleProjectMembers}
         theme={theme}
@@ -253,6 +256,13 @@ export default function AuthenticatedApp() {
         <WorkspaceMembersModal
           workspace={membersWorkspace}
           onClose={() => setMembersWorkspace(null)}
+        />
+      )}
+
+      {rolesWorkspace && (
+        <RolesModal
+          workspace={rolesWorkspace}
+          onClose={() => setRolesWorkspace(null)}
         />
       )}
     </div>
