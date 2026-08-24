@@ -57,6 +57,7 @@ export const list = query({
         members.push({
           ...user,
           membershipId: membership._id,
+          roleId: membership.roleId,
           joinedAt: membership.joinedAt,
           isOwner: false,
         });
@@ -187,5 +188,67 @@ export const remove = mutation({
     }
 
     await ctx.db.delete(membership._id);
+  },
+});
+
+export const changeRole = mutation({
+  args: {
+    workspaceId: v.id("workspaces"),
+    userId: v.id("users"),
+    roleId: v.id("roles"),
+  },
+
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+
+    const workspace = await ctx.db.get(args.workspaceId);
+
+    if (!workspace || workspace.ownerId !== currentUser._id) {
+      throw new Error("Access denied");
+    }
+
+    if (args.userId === workspace.ownerId) {
+      throw new Error("Workspace owner role cannot be changed");
+    }
+
+    const membership = await ctx.db
+      .query("workspaceMembers")
+      .withIndex("by_workspace_user", (q) =>
+        q.eq("workspaceId", args.workspaceId).eq("userId", args.userId),
+      )
+      .unique();
+
+    if (!membership) {
+      throw new Error("Member not found");
+    }
+
+    const role = await ctx.db.get(args.roleId);
+
+    if (!role) {
+      throw new Error("Role not found");
+    }
+
+    if (role.workspaceId !== args.workspaceId) {
+      throw new Error("Role does not belong to this workspace");
+    }
+
+    await ctx.db.patch(membership._id, {
+      roleId: args.roleId,
+    });
+
+    return await ctx.db.get(membership._id);
   },
 });

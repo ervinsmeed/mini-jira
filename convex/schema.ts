@@ -25,11 +25,40 @@ export default defineSchema({
   workspaceMembers: defineTable({
     workspaceId: v.id("workspaces"),
     userId: v.id("users"),
+    roleId: v.optional(v.id("roles")),
     joinedAt: v.number(),
   })
     .index("by_workspace", ["workspaceId"])
     .index("by_user", ["userId"])
     .index("by_workspace_user", ["workspaceId", "userId"]),
+
+  roles: defineTable({
+    workspaceId: v.id("workspaces"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    level: v.number(),
+
+    permissions: v.array(
+      v.union(
+        v.literal("project.view"),
+        v.literal("project.create"),
+        v.literal("project.update"),
+        v.literal("project.delete"),
+
+        v.literal("task.view"),
+        v.literal("task.create"),
+        v.literal("task.update"),
+        v.literal("task.delete"),
+
+        v.literal("members.manage"),
+        v.literal("roles.manage"),
+        v.literal("analytics.view"),
+      ),
+    ),
+
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_workspace", ["workspaceId"]),
 
   boards: defineTable({
     name: v.string(),

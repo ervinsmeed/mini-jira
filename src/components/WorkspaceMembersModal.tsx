@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -15,8 +13,14 @@ export default function WorkspaceMembersModal({ workspace, onClose }: any) {
     workspace?._id ? { workspaceId: workspace._id } : "skip",
   );
 
+  const roles = useQuery(
+    api.roles.list,
+    workspace?._id ? { workspaceId: workspace._id } : "skip",
+  );
+
   const addMember = useMutation(api.workspaceMembers.addByEmail);
   const removeMember = useMutation(api.workspaceMembers.remove);
+  const changeRole = useMutation(api.workspaceMembers.changeRole);
 
   const handleAddMember = async () => {
     if (!email.trim()) return;
@@ -46,7 +50,19 @@ export default function WorkspaceMembersModal({ workspace, onClose }: any) {
       toast.error(error.message || "Failed to remove member");
     }
   };
+  const handleChangeRole = async (userId: any, roleId: any) => {
+    try {
+      await changeRole({
+        workspaceId: workspace._id,
+        userId,
+        roleId,
+      });
 
+      toast.success("Role changed");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to change role");
+    }
+  };
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent>
@@ -97,13 +113,33 @@ export default function WorkspaceMembersModal({ workspace, onClose }: any) {
                   </div>
 
                   {!member.isOwner && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveMember(member._id)}
-                      className="text-sm text-red-400 hover:text-red-500"
-                    >
-                      Remove
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={member.roleId ?? ""}
+                        onChange={(event) => {
+                          if (!event.target.value) return;
+
+                          handleChangeRole(member._id, event.target.value);
+                        }}
+                        className="rounded-md border bg-transparent px-2 py-1 text-sm"
+                      >
+                        <option value="">No role</option>
+
+                        {roles?.map((role: any) => (
+                          <option key={role._id} value={role._id}>
+                            {role.name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveMember(member._id)}
+                        className="text-sm text-red-400 hover:text-red-500"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   )}
                 </div>
               ))
