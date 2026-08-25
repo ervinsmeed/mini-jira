@@ -43,6 +43,15 @@ export default function AuthenticatedApp() {
     currentWorkspace ??
     (workspaces && workspaces.length > 0 ? workspaces[0] : null);
 
+  const currentAccess = useQuery(
+    api.workspaceMembers.getCurrentAccess,
+    displayWorkspace?._id
+      ? {
+          workspaceId: displayWorkspace._id,
+        }
+      : "skip",
+  );
+
   const allBoards = useQuery(api.boards.list);
 
   const workspaceBoards = useQuery(
@@ -55,6 +64,17 @@ export default function AuthenticatedApp() {
   );
 
   const boards = displayWorkspace ? workspaceBoards : allBoards;
+  const can = (permission: any) => {
+    if (!displayWorkspace) {
+      return true;
+    }
+
+    if (currentAccess?.isOwner) {
+      return true;
+    }
+
+    return currentAccess?.permissions?.includes(permission) ?? false;
+  };
 
   const initializeColumns = useMutation(api.columns.initializeDefaultColumns);
 
@@ -105,9 +125,12 @@ export default function AuthenticatedApp() {
   }, []);
 
   const handleOpenCreateModal = () => {
+    if (!can("project.create")) {
+      return;
+    }
+
     setIsCreateBoardModalOpen(true);
   };
-
   const handleOpenCreateWorkspaceModal = () => {
     setIsCreateWorkspaceModalOpen(true);
   };
@@ -191,6 +214,7 @@ export default function AuthenticatedApp() {
         onBoardSelect={handleBoardSelect}
         onCreateBoard={handleOpenCreateModal}
         currentWorkspace={displayWorkspace}
+        can={can}
         workspaces={workspaces}
         onWorkspaceSelect={handleWorkspaceSelect}
         onCreateWorkspace={handleOpenCreateWorkspaceModal}
