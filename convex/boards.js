@@ -1,6 +1,68 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+async function getProjectPermissionAccess(ctx, workspaceId, permission) {
+  const identity = await ctx.auth.getUserIdentity();
+
+  if (!identity) {
+    throw new Error("Not authenticated");
+  }
+
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+    .unique();
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const workspace = await ctx.db.get(workspaceId);
+
+  if (!workspace) {
+    throw new Error("Workspace not found");
+  }
+
+  const isOwner = workspace.ownerId === user._id;
+
+  if (isOwner) {
+    return {
+      user,
+      workspace,
+      isOwner: true,
+      currentRole: null,
+    };
+  }
+
+  const membership = await ctx.db
+    .query("workspaceMembers")
+    .withIndex("by_workspace_user", (q) =>
+      q.eq("workspaceId", workspaceId).eq("userId", user._id),
+    )
+    .unique();
+
+  if (!membership || !membership.roleId) {
+    throw new Error("Access denied");
+  }
+
+  const currentRole = await ctx.db.get(membership.roleId);
+
+  if (!currentRole || currentRole.workspaceId !== workspaceId) {
+    throw new Error("Access denied");
+  }
+
+  if (!currentRole.permissions.includes(permission)) {
+    throw new Error(`Missing permission: ${permission}`);
+  }
+
+  return {
+    user,
+    workspace,
+    isOwner: false,
+    currentRole,
+  };
+}
+
 export const create = mutation({
   args: {
     name: v.string(),
@@ -24,11 +86,7 @@ export const create = mutation({
     }
 
     if (args.workspaceId) {
-      const workspace = await ctx.db.get(args.workspaceId);
-
-      if (!workspace || workspace.ownerId !== user._id) {
-        throw new Error("Workspace not found");
-      }
+      await getProjectPermissionAccess(ctx, args.workspaceId, "project.create");
     }
 
     const boards = await ctx.db
@@ -83,26 +141,7 @@ export const listByWorkspace = query({
   },
 
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) {
-      return [];
-    }
-
-    const workspace = await ctx.db.get(args.workspaceId);
-
-    if (!workspace || workspace.ownerId !== user._id) {
-      return [];
-    }
+    await getProjectPermissionAccess(ctx, args.workspaceId, "project.view");
 
     const boards = await ctx.db
       .query("boards")
@@ -112,7 +151,6 @@ export const listByWorkspace = query({
     return boards.sort((a, b) => (a.order || 0) - (b.order || 0));
   },
 });
-
 export const update = mutation({
   args: {
     id: v.id("boards"),
@@ -128,25 +166,33 @@ export const update = mutation({
   },
 
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
     const board = await ctx.db.get(args.id);
 
-    if (!board || board.userId !== user._id) {
+    if (!board) {
       throw new Error("Project not found");
+    }
+
+    if (board.workspaceId) {
+      await getProjectPermissionAccess(
+        ctx,
+        board.workspaceId,
+        "project.update",
+      );
+    } else {
+      const identity = await ctx.auth.getUserIdentity();
+
+      if (!identity) {
+        throw new Error("Not authenticated");
+      }
+
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+        .unique();
+
+      if (!user || board.userId !== user._id) {
+        throw new Error("Project not found");
+      }
     }
 
     const updates = {};
@@ -211,25 +257,33 @@ export const remove = mutation({
   },
 
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
     const board = await ctx.db.get(args.id);
 
-    if (!board || board.userId !== user._id) {
-      throw new Error("Board not found");
+    if (!board) {
+      throw new Error("Project not found");
+    }
+
+    if (board.workspaceId) {
+      await getProjectPermissionAccess(
+        ctx,
+        board.workspaceId,
+        "project.delete",
+      );
+    } else {
+      const identity = await ctx.auth.getUserIdentity();
+
+      if (!identity) {
+        throw new Error("Not authenticated");
+      }
+
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+        .unique();
+
+      if (!user || board.userId !== user._id) {
+        throw new Error("Project not found");
+      }
     }
 
     const tasks = await ctx.db
