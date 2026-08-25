@@ -47,6 +47,7 @@ export default function Sidebar({
   onWorkspaceRoles,
   onEditProject,
   onProjectMembers,
+  can,
   theme,
   onThemeToggle,
   isCollapsed,
@@ -330,14 +331,18 @@ export default function Sidebar({
         >
           {t("allBoards")} ({boards.length})
         </div>
-
-        <button
-          onClick={onCreateBoard}
-          className={`w-full flex items-center justify-center space-x-3 p-3 rounded-r-full transition-all mb-2 shadow-sm ${theme === "dark" ? "bg-purple-600 text-white hover:bg-purple-700" : "bg-purple-500 text-white hover:bg-purple-600"}`}
-        >
-          <span className="font-semibold">{t("createBoard")}</span>
-        </button>
-
+        {can("project.create") && (
+          <button
+            onClick={onCreateBoard}
+            className={`w-full flex items-center justify-center space-x-3 p-3 rounded-r-full transition-all mb-2 shadow-sm ${
+              theme === "dark"
+                ? "bg-purple-600 text-white hover:bg-purple-700"
+                : "bg-purple-500 text-white hover:bg-purple-600"
+            }`}
+          >
+            <span className="font-semibold">{t("createBoard")}</span>
+          </button>
+        )}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -352,6 +357,7 @@ export default function Sidebar({
                 <SortableBoardItem
                   key={board._id}
                   board={board}
+                  can={can}
                   currentBoard={currentBoard}
                   onBoardSelect={onBoardSelect}
                   onProjectMembers={onProjectMembers}
@@ -465,6 +471,7 @@ function SortableBoardItem({
   setShowDeleteConfirm,
   handleDeleteBoard,
   isCollapsed,
+  can,
   onEditProject,
   handleToggleFavorite,
   theme,
@@ -573,37 +580,41 @@ function SortableBoardItem({
         <Users className="size-3.5" />
       </button>
 
-      <button
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          onEditProject(board);
-        }}
-        className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
-        title="Edit Project"
-      >
-        <Pencil className="size-3.5" />
-      </button>
-      {showDeleteConfirm === board._id ? (
-        <div className="flex items-center space-x-1">
-          <button
-            onClick={() => handleDeleteBoard(board._id)}
-            className="p-1 text-red-400 hover:text-red-500 text-xs"
-          >
-            Yes
-          </button>
-          <button onClick={() => setShowDeleteConfirm(null)} className="p-1">
-            No
-          </button>
-        </div>
-      ) : (
+      {can("project.update") && (
         <button
-          onClick={() => setShowDeleteConfirm(board._id)}
-          className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-all"
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onEditProject(board);
+          }}
+          className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
+          title="Edit Project"
         >
-          <Trash2 className="size-3" />
+          <Pencil className="size-3.5" />
         </button>
       )}
+      {can("project.delete") &&
+        (showDeleteConfirm === board._id ? (
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={() => handleDeleteBoard(board._id)}
+              className="p-1 text-red-400 hover:text-red-500 text-xs"
+            >
+              Yes
+            </button>
+
+            <button onClick={() => setShowDeleteConfirm(null)} className="p-1">
+              No
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowDeleteConfirm(board._id)}
+            className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-all"
+          >
+            <Trash2 className="size-3" />
+          </button>
+        ))}
     </div>
   );
 }

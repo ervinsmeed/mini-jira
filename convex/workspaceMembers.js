@@ -324,3 +324,79 @@ export const changeRole = mutation({
     return await ctx.db.get(membership._id);
   },
 });
+
+export const getCurrentAccess = query({
+  args: {
+    workspaceId: v.id("workspaces"),
+  },
+
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      return null;
+    }
+
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!currentUser) {
+      return null;
+    }
+
+    const workspace = await ctx.db.get(args.workspaceId);
+
+    if (!workspace) {
+      return null;
+    }
+
+    const isOwner = workspace.ownerId === currentUser._id;
+
+    if (isOwner) {
+      return {
+        isOwner: true,
+        roleId: null,
+        roleName: "Owner",
+        level: null,
+        permissions: [],
+      };
+    }
+
+    const membership = await ctx.db
+      .query("workspaceMembers")
+      .withIndex("by_workspace_user", (q) =>
+        q.eq("workspaceId", args.workspaceId).eq("userId", currentUser._id),
+      )
+      .unique();
+
+    if (!membership) {
+      return null;
+    }
+
+    if (!membership.roleId) {
+      return {
+        isOwner: false,
+        roleId: null,
+        roleName: null,
+        level: null,
+        permissions: [],
+      };
+    }
+
+    const role = await ctx.db.get(membership.roleId);
+
+    if (!role || role.workspaceId !== args.workspaceId) {
+      return null;
+    }
+
+    return {
+      isOwner: false,
+      roleId: role._id,
+      roleName: role.name,
+      level: role.level,
+      permissions: role.permissions,
+    };
+  },
+});
