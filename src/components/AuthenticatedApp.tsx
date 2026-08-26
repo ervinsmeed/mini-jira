@@ -235,7 +235,7 @@ export default function AuthenticatedApp() {
           sidebarCollapsed ? "ml-0" : "ml-72"
         }`}
       >
-        <Board board={displayBoard} theme={theme} />
+        <Board board={displayBoard} theme={theme} can={can} />
       </div>
 
       <CreateBoardModal
