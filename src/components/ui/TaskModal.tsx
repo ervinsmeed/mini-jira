@@ -16,15 +16,14 @@ import {
 } from "./select";
 
 import { Checkbox } from "./checkbox";
-import {
-  Edit,
-  MoreVertical,
-  Trash2,
-  CalendarDays,
-  X,
-} from "lucide-react";
+import { Edit, MoreVertical, Trash2, CalendarDays, X } from "lucide-react";
 
-export default function TaskModal({ task: initialTask, onClose, theme }: any) {
+export default function TaskModal({
+  task: initialTask,
+  onClose,
+  theme,
+  can,
+}: any) {
   const { t } = useTranslation();
 
   const [columnId, setColumnId] = useState(initialTask.columnId);
@@ -164,61 +163,73 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
                           : "text-slate-700 hover:bg-slate-100"
                       }`}
                     >
-                      <Edit className={`size-3.5 shrink-0 ${
-                        theme === "dark" ? "text-slate-400" : "text-slate-500"
-                      }`} />
+                      <Edit
+                        className={`size-3.5 shrink-0 ${
+                          theme === "dark" ? "text-slate-400" : "text-slate-500"
+                        }`}
+                      />
                       <span>{t("taskModal.editTask")}</span>
                     </button>
 
-                    <div className="border-t border-slate-700" />
+                    {can("task.delete") && (
+                      <>
+                        <div className="border-t border-slate-700" />
 
-                    {showDeleteConfirm ? (
-                      <div className="px-3 py-2">
-                        <p
-                          className={`text-xs py-2 ${
-                            theme === "dark" ? "text-slate-400" : "text-slate-500"
-                          }`}
-                        >
-                          {t("taskModal.deleteQuestion")}
-                        </p>
+                        {showDeleteConfirm ? (
+                          <div className="px-3 py-2">
+                            <p
+                              className={`text-xs py-2 ${
+                                theme === "dark"
+                                  ? "text-slate-400"
+                                  : "text-slate-500"
+                              }`}
+                            >
+                              {t("taskModal.deleteQuestion")}
+                            </p>
 
-                        <div className="flex space-x-2">
+                            <div className="flex space-x-2">
+                              <button
+                                type="button"
+                                onClick={handleDeleteTask}
+                                className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                              >
+                                {t("common.yes")}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className={`text-xs px-2 py-1 rounded transition-colors ${
+                                  theme === "dark"
+                                    ? "bg-slate-950 text-slate-100 hover:bg-slate-800"
+                                    : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+                                }`}
+                              >
+                                {t("common.no")}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
                           <button
                             type="button"
-                            onClick={handleDeleteTask}
-                            className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                          >
-                            {t("common.yes")}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setShowDeleteConfirm(false)}
-                            className={`text-xs px-2 py-1 rounded transition-colors ${
+                            onClick={() => setShowDeleteConfirm(true)}
+                            className={`flex w-full items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
                               theme === "dark"
-                                ? "bg-slate-950 text-slate-100 hover:bg-slate-800"
-                                : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+                                ? "text-red-400 hover:bg-red-950/50"
+                                : "text-red-500 hover:bg-red-50"
                             }`}
                           >
-                            {t("common.no")}
+                            <Trash2
+                              className={`size-3.5 shrink-0 ${
+                                theme === "dark"
+                                  ? "text-red-400"
+                                  : "text-red-500"
+                              }`}
+                            />
+                            <span>{t("taskModal.deleteTask")}</span>
                           </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className={`flex w-full items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
-                          theme === "dark"
-                            ? "text-red-400 hover:bg-red-950/50"
-                            : "text-red-500 hover:bg-red-50"
-                        }`}
-                      >
-                        <Trash2 className={`size-3.5 shrink-0 ${
-                          theme === "dark" ? "text-red-400" : "text-red-500"
-                        }`} />
-                        <span>{t("taskModal.deleteTask")}</span>
-                      </button>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -323,11 +334,19 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
                           ? "bg-slate-900 hover:bg-slate-800"
                           : "bg-slate-100 hover:bg-slate-200"
                       }`}
-                      onClick={() => handleSubtaskToggle(index)}
+                      onClick={() => {
+                        if (!can("task.update")) return;
+
+                        handleSubtaskToggle(index);
+                      }}
                     >
                       <Checkbox
                         checked={subtask.completed}
-                        onCheckedChange={() => handleSubtaskToggle(index)}
+                        onCheckedChange={() => {
+                          if (!can("task.update")) return;
+
+                          handleSubtaskToggle(index);
+                        }}
                       />{" "}
                       <span
                         className={`text-sm ${
@@ -356,7 +375,11 @@ export default function TaskModal({ task: initialTask, onClose, theme }: any) {
               {t("taskModal.column")}
             </label>
 
-            <Select value={columnId} onValueChange={handleColumnChange}>
+            <Select
+              value={columnId}
+              onValueChange={handleColumnChange}
+              disabled={!can("task.update")}
+            >
               <SelectTrigger
                 className={`w-1/2 border transition-colors ${
                   theme === "dark"

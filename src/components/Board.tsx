@@ -27,13 +27,13 @@ import TaskModal from "./ui/TaskModal";
 import CreateTaskModal from "./ui/CreateTaskModal";
 import CreateColumnModal from "./ui/CreateColumnModal";
 import EditColumnModal from "./EditColumnModal";
-
 type BoardProps = {
   board: Doc<"boards"> | null;
   theme: "light" | "dark";
+  can: (permission: string) => boolean;
 };
 
-export default function Board({ board, theme }: BoardProps) {
+export default function Board({ board, theme, can }: BoardProps) {
   const [selectedTask, setSelectedTask] = useState<Doc<"tasks"> | null>(null);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -55,6 +55,7 @@ export default function Board({ board, theme }: BoardProps) {
     "manual" | "deadline" | "storyPoints" | "priority"
   >("manual");
   const { t } = useTranslation();
+  const canUpdateTask = can("task.update");
 
   const tasksResult = useQuery(
     api.tasks.list,
@@ -340,15 +341,17 @@ export default function Board({ board, theme }: BoardProps) {
         </div>
 
         <div className="flex items-center space-x-4">
-          <button
-            type="button"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center space-x-2 rounded-full bg-purple-500 px-4 py-2 font-medium text-white transition-colors hover:bg-purple-600"
-          >
-            <Plus className="size-4" />
+          {can("task.create") && (
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center space-x-2 rounded-full bg-purple-500 px-4 py-2 font-medium text-white transition-colors hover:bg-purple-600"
+            >
+              <Plus className="size-4" />
 
-            <span>{t("board.addTask")}</span>
-          </button>
+              <span>{t("board.addTask")}</span>
+            </button>
+          )}
 
           <UserButton />
         </div>
@@ -358,7 +361,7 @@ export default function Board({ board, theme }: BoardProps) {
       <div className="flex-1 overflow-auto p-6">
         <div className="flex h-full min-w-max items-start space-x-6">
           <DndContext
-            sensors={sensors}
+            sensors={canUpdateTask ? sensors : []}
             collisionDetection={closestCenter}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
@@ -414,6 +417,7 @@ export default function Board({ board, theme }: BoardProps) {
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
           theme={theme}
+          can={can}
         />
       )}
 
