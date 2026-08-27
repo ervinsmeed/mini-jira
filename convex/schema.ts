@@ -106,6 +106,7 @@ export default defineSchema({
     columnId: v.id("columns"),
     order: v.number(),
     priority: v.optional(v.string()),
+    assigneeId: v.optional(v.id("users")),
 
     storyPoints: v.optional(
       v.union(
@@ -133,5 +134,6 @@ export default defineSchema({
     boardId: v.id("boards"),
     userId: v.id("users"),
     createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
   }).index("by_board", ["boardId"]),
 });

@@ -27,6 +27,7 @@ export default function TaskModal({
   const { t } = useTranslation();
 
   const [columnId, setColumnId] = useState(initialTask.columnId);
+  const [assigneeId, setAssigneeId] = useState(initialTask.assigneeId ?? "");
   const [showActions, setShowActions] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -43,12 +44,27 @@ export default function TaskModal({
     boardId: task.boardId,
   }) ?? []) as any[];
 
+  const projectMembers: any[] = (useQuery(api.boardMembers.list, {
+    boardId: task.boardId,
+  }) ?? []) as any[];
+
   const handleColumnChange = async (newColumnId: any) => {
     setColumnId(newColumnId);
 
     await updateTask({
       id: task._id,
       columnId: newColumnId,
+    });
+  };
+
+  const handleAssigneeChange = async (value: any) => {
+    const newAssigneeId = value === "unassigned" ? "" : value;
+
+    setAssigneeId(newAssigneeId);
+
+    await updateTask({
+      id: task._id,
+      assigneeId: value === "unassigned" ? null : value,
     });
   };
 
@@ -365,6 +381,48 @@ export default function TaskModal({
               </div>
             </div>
           )}
+
+          <div>
+            <label
+              className={`block text-sm font-medium mb-2 ${
+                theme === "dark" ? "text-slate-100" : "text-slate-900"
+              }`}
+            >
+              Assignee
+            </label>
+
+            <Select
+              value={assigneeId || "unassigned"}
+              onValueChange={handleAssigneeChange}
+              disabled={!can("task.update")}
+            >
+              <SelectTrigger
+                className={`w-1/2 border transition-colors ${
+                  theme === "dark"
+                    ? "bg-slate-900 text-slate-100 border-slate-700"
+                    : "bg-white text-slate-900 border-slate-300"
+                }`}
+              >
+                <SelectValue placeholder="Select assignee" />
+              </SelectTrigger>
+
+              <SelectContent
+                className={`transition-colors border ${
+                  theme === "dark"
+                    ? "bg-slate-900 text-slate-100 border-slate-700"
+                    : "bg-white text-slate-900 border-slate-200"
+                }`}
+              >
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+
+                {projectMembers.map((member: any) => (
+                  <SelectItem key={member._id} value={member._id}>
+                    {member.name || member.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div>
             <label

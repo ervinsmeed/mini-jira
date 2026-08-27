@@ -84,12 +84,34 @@ async function getTaskPermissionAccess(ctx, boardId, permission) {
   };
 }
 
+async function validateAssignee(ctx, board, assigneeId) {
+  if (!assigneeId) {
+    return;
+  }
+
+  if (assigneeId === board.userId) {
+    return;
+  }
+
+  const membership = await ctx.db
+    .query("boardMembers")
+    .withIndex("by_board_user", (q) =>
+      q.eq("boardId", board._id).eq("userId", assigneeId),
+    )
+    .unique();
+
+  if (!membership) {
+    throw new Error("Assignee must be a project member");
+  }
+}
+
 export const create = mutation({
   args: {
     title: v.string(),
     description: v.optional(v.string()),
     columnId: v.id("columns"),
     priority: v.optional(v.string()),
+    assigneeId: v.optional(v.union(v.id("users"), v.null())),
 
     storyPoints: v.optional(
       v.union(
@@ -123,6 +145,7 @@ export const create = mutation({
       args.boardId,
       "task.create",
     );
+    await validateAssignee(ctx, board, args.assigneeId);
 
     const column = await ctx.db.get("columns", args.columnId);
 
@@ -141,6 +164,7 @@ export const create = mutation({
       title: args.title,
       description: args.description,
       priority: args.priority || "medium",
+      assigneeId: args.assigneeId,
       storyPoints: args.storyPoints,
       deadline: args.deadline,
       subtasks: args.subtasks || [],
@@ -149,6 +173,7 @@ export const create = mutation({
       boardId: args.boardId,
       userId: user._id,
       createdAt: Date.now(),
+      updatedAt: Date.now(),
     });
 
     return await ctx.db.get("tasks", taskId);
@@ -224,6 +249,7 @@ export const update = mutation({
     title: v.optional(v.string()),
     description: v.optional(v.string()),
     priority: v.optional(v.string()),
+    assigneeId: v.optional(v.union(v.id("users"), v.null())),
 
     storyPoints: v.optional(
       v.union(
@@ -259,12 +285,22 @@ export const update = mutation({
       throw new Error("Task not found");
     }
 
-    await getTaskPermissionAccess(ctx, task.boardId, "task.update");
+    const { board } = await getTaskPermissionAccess(
+      ctx,
+      task.boardId,
+      "task.update",
+    );
+
+    await validateAssignee(ctx, board, args.assigneeId);
 
     const updates = {};
 
     if (args.title !== undefined) {
       updates.title = args.title;
+    }
+
+    if (args.assigneeId !== undefined) {
+      updates.assigneeId = args.assigneeId ?? undefined;
     }
 
     if (args.description !== undefined) {
@@ -294,6 +330,8 @@ export const update = mutation({
     if (args.subtasks !== undefined) {
       updates.subtasks = args.subtasks;
     }
+
+    updates.updatedAt = Date.now();
 
     await ctx.db.patch("tasks", args.id, updates);
 
@@ -325,6 +363,7 @@ export const updateOrder = mutation({
     await ctx.db.patch("tasks", args.taskId, {
       columnId: args.newColumnId,
       order: args.newOrder,
+      updatedAt: Date.now(),
     });
 
     return await ctx.db.get("tasks", args.taskId);
