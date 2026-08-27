@@ -125,7 +125,6 @@ export const update = mutation({
     return await ctx.db.get(args.id);
   },
 });
-
 export const remove = mutation({
   args: {
     id: v.id("workspaces"),
@@ -177,7 +176,34 @@ export const remove = mutation({
         await ctx.db.delete(column._id);
       }
 
+      const boardMembers = await ctx.db
+        .query("boardMembers")
+        .withIndex("by_board", (q) => q.eq("boardId", board._id))
+        .collect();
+
+      for (const member of boardMembers) {
+        await ctx.db.delete(member._id);
+      }
+
       await ctx.db.delete(board._id);
+    }
+
+    const workspaceMembers = await ctx.db
+      .query("workspaceMembers")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.id))
+      .collect();
+
+    for (const member of workspaceMembers) {
+      await ctx.db.delete(member._id);
+    }
+
+    const roles = await ctx.db
+      .query("roles")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.id))
+      .collect();
+
+    for (const role of roles) {
+      await ctx.db.delete(role._id);
     }
 
     await ctx.db.delete(args.id);
