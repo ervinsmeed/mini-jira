@@ -51,10 +51,33 @@ export const list = query({
       return [];
     }
 
-    return await ctx.db
+    const ownedWorkspaces = await ctx.db
       .query("workspaces")
       .withIndex("by_owner", (q) => q.eq("ownerId", user._id))
       .collect();
+
+    const memberships = await ctx.db
+      .query("workspaceMembers")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const memberWorkspaces = [];
+
+    for (const membership of memberships) {
+      const workspace = await ctx.db.get(membership.workspaceId);
+
+      if (workspace) {
+        memberWorkspaces.push(workspace);
+      }
+    }
+
+    const allWorkspaces = [...ownedWorkspaces, ...memberWorkspaces];
+
+    return Array.from(
+      new Map(
+        allWorkspaces.map((workspace) => [workspace._id, workspace]),
+      ).values(),
+    );
   },
 });
 

@@ -73,7 +73,40 @@ export const list = query({
 
     const board = await ctx.db.get(args.boardId);
 
-    if (!board || board.userId !== user._id) {
+    if (!board) {
+      return [];
+    }
+
+    if (board.workspaceId) {
+      const workspace = await ctx.db.get(board.workspaceId);
+
+      if (!workspace) {
+        return [];
+      }
+
+      if (workspace.ownerId !== user._id) {
+        const membership = await ctx.db
+          .query("workspaceMembers")
+          .withIndex("by_workspace_user", (q) =>
+            q.eq("workspaceId", board.workspaceId).eq("userId", user._id),
+          )
+          .unique();
+
+        if (!membership || !membership.roleId) {
+          return [];
+        }
+
+        const role = await ctx.db.get(membership.roleId);
+
+        if (
+          !role ||
+          role.workspaceId !== board.workspaceId ||
+          !role.permissions.includes("task.view")
+        ) {
+          return [];
+        }
+      }
+    } else if (board.userId !== user._id) {
       return [];
     }
 
