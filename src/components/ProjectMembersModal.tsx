@@ -2,6 +2,13 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
 
@@ -13,8 +20,18 @@ export default function ProjectMembersModal({ project, onClose }: any) {
     project?._id ? { boardId: project._id } : "skip",
   );
 
+  const roles = useQuery(
+    api.roles.list,
+    project?.workspaceId
+      ? {
+          workspaceId: project.workspaceId,
+        }
+      : "skip",
+  );
+
   const addMember = useMutation(api.boardMembers.addByEmail);
   const removeMember = useMutation(api.boardMembers.remove);
+  const changeRole = useMutation(api.boardMembers.changeRole);
 
   const handleAddMember = async () => {
     if (!email.trim()) return;
@@ -42,6 +59,20 @@ export default function ProjectMembersModal({ project, onClose }: any) {
       toast.success("Member removed");
     } catch (error: any) {
       toast.error(error.message || "Failed to remove member");
+    }
+  };
+
+  const handleChangeRole = async (userId: any, roleId: any) => {
+    try {
+      await changeRole({
+        boardId: project._id,
+        userId,
+        roleId,
+      });
+
+      toast.success("Role changed");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to change role");
     }
   };
 
@@ -95,13 +126,34 @@ export default function ProjectMembersModal({ project, onClose }: any) {
                   </div>
 
                   {!member.isOwner && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveMember(member._id)}
-                      className="text-sm text-red-400 hover:text-red-500"
-                    >
-                      Remove
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={member.roleId ?? undefined}
+                        onValueChange={(roleId) =>
+                          handleChangeRole(member._id, roleId)
+                        }
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                          {(roles ?? []).map((role: any) => (
+                            <SelectItem key={role._id} value={role._id}>
+                              {role.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveMember(member._id)}
+                        className="text-sm text-red-400 hover:text-red-500"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   )}
                 </div>
               ))

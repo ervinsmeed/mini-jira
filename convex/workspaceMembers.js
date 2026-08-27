@@ -141,7 +141,6 @@ export const list = query({
     return members;
   },
 });
-
 export const addByEmail = mutation({
   args: {
     workspaceId: v.id("workspaces"),
@@ -149,46 +148,21 @@ export const addByEmail = mutation({
   },
 
   handler: async (ctx, args) => {
-    handler: async (ctx, args) => {
-      const { currentUser, workspace } = await getMemberManagementAccess(
-        ctx,
-        args.workspaceId,
-      );
+    const { workspace } = await getMemberManagementAccess(
+      ctx,
+      args.workspaceId,
+    );
 
-      const email = args.email.trim().toLowerCase();
+    const email = args.email.trim().toLowerCase();
 
-      const user = await ctx.db
-        .query("users")
-        .withIndex("by_email", (q) => q.eq("email", email))
-        .unique();
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .unique();
 
-      if (!user) {
-        throw new Error("User not found");
-      }
-
-      if (user._id === workspace.ownerId) {
-        throw new Error("Owner is already in workspace");
-      }
-
-      const existingMember = await ctx.db
-        .query("workspaceMembers")
-        .withIndex("by_workspace_user", (q) =>
-          q.eq("workspaceId", args.workspaceId).eq("userId", user._id),
-        )
-        .unique();
-
-      if (existingMember) {
-        throw new Error("User is already a member");
-      }
-
-      const membershipId = await ctx.db.insert("workspaceMembers", {
-        workspaceId: args.workspaceId,
-        userId: user._id,
-        joinedAt: Date.now(),
-      });
-
-      return await ctx.db.get(membershipId);
-    };
+    if (!user) {
+      throw new Error("User not found");
+    }
 
     if (user._id === workspace.ownerId) {
       throw new Error("Owner is already in workspace");
@@ -214,6 +188,7 @@ export const addByEmail = mutation({
     return await ctx.db.get(membershipId);
   },
 });
+
 export const remove = mutation({
   args: {
     workspaceId: v.id("workspaces"),

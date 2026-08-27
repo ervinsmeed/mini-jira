@@ -85,6 +85,7 @@ export default defineSchema({
   boardMembers: defineTable({
     boardId: v.id("boards"),
     userId: v.id("users"),
+    roleId: v.optional(v.id("roles")),
     joinedAt: v.number(),
   })
     .index("by_board", ["boardId"])
