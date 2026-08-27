@@ -307,3 +307,76 @@ export const remove = mutation({
     await ctx.db.delete(args.id);
   },
 });
+export const getCurrentAccess = query({
+  args: {
+    boardId: v.id("boards"),
+  },
+
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      return null;
+    }
+
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!currentUser) {
+      return null;
+    }
+
+    const board = await ctx.db.get(args.boardId);
+
+    if (!board) {
+      return null;
+    }
+
+    if (board.userId === currentUser._id) {
+      return {
+        isOwner: true,
+        roleId: null,
+        roleName: "Owner",
+        level: null,
+        permissions: [],
+      };
+    }
+
+    const membership = await ctx.db
+      .query("boardMembers")
+      .withIndex("by_board_user", (q) =>
+        q.eq("boardId", args.boardId).eq("userId", currentUser._id),
+      )
+      .unique();
+
+    if (!membership) {
+      return null;
+    }
+
+    if (!membership.roleId) {
+      return {
+        isOwner: false,
+        roleId: null,
+        roleName: null,
+        level: null,
+        permissions: [],
+      };
+    }
+
+    const role = await ctx.db.get(membership.roleId);
+
+    if (!role || !board.workspaceId || role.workspaceId !== board.workspaceId) {
+      return null;
+    }
+
+    return {
+      isOwner: false,
+      roleId: role._id,
+      roleName: role.name,
+      level: role.level,
+      permissions: role.permissions,
+    };
+  },
+});

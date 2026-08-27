@@ -1,6 +1,5 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-
 async function getTaskPermissionAccess(ctx, boardId, permission) {
   const identity = await ctx.auth.getUserIdentity();
 
@@ -23,41 +22,23 @@ async function getTaskPermissionAccess(ctx, boardId, permission) {
     throw new Error("Project not found");
   }
 
+  if (board.userId === user._id) {
+    return {
+      user,
+      board,
+      isOwner: true,
+      currentRole: null,
+    };
+  }
+
   if (!board.workspaceId) {
-    if (board.userId !== user._id) {
-      throw new Error("Access denied");
-    }
-
-    return {
-      user,
-      board,
-      isOwner: true,
-      currentRole: null,
-    };
-  }
-
-  const workspace = await ctx.db.get("workspaces", board.workspaceId);
-
-  if (!workspace) {
-    throw new Error("Workspace not found");
-  }
-
-  const isOwner = workspace.ownerId === user._id;
-
-  if (isOwner) {
-    return {
-      user,
-      board,
-      workspace,
-      isOwner: true,
-      currentRole: null,
-    };
+    throw new Error("Access denied");
   }
 
   const membership = await ctx.db
-    .query("workspaceMembers")
-    .withIndex("by_workspace_user", (q) =>
-      q.eq("workspaceId", board.workspaceId).eq("userId", user._id),
+    .query("boardMembers")
+    .withIndex("by_board_user", (q) =>
+      q.eq("boardId", boardId).eq("userId", user._id),
     )
     .unique();
 
@@ -75,6 +56,12 @@ async function getTaskPermissionAccess(ctx, boardId, permission) {
     throw new Error(`Missing permission: ${permission}`);
   }
 
+  const workspace = await ctx.db.get("workspaces", board.workspaceId);
+
+  if (!workspace) {
+    throw new Error("Workspace not found");
+  }
+
   return {
     user,
     board,
@@ -83,7 +70,6 @@ async function getTaskPermissionAccess(ctx, boardId, permission) {
     currentRole,
   };
 }
-
 async function validateAssignee(ctx, board, assigneeId) {
   if (!assigneeId) {
     return;

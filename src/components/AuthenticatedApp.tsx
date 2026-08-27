@@ -94,6 +94,27 @@ export default function AuthenticatedApp() {
   const displayBoard =
     currentBoard ?? (boards && boards.length > 0 ? boards[0] : null);
 
+  const projectAccess = useQuery(
+    api.boardMembers.getCurrentAccess,
+    displayBoard?._id
+      ? {
+          boardId: displayBoard._id,
+        }
+      : "skip",
+  );
+
+  const canProject = (permission: any) => {
+    if (!displayBoard) {
+      return false;
+    }
+
+    if (projectAccess?.isOwner) {
+      return true;
+    }
+
+    return projectAccess?.permissions?.includes(permission) ?? false;
+  };
+
   // Apply theme
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -235,7 +256,7 @@ export default function AuthenticatedApp() {
           sidebarCollapsed ? "ml-0" : "ml-72"
         }`}
       >
-        <Board board={displayBoard} theme={theme} can={can} />
+        <Board board={displayBoard} theme={theme} can={canProject} />
       </div>
 
       <CreateBoardModal

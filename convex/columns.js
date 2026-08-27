@@ -49,7 +49,6 @@ export const create = mutation({
     return await ctx.db.get(columnId);
   },
 });
-
 export const list = query({
   args: {
     boardId: v.id("boards"),
@@ -77,37 +76,31 @@ export const list = query({
       return [];
     }
 
-    if (board.workspaceId) {
-      const workspace = await ctx.db.get(board.workspaceId);
-
-      if (!workspace) {
+    if (board.userId !== user._id) {
+      if (!board.workspaceId) {
         return [];
       }
 
-      if (workspace.ownerId !== user._id) {
-        const membership = await ctx.db
-          .query("workspaceMembers")
-          .withIndex("by_workspace_user", (q) =>
-            q.eq("workspaceId", board.workspaceId).eq("userId", user._id),
-          )
-          .unique();
+      const membership = await ctx.db
+        .query("boardMembers")
+        .withIndex("by_board_user", (q) =>
+          q.eq("boardId", args.boardId).eq("userId", user._id),
+        )
+        .unique();
 
-        if (!membership || !membership.roleId) {
-          return [];
-        }
-
-        const role = await ctx.db.get(membership.roleId);
-
-        if (
-          !role ||
-          role.workspaceId !== board.workspaceId ||
-          !role.permissions.includes("task.view")
-        ) {
-          return [];
-        }
+      if (!membership || !membership.roleId) {
+        return [];
       }
-    } else if (board.userId !== user._id) {
-      return [];
+
+      const role = await ctx.db.get(membership.roleId);
+
+      if (
+        !role ||
+        role.workspaceId !== board.workspaceId ||
+        !role.permissions.includes("task.view")
+      ) {
+        return [];
+      }
     }
 
     const columns = await ctx.db
