@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
@@ -39,6 +39,11 @@ export default function TaskModal({
 
   const updateTask = useMutation(api.tasks.update);
   const deleteTask = useMutation(api.tasks.remove);
+  const startTimer = useMutation(api.tasks.startTimer);
+  const pauseTimer = useMutation(api.tasks.pauseTimer);
+  const stopTimer = useMutation(api.tasks.stopTimer);
+
+  const [now, setNow] = useState(Date.now());
 
   const columns: any[] = (useQuery(api.columns.list, {
     boardId: task.boardId,
@@ -47,6 +52,30 @@ export default function TaskModal({
   const projectMembers: any[] = (useQuery(api.boardMembers.list, {
     boardId: task.boardId,
   }) ?? []) as any[];
+  const activityLogs =
+    useQuery(api.tasks.listActivity, {
+      taskId: task._id,
+    }) ?? [];
+
+  const comments =
+    useQuery(api.tasks.listComments, {
+      taskId: task._id,
+    }) ?? [];
+
+  const addComment = useMutation(api.tasks.addComment);
+  const [commentText, setCommentText] = useState("");
+
+  useEffect(() => {
+    if (task.timerStatus !== "running") {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [task.timerStatus, task.timerStartedAt]);
 
   const handleColumnChange = async (newColumnId: any) => {
     setColumnId(newColumnId);
@@ -85,6 +114,19 @@ export default function TaskModal({
     });
   };
 
+  const handleAddComment = async () => {
+    if (!commentText.trim()) {
+      return;
+    }
+
+    await addComment({
+      taskId: task._id,
+      text: commentText.trim(),
+    });
+
+    setCommentText("");
+  };
+
   const handleDeleteTask = async () => {
     await deleteTask({
       id: task._id,
@@ -106,6 +148,41 @@ export default function TaskModal({
   const formattedDeadline = task.deadline
     ? new Date(task.deadline).toLocaleDateString()
     : "";
+  const timerElapsedMs =
+    (task.timerElapsedMs ?? 0) +
+    (task.timerStatus === "running" && task.timerStartedAt !== undefined
+      ? Math.max(0, now - task.timerStartedAt)
+      : 0);
+
+  const formatTimer = (milliseconds: number) => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return [hours, minutes, seconds]
+      .map((value) => String(value).padStart(2, "0"))
+      .join(":");
+  };
+
+  const handleStartTimer = async () => {
+    await startTimer({
+      id: task._id,
+    });
+  };
+
+  const handlePauseTimer = async () => {
+    await pauseTimer({
+      id: task._id,
+    });
+  };
+
+  const handleStopTimer = async () => {
+    await stopTimer({
+      id: task._id,
+    });
+  };
 
   if (showEditModal) {
     return (
@@ -268,6 +345,60 @@ export default function TaskModal({
         </DialogHeader>
 
         <div className="space-y-6">
+          <div>
+            <h4
+              className={`text-sm font-medium mb-2 ${
+                theme === "dark" ? "text-slate-100" : "text-slate-900"
+              }`}
+            >
+              Timer
+            </h4>
+
+            <div
+              className={`rounded-lg border p-4 ${
+                theme === "dark"
+                  ? "border-slate-800 bg-slate-900"
+                  : "border-slate-200 bg-slate-100"
+              }`}
+            >
+              <div className="mb-4 text-3xl font-mono font-semibold">
+                {formatTimer(timerElapsedMs)}
+              </div>
+
+              <div className="flex gap-2">
+                {task.timerStatus !== "running" && (
+                  <button
+                    type="button"
+                    onClick={handleStartTimer}
+                    disabled={!can("task.update")}
+                    className="rounded-md bg-emerald-500 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+                  >
+                    Start
+                  </button>
+                )}
+
+                {task.timerStatus === "running" && (
+                  <button
+                    type="button"
+                    onClick={handlePauseTimer}
+                    disabled={!can("task.update")}
+                    className="rounded-md bg-yellow-500 px-3 py-2 text-sm font-medium text-white hover:bg-yellow-600 disabled:opacity-50"
+                  >
+                    Pause
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleStopTimer}
+                  disabled={!can("task.update")}
+                  className="rounded-md bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
+                >
+                  Stop
+                </button>
+              </div>
+            </div>
+          </div>
           {task.description && (
             <div>
               <p
@@ -381,6 +512,158 @@ export default function TaskModal({
               </div>
             </div>
           )}
+          <div>
+            <h4
+              className={`text-sm font-medium mb-3 ${
+                theme === "dark" ? "text-slate-100" : "text-slate-900"
+              }`}
+            >
+              Comments
+            </h4>
+
+            <div className="space-y-3">
+              {comments.length === 0 ? (
+                <p
+                  className={`text-sm ${
+                    theme === "dark" ? "text-slate-500" : "text-slate-500"
+                  }`}
+                >
+                  No comments yet
+                </p>
+              ) : (
+                comments.map((comment: any) => (
+                  <div
+                    key={comment._id}
+                    className={`rounded-lg border p-3 ${
+                      theme === "dark"
+                        ? "border-slate-800 bg-slate-900"
+                        : "border-slate-200 bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p
+                          className={`text-sm font-medium ${
+                            theme === "dark"
+                              ? "text-slate-100"
+                              : "text-slate-900"
+                          }`}
+                        >
+                          {comment.userName}
+                        </p>
+
+                        <p
+                          className={`mt-1 text-sm ${
+                            theme === "dark"
+                              ? "text-slate-400"
+                              : "text-slate-600"
+                          }`}
+                        >
+                          {comment.text}
+                        </p>
+                      </div>
+
+                      <span
+                        className={`shrink-0 text-xs ${
+                          theme === "dark" ? "text-slate-500" : "text-slate-400"
+                        }`}
+                      >
+                        {new Date(comment.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              <input
+                type="text"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Write a comment..."
+                disabled={!can("task.update")}
+                className={`flex-1 rounded-md border px-3 py-2 text-sm outline-none ${
+                  theme === "dark"
+                    ? "border-slate-700 bg-slate-900 text-slate-100"
+                    : "border-slate-300 bg-white text-slate-900"
+                }`}
+              />
+
+              <button
+                type="button"
+                onClick={handleAddComment}
+                disabled={!can("task.update") || !commentText.trim()}
+                className="rounded-md bg-purple-500 px-3 py-2 text-sm font-medium text-white hover:bg-purple-600 disabled:opacity-50"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+          <div>
+            <h4
+              className={`text-sm font-medium mb-3 ${
+                theme === "dark" ? "text-slate-100" : "text-slate-900"
+              }`}
+            >
+              Activity
+            </h4>
+
+            <div className="space-y-3">
+              {activityLogs.length === 0 ? (
+                <p
+                  className={`text-sm ${
+                    theme === "dark" ? "text-slate-500" : "text-slate-500"
+                  }`}
+                >
+                  No activity yet
+                </p>
+              ) : (
+                activityLogs.map((log: any) => (
+                  <div
+                    key={log._id}
+                    className={`rounded-lg border p-3 ${
+                      theme === "dark"
+                        ? "border-slate-800 bg-slate-900"
+                        : "border-slate-200 bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p
+                          className={`text-sm font-medium ${
+                            theme === "dark"
+                              ? "text-slate-100"
+                              : "text-slate-900"
+                          }`}
+                        >
+                          {log.userName}
+                        </p>
+
+                        <p
+                          className={`mt-1 text-sm ${
+                            theme === "dark"
+                              ? "text-slate-400"
+                              : "text-slate-600"
+                          }`}
+                        >
+                          {log.details}
+                        </p>
+                      </div>
+
+                      <span
+                        className={`shrink-0 text-xs ${
+                          theme === "dark" ? "text-slate-500" : "text-slate-400"
+                        }`}
+                      >
+                        {new Date(log.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
 
           <div>
             <label

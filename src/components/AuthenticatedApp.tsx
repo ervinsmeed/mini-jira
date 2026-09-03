@@ -95,7 +95,7 @@ export default function AuthenticatedApp() {
     currentBoard ?? (boards && boards.length > 0 ? boards[0] : null);
 
   const projectAccess = useQuery(
-    api.boardMembers.getCurrentAccess,
+    api.boards.getCurrentAccess,
     displayBoard?._id
       ? {
           boardId: displayBoard._id,
