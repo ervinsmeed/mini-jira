@@ -91,6 +91,32 @@ async function validateAssignee(ctx, board, assigneeId) {
   }
 }
 
+async function validateEpic(ctx, boardId, epicId) {
+  if (!epicId) {
+    return;
+  }
+
+  const epic = await ctx.db.get("tasks", epicId);
+
+  if (!epic || epic.boardId !== boardId || epic.taskType !== "epic") {
+    throw new Error("Epic not found");
+  }
+}
+
+async function addActivityLog(
+  ctx,
+  { boardId, taskId, userId, action, details },
+) {
+  await ctx.db.insert("activityLogs", {
+    boardId,
+    taskId,
+    userId,
+    action,
+    details,
+    createdAt: Date.now(),
+  });
+}
+
 export const create = mutation({
   args: {
     title: v.string(),
@@ -98,6 +124,10 @@ export const create = mutation({
     columnId: v.id("columns"),
     priority: v.optional(v.string()),
     assigneeId: v.optional(v.union(v.id("users"), v.null())),
+
+    taskType: v.optional(v.union(v.literal("epic"), v.literal("task"))),
+
+    epicId: v.optional(v.id("tasks")),
 
     storyPoints: v.optional(
       v.union(
@@ -132,6 +162,11 @@ export const create = mutation({
       "task.create",
     );
     await validateAssignee(ctx, board, args.assigneeId);
+    if (args.taskType === "epic" && args.epicId) {
+      throw new Error("Epic cannot belong to another epic");
+    }
+
+    await validateEpic(ctx, args.boardId, args.epicId);
 
     const column = await ctx.db.get("columns", args.columnId);
 
@@ -151,6 +186,8 @@ export const create = mutation({
       description: args.description,
       priority: args.priority || "medium",
       assigneeId: args.assigneeId,
+      taskType: args.taskType ?? "task",
+      epicId: args.taskType === "epic" ? undefined : args.epicId,
       storyPoints: args.storyPoints,
       deadline: args.deadline,
       subtasks: args.subtasks || [],
@@ -160,6 +197,13 @@ export const create = mutation({
       userId: user._id,
       createdAt: Date.now(),
       updatedAt: Date.now(),
+    });
+    await addActivityLog(ctx, {
+      boardId: args.boardId,
+      taskId,
+      userId: user._id,
+      action: "task.created",
+      details: `Created task "${args.title}"`,
     });
 
     return await ctx.db.get("tasks", taskId);
@@ -237,6 +281,10 @@ export const update = mutation({
     priority: v.optional(v.string()),
     assigneeId: v.optional(v.union(v.id("users"), v.null())),
 
+    taskType: v.optional(v.union(v.literal("epic"), v.literal("task"))),
+
+    epicId: v.optional(v.union(v.id("tasks"), v.null())),
+
     storyPoints: v.optional(
       v.union(
         v.literal(1),
@@ -271,13 +319,35 @@ export const update = mutation({
       throw new Error("Task not found");
     }
 
-    const { board } = await getTaskPermissionAccess(
+    const { user, board } = await getTaskPermissionAccess(
       ctx,
       task.boardId,
       "task.update",
     );
 
     await validateAssignee(ctx, board, args.assigneeId);
+
+    const nextTaskType = args.taskType ?? task.taskType ?? "task";
+
+    if (args.epicId === args.id) {
+      throw new Error("Task cannot use itself as an epic");
+    }
+
+    if (
+      nextTaskType === "epic" &&
+      args.epicId !== undefined &&
+      args.epicId !== null
+    ) {
+      throw new Error("Epic cannot belong to another epic");
+    }
+
+    if (
+      nextTaskType !== "epic" &&
+      args.epicId !== undefined &&
+      args.epicId !== null
+    ) {
+      await validateEpic(ctx, task.boardId, args.epicId);
+    }
 
     const updates = {};
 
@@ -287,6 +357,18 @@ export const update = mutation({
 
     if (args.assigneeId !== undefined) {
       updates.assigneeId = args.assigneeId ?? undefined;
+    }
+
+    if (args.taskType !== undefined) {
+      updates.taskType = args.taskType;
+
+      if (args.taskType === "epic") {
+        updates.epicId = undefined;
+      }
+    }
+
+    if (args.epicId !== undefined) {
+      updates.epicId = args.epicId ?? undefined;
     }
 
     if (args.description !== undefined) {
@@ -320,6 +402,54 @@ export const update = mutation({
     updates.updatedAt = Date.now();
 
     await ctx.db.patch("tasks", args.id, updates);
+    if (
+      args.assigneeId !== undefined &&
+      (args.assigneeId ?? undefined) !== task.assigneeId
+    ) {
+      await addActivityLog(ctx, {
+        boardId: task.boardId,
+        taskId: task._id,
+        userId: user._id,
+        action: "task.assignee_changed",
+        details: "Assignee changed",
+      });
+    }
+
+    if (
+      args.storyPoints !== undefined &&
+      args.storyPoints !== task.storyPoints
+    ) {
+      await addActivityLog(ctx, {
+        boardId: task.boardId,
+        taskId: task._id,
+        userId: user._id,
+        action: "task.story_points_changed",
+        details: `Story Points changed from ${task.storyPoints ?? "none"} to ${args.storyPoints}`,
+      });
+    }
+
+    if (args.deadline !== undefined && args.deadline !== task.deadline) {
+      await addActivityLog(ctx, {
+        boardId: task.boardId,
+        taskId: task._id,
+        userId: user._id,
+        action: "task.deadline_changed",
+        details: "Deadline changed",
+      });
+    }
+
+    if (args.columnId !== undefined && args.columnId !== task.columnId) {
+      const oldColumn = await ctx.db.get("columns", task.columnId);
+      const newColumn = await ctx.db.get("columns", args.columnId);
+
+      await addActivityLog(ctx, {
+        boardId: task.boardId,
+        taskId: task._id,
+        userId: user._id,
+        action: "task.status_changed",
+        details: `Status changed from "${oldColumn?.name ?? "Unknown"}" to "${newColumn?.name ?? "Unknown"}"`,
+      });
+    }
 
     return await ctx.db.get("tasks", args.id);
   },
@@ -339,7 +469,11 @@ export const updateOrder = mutation({
       throw new Error("Task not found");
     }
 
-    await getTaskPermissionAccess(ctx, task.boardId, "task.update");
+    const { user } = await getTaskPermissionAccess(
+      ctx,
+      task.boardId,
+      "task.update",
+    );
 
     const newColumn = await ctx.db.get("columns", args.newColumnId);
 
@@ -351,6 +485,17 @@ export const updateOrder = mutation({
       order: args.newOrder,
       updatedAt: Date.now(),
     });
+    if (args.newColumnId !== task.columnId) {
+      const oldColumn = await ctx.db.get("columns", task.columnId);
+
+      await addActivityLog(ctx, {
+        boardId: task.boardId,
+        taskId: task._id,
+        userId: user._id,
+        action: "task.status_changed",
+        details: `Status changed from "${oldColumn?.name ?? "Unknown"}" to "${newColumn.name}"`,
+      });
+    }
 
     return await ctx.db.get("tasks", args.taskId);
   },
@@ -371,5 +516,256 @@ export const remove = mutation({
     await getTaskPermissionAccess(ctx, task.boardId, "task.delete");
 
     await ctx.db.delete("tasks", args.id);
+
+    if (task.taskType === "epic") {
+      const tasks = await ctx.db
+        .query("tasks")
+        .withIndex("by_board", (q) => q.eq("boardId", task.boardId))
+        .collect();
+
+      for (const childTask of tasks) {
+        if (childTask.epicId === task._id) {
+          await ctx.db.patch("tasks", childTask._id, {
+            epicId: undefined,
+            updatedAt: Date.now(),
+          });
+        }
+      }
+    }
+  },
+});
+export const startTimer = mutation({
+  args: {
+    id: v.id("tasks"),
+  },
+
+  handler: async (ctx, args) => {
+    const task = await ctx.db.get("tasks", args.id);
+
+    if (!task) {
+      throw new Error("Task not found");
+    }
+
+    const { user } = await getTaskPermissionAccess(
+      ctx,
+      task.boardId,
+      "task.update",
+    );
+
+    if (task.timerStatus === "running") {
+      return task;
+    }
+
+    await ctx.db.patch("tasks", args.id, {
+      timerStatus: "running",
+      timerStartedAt: Date.now(),
+      timerElapsedMs:
+        task.timerStatus === "stopped" ? 0 : (task.timerElapsedMs ?? 0),
+      updatedAt: Date.now(),
+    });
+
+    await addActivityLog(ctx, {
+      boardId: task.boardId,
+      taskId: task._id,
+      userId: user._id,
+      action: "task.timer_started",
+      details: "Timer started",
+    });
+
+    return await ctx.db.get("tasks", args.id);
+  },
+});
+
+export const pauseTimer = mutation({
+  args: {
+    id: v.id("tasks"),
+  },
+
+  handler: async (ctx, args) => {
+    const task = await ctx.db.get("tasks", args.id);
+
+    if (!task) {
+      throw new Error("Task not found");
+    }
+
+    const { user } = await getTaskPermissionAccess(
+      ctx,
+      task.boardId,
+      "task.update",
+    );
+
+    if (task.timerStatus !== "running" || task.timerStartedAt === undefined) {
+      return task;
+    }
+
+    const elapsed =
+      (task.timerElapsedMs ?? 0) + (Date.now() - task.timerStartedAt);
+
+    await ctx.db.patch("tasks", args.id, {
+      timerStatus: "paused",
+      timerStartedAt: undefined,
+      timerElapsedMs: elapsed,
+      updatedAt: Date.now(),
+    });
+    await addActivityLog(ctx, {
+      boardId: task.boardId,
+      taskId: task._id,
+      userId: user._id,
+      action: "task.timer_paused",
+      details: "Timer paused",
+    });
+
+    return await ctx.db.get("tasks", args.id);
+  },
+});
+
+export const stopTimer = mutation({
+  args: {
+    id: v.id("tasks"),
+  },
+
+  handler: async (ctx, args) => {
+    const task = await ctx.db.get("tasks", args.id);
+
+    if (!task) {
+      throw new Error("Task not found");
+    }
+
+    const { user } = await getTaskPermissionAccess(
+      ctx,
+      task.boardId,
+      "task.update",
+    );
+
+    let elapsed = task.timerElapsedMs ?? 0;
+
+    if (task.timerStatus === "running" && task.timerStartedAt !== undefined) {
+      elapsed += Date.now() - task.timerStartedAt;
+    }
+
+    await ctx.db.patch("tasks", args.id, {
+      timerStatus: "stopped",
+      timerStartedAt: undefined,
+      timerElapsedMs: elapsed,
+      updatedAt: Date.now(),
+    });
+
+    await addActivityLog(ctx, {
+      boardId: task.boardId,
+      taskId: task._id,
+      userId: user._id,
+      action: "task.timer_stopped",
+      details: "Timer stopped",
+    });
+
+    return await ctx.db.get("tasks", args.id);
+  },
+});
+export const listActivity = query({
+  args: {
+    taskId: v.id("tasks"),
+  },
+
+  handler: async (ctx, args) => {
+    const task = await ctx.db.get("tasks", args.taskId);
+
+    if (!task) {
+      throw new Error("Task not found");
+    }
+
+    await getTaskPermissionAccess(ctx, task.boardId, "task.view");
+
+    const logs = await ctx.db
+      .query("activityLogs")
+      .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
+      .collect();
+
+    const result = await Promise.all(
+      logs.map(async (log) => {
+        const user = await ctx.db.get("users", log.userId);
+
+        return {
+          ...log,
+          userName: user?.name ?? user?.email ?? "Unknown user",
+        };
+      }),
+    );
+
+    return result.sort((a, b) => b.createdAt - a.createdAt);
+  },
+});
+export const addComment = mutation({
+  args: {
+    taskId: v.id("tasks"),
+    text: v.string(),
+  },
+
+  handler: async (ctx, args) => {
+    const task = await ctx.db.get("tasks", args.taskId);
+
+    if (!task) {
+      throw new Error("Task not found");
+    }
+
+    if (!args.text.trim()) {
+      throw new Error("Comment cannot be empty");
+    }
+
+    const { user } = await getTaskPermissionAccess(
+      ctx,
+      task.boardId,
+      "task.update",
+    );
+
+    const commentId = await ctx.db.insert("comments", {
+      taskId: task._id,
+      boardId: task.boardId,
+      userId: user._id,
+      text: args.text.trim(),
+      createdAt: Date.now(),
+    });
+
+    await addActivityLog(ctx, {
+      boardId: task.boardId,
+      taskId: task._id,
+      userId: user._id,
+      action: "task.comment_added",
+      details: "Comment added",
+    });
+
+    return await ctx.db.get("comments", commentId);
+  },
+});
+export const listComments = query({
+  args: {
+    taskId: v.id("tasks"),
+  },
+
+  handler: async (ctx, args) => {
+    const task = await ctx.db.get("tasks", args.taskId);
+
+    if (!task) {
+      throw new Error("Task not found");
+    }
+
+    await getTaskPermissionAccess(ctx, task.boardId, "task.view");
+
+    const comments = await ctx.db
+      .query("comments")
+      .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
+      .collect();
+
+    const result = await Promise.all(
+      comments.map(async (comment) => {
+        const user = await ctx.db.get("users", comment.userId);
+
+        return {
+          ...comment,
+          userName: user?.name ?? user?.email ?? "Unknown user",
+        };
+      }),
+    );
+
+    return result.sort((a, b) => a.createdAt - b.createdAt);
   },
 });

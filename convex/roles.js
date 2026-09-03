@@ -124,6 +124,78 @@ export const create = mutation({
   },
 });
 
+export const update = mutation({
+  args: {
+    id: v.id("roles"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    level: v.optional(v.number()),
+    permissions: v.optional(v.array(permissionValidator)),
+  },
+
+  handler: async (ctx, args) => {
+    const role = await ctx.db.get(args.id);
+
+    if (!role) {
+      throw new Error("Role not found");
+    }
+
+    const { isOwner, currentRole } = await getRoleManagementAccess(
+      ctx,
+      role.workspaceId,
+    );
+
+    if (!isOwner && currentRole) {
+      if (role.level >= currentRole.level) {
+        throw new Error("You cannot edit a role with equal or higher level");
+      }
+
+      if (args.level !== undefined && args.level >= currentRole.level) {
+        throw new Error("You cannot set an equal or higher role level");
+      }
+    }
+
+    if (args.name !== undefined) {
+      const roles = await ctx.db
+        .query("roles")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", role.workspaceId))
+        .collect();
+
+      const duplicateRole = roles.find(
+        (item) =>
+          item._id !== args.id &&
+          item.name.toLowerCase() === args.name.trim().toLowerCase(),
+      );
+
+      if (duplicateRole) {
+        throw new Error("Role already exists");
+      }
+    }
+
+    const updates = {};
+
+    if (args.name !== undefined) {
+      updates.name = args.name.trim();
+    }
+
+    if (args.description !== undefined) {
+      updates.description = args.description.trim() || undefined;
+    }
+
+    if (args.level !== undefined) {
+      updates.level = args.level;
+    }
+
+    if (args.permissions !== undefined) {
+      updates.permissions = args.permissions;
+    }
+
+    await ctx.db.patch(args.id, updates);
+
+    return await ctx.db.get(args.id);
+  },
+});
+
 export const list = query({
   args: {
     workspaceId: v.id("workspaces"),
@@ -192,16 +264,22 @@ export const remove = mutation({
     if (!isOwner && currentRole && role.level >= currentRole.level) {
       throw new Error("You cannot delete a role with equal or higher level");
     }
-    const memberships = await ctx.db
+    const workspaceMemberships = await ctx.db
       .query("workspaceMembers")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", role.workspaceId))
       .collect();
 
-    const roleIsAssigned = memberships.some(
+    const workspaceRoleIsAssigned = workspaceMemberships.some(
       (membership) => membership.roleId === args.id,
     );
 
-    if (roleIsAssigned) {
+    const projectMemberships = await ctx.db.query("boardMembers").collect();
+
+    const projectRoleIsAssigned = projectMemberships.some(
+      (membership) => membership.roleId === args.id,
+    );
+
+    if (workspaceRoleIsAssigned || projectRoleIsAssigned) {
       throw new Error("Role is assigned to one or more members");
     }
 

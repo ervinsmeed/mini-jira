@@ -38,6 +38,7 @@ export default function Column({
   column,
   taskCount,
   tasks,
+  allTasks,
   onTaskClick,
   onEditColumn,
   theme,
@@ -200,6 +201,11 @@ export default function Column({
             <TaskCard
               key={task._id}
               task={task}
+              epic={
+                task.epicId
+                  ? allTasks.find((item: any) => item._id === task.epicId)
+                  : null
+              }
               onClick={() => onTaskClick(task)}
               theme={theme}
             />

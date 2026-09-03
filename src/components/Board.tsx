@@ -271,12 +271,12 @@ export default function Board({ board, theme, can }: BoardProps) {
 
   return (
     <div
-      className={`flex min-w-full flex-1 flex-col transition-colors ${
+      className={`flex w-full min-w-0 flex-1 flex-col transition-colors ${
         theme === "dark" ? "bg-slate-950" : "bg-slate-50"
       }`}
     >
       <div
-        className={`flex items-center justify-between border-b p-6 transition-colors ${
+        className={`flex flex-wrap items-center justify-between gap-4 border-b p-6 transition-colors ${
           theme === "dark" ? "border-slate-800" : "border-slate-200"
         }`}
       >
@@ -373,6 +373,7 @@ export default function Board({ board, theme, can }: BoardProps) {
                   column={column}
                   taskCount={getTaskCount(column._id)}
                   tasks={getVisibleTasksByColumn(column._id)}
+                  allTasks={tasks}
                   onTaskClick={setSelectedTask}
                   onEditColumn={setEditingColumn}
                   theme={theme}

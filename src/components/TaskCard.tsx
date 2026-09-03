@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 
 export default function TaskCard({
   task,
+  epic,
   onClick,
   isDragging = false,
   theme,
@@ -91,6 +92,20 @@ export default function TaskCard({
           : ""
       }`}
     >
+      {task.taskType === "epic" && (
+        <div className="mb-2">
+          <span
+            className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ${
+              theme === "dark"
+                ? "bg-purple-500/20 text-purple-300"
+                : "bg-purple-100 text-purple-700"
+            }`}
+          >
+            EPIC
+          </span>
+        </div>
+      )}
+
       <div className="flex items-start justify-between mb-2">
         <h4
           className={`font-semibold leading-tight flex-1 ${
@@ -115,6 +130,17 @@ export default function TaskCard({
         >
           {task.description}
         </p>
+      )}
+      {epic && (
+        <div className="mb-2">
+          <span
+            className={`text-xs font-medium ${
+              theme === "dark" ? "text-purple-300" : "text-purple-700"
+            }`}
+          >
+            Epic: {epic.title}
+          </span>
+        </div>
       )}
 
       {task.storyPoints !== undefined && (

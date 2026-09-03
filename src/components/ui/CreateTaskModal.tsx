@@ -131,6 +131,8 @@ export default function CreateTaskModal({
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
   const [assigneeId, setAssigneeId] = useState<Id<"users"> | "">("");
+  const [taskType, setTaskType] = useState<"epic" | "task">("task");
+  const [epicId, setEpicId] = useState<Id<"tasks"> | "">("");
 
   const [storyPoints, setStoryPoints] = useState<1 | 2 | 3 | 5 | 8 | 13 | 21>(
     1,
@@ -142,6 +144,10 @@ export default function CreateTaskModal({
 
   const createTask = useMutation(api.tasks.create);
   const projectMembers = useQuery(api.boardMembers.list, { boardId }) ?? [];
+  const projectTasks: Doc<"tasks">[] =
+    useQuery(api.tasks.list, { boardId }) ?? [];
+
+  const epics = projectTasks.filter((task) => task.taskType === "epic");
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -212,6 +218,8 @@ export default function CreateTaskModal({
       description: description.trim(),
       priority,
       assigneeId: assigneeId || undefined,
+      taskType,
+      epicId: taskType === "task" ? epicId || undefined : undefined,
       storyPoints,
       deadline: deadline
         ? new Date(`${deadline}T23:59:59`).getTime()
@@ -225,6 +233,8 @@ export default function CreateTaskModal({
     setDescription("");
     setPriority("medium");
     setAssigneeId("");
+    setTaskType("task");
+    setEpicId("");
     setStoryPoints(1);
     setDeadline("");
     setSubtasks(["", ""]);
@@ -295,6 +305,95 @@ export default function CreateTaskModal({
               }`}
             />
           </div>
+
+          <div>
+            <label
+              className={`block text-sm font-medium mb-2 ${
+                theme === "dark" ? "text-slate-300" : "text-slate-700"
+              }`}
+            >
+              Type
+            </label>
+
+            <Select
+              value={taskType}
+              onValueChange={(value) => {
+                const newType = value as "epic" | "task";
+
+                setTaskType(newType);
+
+                if (newType === "epic") {
+                  setEpicId("");
+                }
+              }}
+            >
+              <SelectTrigger
+                className={`w-full transition-colors ${
+                  theme === "dark"
+                    ? "bg-slate-900 border-slate-800 text-slate-100"
+                    : "bg-white border-slate-300 text-slate-900"
+                }`}
+              >
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+
+              <SelectContent
+                className={`transition-colors ${
+                  theme === "dark"
+                    ? "bg-slate-900 border-slate-800 text-slate-100"
+                    : "bg-white border-slate-200 text-slate-900"
+                }`}
+              >
+                <SelectItem value="task">Task</SelectItem>
+                <SelectItem value="epic">Epic</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {taskType === "task" && (
+            <div>
+              <label
+                className={`block text-sm font-medium mb-2 ${
+                  theme === "dark" ? "text-slate-300" : "text-slate-700"
+                }`}
+              >
+                Epic
+              </label>
+
+              <Select
+                value={epicId || "none"}
+                onValueChange={(value) =>
+                  setEpicId(value === "none" ? "" : (value as Id<"tasks">))
+                }
+              >
+                <SelectTrigger
+                  className={`w-full transition-colors ${
+                    theme === "dark"
+                      ? "bg-slate-900 border-slate-800 text-slate-100"
+                      : "bg-white border-slate-300 text-slate-900"
+                  }`}
+                >
+                  <SelectValue placeholder="Select Epic" />
+                </SelectTrigger>
+
+                <SelectContent
+                  className={`transition-colors ${
+                    theme === "dark"
+                      ? "bg-slate-900 border-slate-800 text-slate-100"
+                      : "bg-white border-slate-200 text-slate-900"
+                  }`}
+                >
+                  <SelectItem value="none">No Epic</SelectItem>
+
+                  {epics.map((epic) => (
+                    <SelectItem key={epic._id} value={epic._id}>
+                      {epic.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div>
             <label

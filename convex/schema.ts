@@ -86,6 +86,7 @@ export default defineSchema({
     boardId: v.id("boards"),
     userId: v.id("users"),
     roleId: v.optional(v.id("roles")),
+
     joinedAt: v.number(),
   })
     .index("by_board", ["boardId"])
@@ -100,7 +101,6 @@ export default defineSchema({
     order: v.number(),
     createdAt: v.number(),
   }).index("by_board", ["boardId"]),
-
   tasks: defineTable({
     title: v.string(),
     description: v.optional(v.string()),
@@ -108,6 +108,9 @@ export default defineSchema({
     order: v.number(),
     priority: v.optional(v.string()),
     assigneeId: v.optional(v.id("users")),
+    taskType: v.optional(v.union(v.literal("epic"), v.literal("task"))),
+
+    epicId: v.optional(v.id("tasks")),
 
     storyPoints: v.optional(
       v.union(
@@ -135,6 +138,33 @@ export default defineSchema({
     boardId: v.id("boards"),
     userId: v.id("users"),
     createdAt: v.number(),
+
+    timerStatus: v.optional(
+      v.union(v.literal("running"), v.literal("paused"), v.literal("stopped")),
+    ),
+
+    timerStartedAt: v.optional(v.number()),
+    timerElapsedMs: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
   }).index("by_board", ["boardId"]),
+
+  activityLogs: defineTable({
+    boardId: v.id("boards"),
+    taskId: v.id("tasks"),
+    userId: v.id("users"),
+
+    action: v.string(),
+    details: v.optional(v.string()),
+
+    createdAt: v.number(),
+  })
+    .index("by_task", ["taskId"])
+    .index("by_board", ["boardId"]),
+  comments: defineTable({
+    taskId: v.id("tasks"),
+    boardId: v.id("boards"),
+    userId: v.id("users"),
+    text: v.string(),
+    createdAt: v.number(),
+  }).index("by_task", ["taskId"]),
 });
