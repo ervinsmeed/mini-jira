@@ -33,7 +33,6 @@ import {
 } from "./Dialog";
 
 import { toast } from "sonner";
-
 export default function Column({
   column,
   taskCount,
@@ -41,6 +40,8 @@ export default function Column({
   allTasks,
   onTaskClick,
   onEditColumn,
+  selectedTaskIds,
+  onToggleTaskSelection,
   theme,
 }: any) {
   const { t } = useTranslation();
@@ -207,6 +208,8 @@ export default function Column({
                   : null
               }
               onClick={() => onTaskClick(task)}
+              isSelected={selectedTaskIds.includes(task._id)}
+              onToggleSelect={() => onToggleTaskSelection(task._id)}
               theme={theme}
             />
           ))}

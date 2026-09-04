@@ -769,3 +769,144 @@ export const listComments = query({
     return result.sort((a, b) => a.createdAt - b.createdAt);
   },
 });
+export const bulkUpdate = mutation({
+  args: {
+    taskIds: v.array(v.id("tasks")),
+    columnId: v.optional(v.id("columns")),
+    assigneeId: v.optional(v.union(v.id("users"), v.null())),
+    priority: v.optional(v.string()),
+  },
+
+  handler: async (ctx, args) => {
+    const updatedTasks = [];
+
+    for (const taskId of args.taskIds) {
+      const task = await ctx.db.get("tasks", taskId);
+
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      const { user, board } = await getTaskPermissionAccess(
+        ctx,
+        task.boardId,
+        "task.update",
+      );
+
+      if (args.assigneeId !== undefined) {
+        await validateAssignee(ctx, board, args.assigneeId);
+      }
+
+      let newColumn = null;
+
+      if (args.columnId !== undefined) {
+        newColumn = await ctx.db.get("columns", args.columnId);
+
+        if (!newColumn || newColumn.boardId !== task.boardId) {
+          throw new Error("Column not found");
+        }
+      }
+
+      const updates = {
+        updatedAt: Date.now(),
+      };
+
+      const changes = [];
+
+      if (args.columnId !== undefined && args.columnId !== task.columnId) {
+        const oldColumn = await ctx.db.get("columns", task.columnId);
+
+        updates.columnId = args.columnId;
+
+        changes.push(
+          `Status changed from "${oldColumn?.name ?? "Unknown"}" to "${
+            newColumn?.name ?? "Unknown"
+          }"`,
+        );
+      }
+
+      if (
+        args.assigneeId !== undefined &&
+        args.assigneeId !== task.assigneeId
+      ) {
+        updates.assigneeId = args.assigneeId ?? undefined;
+        changes.push("Assignee changed");
+      }
+
+      if (args.priority !== undefined && args.priority !== task.priority) {
+        updates.priority = args.priority;
+        changes.push(
+          `Priority changed from "${task.priority ?? "none"}" to "${
+            args.priority
+          }"`,
+        );
+      }
+
+      await ctx.db.patch("tasks", taskId, updates);
+
+      if (changes.length > 0) {
+        await addActivityLog(ctx, {
+          boardId: task.boardId,
+          taskId: task._id,
+          userId: user._id,
+          action: "task.bulk_updated",
+          details: changes.join("; "),
+        });
+      }
+
+      updatedTasks.push(await ctx.db.get("tasks", taskId));
+    }
+
+    return updatedTasks;
+  },
+});
+
+export const bulkRemove = mutation({
+  args: {
+    taskIds: v.array(v.id("tasks")),
+  },
+
+  handler: async (ctx, args) => {
+    const tasksToDelete = [];
+
+    for (const taskId of args.taskIds) {
+      const task = await ctx.db.get("tasks", taskId);
+
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      await getTaskPermissionAccess(ctx, task.boardId, "task.delete");
+
+      tasksToDelete.push(task);
+    }
+
+    for (const task of tasksToDelete) {
+      await ctx.db.delete("tasks", task._id);
+    }
+
+    for (const task of tasksToDelete) {
+      if (task.taskType !== "epic") {
+        continue;
+      }
+
+      const remainingTasks = await ctx.db
+        .query("tasks")
+        .withIndex("by_board", (q) => q.eq("boardId", task.boardId))
+        .collect();
+
+      for (const childTask of remainingTasks) {
+        if (childTask.epicId === task._id) {
+          await ctx.db.patch("tasks", childTask._id, {
+            epicId: undefined,
+            updatedAt: Date.now(),
+          });
+        }
+      }
+    }
+
+    return {
+      deletedCount: tasksToDelete.length,
+    };
+  },
+});
