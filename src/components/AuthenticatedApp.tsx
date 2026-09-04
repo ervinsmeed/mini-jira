@@ -252,8 +252,8 @@ export default function AuthenticatedApp() {
       />
 
       <div
-        className={`flex-1 transition-all duration-300 ${
-          sidebarCollapsed ? "ml-0" : "ml-72"
+        className={`min-w-0 transition-all duration-300 ${
+          sidebarCollapsed ? "flex-1" : "ml-72 w-[calc(100vw-18rem)]"
         }`}
       >
         <Board board={displayBoard} theme={theme} can={canProject} />
