@@ -46,6 +46,7 @@ export default function Board({ board, theme, can }: BoardProps) {
 
   const [activeTask, setActiveTask] = useState<Doc<"tasks"> | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   const [priorityFilter, setPriorityFilter] = useState<
     "all" | "high" | "medium" | "low"
@@ -60,6 +61,15 @@ export default function Board({ board, theme, can }: BoardProps) {
   const tasksResult = useQuery(
     api.tasks.list,
     board?._id
+      ? {
+          boardId: board._id,
+        }
+      : "skip",
+  );
+
+  const analytics = useQuery(
+    api.analytics.getProjectAnalytics,
+    board?._id && can("analytics.view")
       ? {
           boardId: board._id,
         }
@@ -271,7 +281,7 @@ export default function Board({ board, theme, can }: BoardProps) {
 
   return (
     <div
-      className={`flex w-full min-w-0 flex-1 flex-col transition-colors ${
+      className={`flex min-w-0 flex-1 flex-col transition-colors ${
         theme === "dark" ? "bg-slate-950" : "bg-slate-50"
       }`}
     >
@@ -288,6 +298,19 @@ export default function Board({ board, theme, can }: BoardProps) {
           {board.name}
         </h1>
         <div className="flex flex-wrap items-center gap-3">
+          {can("analytics.view") && (
+            <button
+              type="button"
+              onClick={() => setShowAnalytics((value) => !value)}
+              className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
+                theme === "dark"
+                  ? "border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                  : "border-slate-300 bg-white text-slate-900 hover:bg-slate-100"
+              }`}
+            >
+              {showAnalytics ? "Hide Analytics" : "Analytics"}
+            </button>
+          )}
           <input
             type="text"
             value={searchQuery}
@@ -357,7 +380,184 @@ export default function Board({ board, theme, can }: BoardProps) {
         </div>
       </div>
 
+      {showAnalytics && analytics && can("analytics.view") && (
+        <div
+          className={`grid w-full min-w-0 grid-cols-2 gap-4 border-b p-6 md:grid-cols-4 ${
+            theme === "dark" ? "border-slate-800" : "border-slate-200"
+          }`}
+        >
+          <div
+            className={`rounded-lg border p-4 ${
+              theme === "dark"
+                ? "border-slate-800 bg-slate-900"
+                : "border-slate-200 bg-white"
+            }`}
+          >
+            <p
+              className={`text-sm ${
+                theme === "dark" ? "text-slate-400" : "text-slate-500"
+              }`}
+            >
+              Total Tasks
+            </p>
+
+            <p className="mt-2 text-2xl font-bold">{analytics.total}</p>
+          </div>
+
+          <div
+            className={`rounded-lg border p-4 ${
+              theme === "dark"
+                ? "border-slate-800 bg-slate-900"
+                : "border-slate-200 bg-white"
+            }`}
+          >
+            <p
+              className={`text-sm ${
+                theme === "dark" ? "text-slate-400" : "text-slate-500"
+              }`}
+            >
+              Completed
+            </p>
+
+            <p className="mt-2 text-2xl font-bold">{analytics.completed}</p>
+          </div>
+
+          <div
+            className={`rounded-lg border p-4 ${
+              theme === "dark"
+                ? "border-slate-800 bg-slate-900"
+                : "border-slate-200 bg-white"
+            }`}
+          >
+            <p
+              className={`text-sm ${
+                theme === "dark" ? "text-slate-400" : "text-slate-500"
+              }`}
+            >
+              Active
+            </p>
+
+            <p className="mt-2 text-2xl font-bold">{analytics.active}</p>
+          </div>
+
+          <div
+            className={`rounded-lg border p-4 ${
+              theme === "dark"
+                ? "border-slate-800 bg-slate-900"
+                : "border-slate-200 bg-white"
+            }`}
+          >
+            <p
+              className={`text-sm ${
+                theme === "dark" ? "text-slate-400" : "text-slate-500"
+              }`}
+            >
+              Overdue
+            </p>
+
+            <p className="mt-2 text-2xl font-bold">{analytics.overdue}</p>
+          </div>
+        </div>
+      )}
+      {showAnalytics && analytics && can("analytics.view") && (
+        <div className="grid w-full min-w-0 gap-6 px-6 pb-6 md:grid-cols-3">
+          <div
+            className={`rounded-lg border p-4 ${
+              theme === "dark"
+                ? "border-slate-800 bg-slate-900"
+                : "border-slate-200 bg-white"
+            }`}
+          >
+            <h3 className="mb-4 text-lg font-semibold">Tasks by Status</h3>
+
+            <div className="space-y-3">
+              {analytics.byStatus.map(
+                (status: {
+                  columnId: Id<"columns">;
+                  name: string;
+                  count: number;
+                }) => (
+                  <div
+                    key={status.columnId}
+                    className="flex items-center justify-between"
+                  >
+                    <span
+                      className={
+                        theme === "dark" ? "text-slate-400" : "text-slate-600"
+                      }
+                    >
+                      {status.name}
+                    </span>
+
+                    <span className="font-semibold">{status.count}</span>
+                  </div>
+                ),
+              )}
+            </div>
+          </div>
+
+          <div
+            className={`rounded-lg border p-4 ${
+              theme === "dark"
+                ? "border-slate-800 bg-slate-900"
+                : "border-slate-200 bg-white"
+            }`}
+          >
+            <h3 className="mb-4 text-lg font-semibold">Tasks by Assignee</h3>
+
+            <div className="space-y-3">
+              {analytics.byAssignee.map(
+                (assignee: {
+                  assigneeId: Id<"users"> | null;
+                  name: string;
+                  count: number;
+                }) => (
+                  <div
+                    key={assignee.assigneeId ?? "unassigned"}
+                    className="flex items-center justify-between"
+                  >
+                    <span
+                      className={
+                        theme === "dark" ? "text-slate-400" : "text-slate-600"
+                      }
+                    >
+                      {assignee.name}
+                    </span>
+
+                    <span className="font-semibold">{assignee.count}</span>
+                  </div>
+                ),
+              )}
+            </div>
+          </div>
+          <div
+            className={`rounded-lg border p-4 ${
+              theme === "dark"
+                ? "border-slate-800 bg-slate-900"
+                : "border-slate-200 bg-white"
+            }`}
+          >
+            <h3 className="mb-4 text-lg font-semibold">Tasks by Project</h3>
+
+            <div className="flex items-center justify-between">
+              <span
+                className={
+                  theme === "dark" ? "text-slate-400" : "text-slate-600"
+                }
+              >
+                {analytics.project.name}
+              </span>
+
+              <span className="font-semibold">
+                {analytics.project.taskCount}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Колонки */}
+
       <div className="flex-1 overflow-auto p-6">
         <div className="flex h-full min-w-max items-start space-x-6">
           <DndContext
