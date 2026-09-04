@@ -8,6 +8,8 @@ export default function TaskCard({
   task,
   epic,
   onClick,
+  isSelected = false,
+  onToggleSelect,
   isDragging = false,
   theme,
 }: any) {
@@ -34,6 +36,7 @@ export default function TaskCard({
     : 0;
 
   const totalSubtasks = task.subtasks ? task.subtasks.length : 0;
+
   const isOverdue = task.deadline !== undefined && task.deadline < Date.now();
 
   const formattedDeadline = task.deadline
@@ -90,8 +93,19 @@ export default function TaskCard({
         isDragging || isSortableDragging
           ? "shadow-lg rotate-1 scale-105 opacity-50"
           : ""
-      }`}
+      } ${isSelected ? "ring-2 ring-purple-500" : ""}`}
     >
+      {onToggleSelect && (
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={onToggleSelect}
+          onClick={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          className="mb-3 size-4 cursor-pointer accent-purple-500"
+        />
+      )}
+
       {task.taskType === "epic" && (
         <div className="mb-2">
           <span
@@ -131,6 +145,7 @@ export default function TaskCard({
           {task.description}
         </p>
       )}
+
       {epic && (
         <div className="mb-2">
           <span
@@ -168,9 +183,11 @@ export default function TaskCard({
           }`}
         >
           <CalendarDays className="size-4" />
+
           <span>{formattedDeadline}</span>
         </div>
       )}
+
       {totalSubtasks > 0 && (
         <>
           <p
