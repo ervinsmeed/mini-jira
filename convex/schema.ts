@@ -62,6 +62,7 @@ export default defineSchema({
 
   boards: defineTable({
     name: v.string(),
+    description: v.optional(v.string()),
     userId: v.id("users"),
 
     workspaceId: v.optional(v.id("workspaces")),
@@ -93,6 +94,21 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_board_user", ["boardId", "userId"]),
 
+  favorites: defineTable({
+    userId: v.id("users"),
+    boardId: v.id("boards"),
+    taskId: v.optional(v.id("tasks")),
+
+    itemType: v.union(v.literal("project"), v.literal("task")),
+
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_type", ["userId", "itemType"])
+    .index("by_user_board", ["userId", "boardId", "itemType"])
+    .index("by_user_task", ["userId", "taskId"])
+    .index("by_board", ["boardId"])
+    .index("by_task", ["taskId"]),
   columns: defineTable({
     name: v.string(),
     color: v.string(),
@@ -147,6 +163,35 @@ export default defineSchema({
     timerElapsedMs: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
   }).index("by_board", ["boardId"]),
+  taskTemplates: defineTable({
+    name: v.string(),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+
+    priority: v.optional(
+      v.union(v.literal("high"), v.literal("medium"), v.literal("low")),
+    ),
+
+    storyPoints: v.optional(
+      v.union(
+        v.literal(1),
+        v.literal(2),
+        v.literal(3),
+        v.literal(5),
+        v.literal(8),
+        v.literal(13),
+        v.literal(21),
+      ),
+    ),
+
+    boardId: v.id("boards"),
+    userId: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_board", ["boardId"])
+    .index("by_user", ["userId"])
+    .index("by_board_user", ["boardId", "userId"]),
 
   activityLogs: defineTable({
     boardId: v.id("boards"),

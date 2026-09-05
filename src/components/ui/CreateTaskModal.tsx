@@ -37,6 +37,8 @@ import {
 import { toast } from "sonner";
 
 type Theme = "dark" | "light";
+type Priority = "high" | "medium" | "low";
+type StoryPoints = 1 | 2 | 3 | 5 | 8 | 13 | 21;
 
 interface SortableSubTaskProps {
   subtask: string;
@@ -129,20 +131,29 @@ export default function CreateTaskModal({
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState("medium");
+  const [priority, setPriority] = useState<Priority>("medium");
   const [assigneeId, setAssigneeId] = useState<Id<"users"> | "">("");
   const [taskType, setTaskType] = useState<"epic" | "task">("task");
   const [epicId, setEpicId] = useState<Id<"tasks"> | "">("");
 
-  const [storyPoints, setStoryPoints] = useState<1 | 2 | 3 | 5 | 8 | 13 | 21>(
-    1,
-  );
+  const [storyPoints, setStoryPoints] = useState<StoryPoints>(1);
   const [deadline, setDeadline] = useState("");
 
   const [subtasks, setSubtasks] = useState(["", ""]);
   const [columnId, setColumnId] = useState<Id<"columns"> | "">("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<
+    Id<"taskTemplates"> | ""
+  >("");
+
+  const [templateName, setTemplateName] = useState("");
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
 
   const createTask = useMutation(api.tasks.create);
+  const createTemplate = useMutation(api.taskTemplates.create);
+  const removeTemplate = useMutation(api.taskTemplates.remove);
+
+  const taskTemplates: Doc<"taskTemplates">[] =
+    useQuery(api.taskTemplates.list, { boardId }) ?? [];
   const projectMembers = useQuery(api.boardMembers.list, { boardId }) ?? [];
   const projectTasks: Doc<"tasks">[] =
     useQuery(api.tasks.list, { boardId }) ?? [];
@@ -165,6 +176,107 @@ export default function CreateTaskModal({
       setColumnId(firstColumn._id);
     }
   }, [columns, columnId]);
+  const handleTemplateSelect = (templateId: string) => {
+    if (templateId === "none") {
+      setSelectedTemplateId("");
+      return;
+    }
+
+    const template = taskTemplates.find(
+      (currentTemplate) => currentTemplate._id === templateId,
+    );
+
+    if (!template) return;
+
+    setSelectedTemplateId(template._id);
+    setTitle(template.title ?? "");
+    setDescription(template.description ?? "");
+    setPriority(template.priority ?? "medium");
+    setStoryPoints(template.storyPoints ?? 1);
+  };
+
+  const handleSaveTemplate = async () => {
+    const trimmedTemplateName = templateName.trim();
+
+    if (!trimmedTemplateName) {
+      toast.error(
+        t("createTask.templateNameRequired", {
+          defaultValue: "Enter a template name",
+        }),
+      );
+
+      return;
+    }
+
+    setIsSavingTemplate(true);
+
+    try {
+      const createdTemplate = await createTemplate({
+        boardId,
+        name: trimmedTemplateName,
+        title: title.trim() || undefined,
+        description: description.trim() || undefined,
+        priority,
+        storyPoints,
+      });
+
+      setTemplateName("");
+
+      if (createdTemplate) {
+        setSelectedTemplateId(createdTemplate._id);
+      }
+
+      toast.success(
+        t("createTask.templateCreated", {
+          defaultValue: "Template created",
+        }),
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("createTask.templateCreateError", {
+              defaultValue: "Failed to create template",
+            }),
+      );
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!selectedTemplateId) return;
+
+    const confirmed = window.confirm(
+      t("createTask.deleteTemplateQuestion", {
+        defaultValue: "Delete selected template?",
+      }),
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await removeTemplate({
+        id: selectedTemplateId,
+      });
+
+      setSelectedTemplateId("");
+
+      toast.success(
+        t("createTask.templateDeleted", {
+          defaultValue: "Template deleted",
+        }),
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("createTask.templateDeleteError", {
+              defaultValue: "Failed to delete template",
+            }),
+      );
+    }
+  };
   const handleAddSubtask = () => {
     setSubtasks([...subtasks, ""]);
   };
@@ -261,6 +373,104 @@ export default function CreateTaskModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 mt-2">
+          <div
+            className={`rounded-lg border p-4 ${
+              theme === "dark"
+                ? "border-slate-800 bg-slate-900/50"
+                : "border-slate-200 bg-slate-50"
+            }`}
+          >
+            <label
+              className={`mb-2 block text-sm font-medium ${
+                theme === "dark" ? "text-slate-300" : "text-slate-700"
+              }`}
+            >
+              {t("createTask.template", {
+                defaultValue: "Task template",
+              })}
+            </label>
+
+            <div className="flex gap-2">
+              <select
+                value={selectedTemplateId || "none"}
+                onChange={(event) => handleTemplateSelect(event.target.value)}
+                className={`min-w-0 flex-1 rounded-md border px-3 py-2 text-sm outline-none ${
+                  theme === "dark"
+                    ? "border-slate-700 bg-slate-950 text-slate-100"
+                    : "border-slate-300 bg-white text-slate-900"
+                }`}
+              >
+                <option value="none">
+                  {t("createTask.noTemplate", {
+                    defaultValue: "Without template",
+                  })}
+                </option>
+
+                {taskTemplates.map((template) => (
+                  <option key={template._id} value={template._id}>
+                    {template.name}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={handleDeleteTemplate}
+                disabled={!selectedTemplateId}
+                className={`rounded-md border px-3 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                  theme === "dark"
+                    ? "border-red-900 text-red-400 hover:bg-red-950"
+                    : "border-red-200 text-red-600 hover:bg-red-50"
+                }`}
+              >
+                {t("createTask.deleteTemplate", {
+                  defaultValue: "Delete",
+                })}
+              </button>
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              <input
+                type="text"
+                value={templateName}
+                onChange={(event) => setTemplateName(event.target.value)}
+                placeholder={t("createTask.templateNamePlaceholder", {
+                  defaultValue: "Template name, e.g. Bug",
+                })}
+                className={`min-w-0 flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 ${
+                  theme === "dark"
+                    ? "border-slate-700 bg-slate-950 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
+                    : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
+                }`}
+              />
+
+              <button
+                type="button"
+                onClick={handleSaveTemplate}
+                disabled={isSavingTemplate}
+                className="rounded-md bg-purple-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSavingTemplate
+                  ? t("createTask.savingTemplate", {
+                      defaultValue: "Saving...",
+                    })
+                  : t("createTask.saveTemplate", {
+                      defaultValue: "Save template",
+                    })}
+              </button>
+            </div>
+
+            <p
+              className={`mt-2 text-xs ${
+                theme === "dark" ? "text-slate-500" : "text-slate-500"
+              }`}
+            >
+              {t("createTask.templateHint", {
+                defaultValue:
+                  "The template saves the current title, description, priority and Story Points.",
+              })}
+            </p>
+          </div>
           <div>
             <label
               className={`block text-sm font-medium mb-2 ${
@@ -453,7 +663,10 @@ export default function CreateTaskModal({
                 {t("createTask.priority")}
               </label>
 
-              <Select value={priority} onValueChange={setPriority}>
+              <Select
+                value={priority}
+                onValueChange={(value) => setPriority(value as Priority)}
+              >
                 <SelectTrigger
                   className={`w-full transition-colors ${
                     theme === "dark"
@@ -605,7 +818,7 @@ export default function CreateTaskModal({
             <Select
               value={storyPoints.toString()}
               onValueChange={(value) =>
-                setStoryPoints(Number(value) as 1 | 2 | 3 | 5 | 8 | 13 | 21)
+                setStoryPoints(Number(value) as StoryPoints)
               }
             >
               <SelectTrigger

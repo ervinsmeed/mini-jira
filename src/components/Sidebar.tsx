@@ -72,7 +72,12 @@ export default function Sidebar({
     : allBoardsResult) ?? []) as any[];
   const deleteBoard = useMutation(api.boards.remove);
   const updateBoardOrder = useMutation(api.boards.updateOrder);
-  const updateProject = useMutation(api.boards.update);
+
+  const toggleProjectFavorite = useMutation(api.favorites.toggleProject);
+
+  const favoriteProjectIds = useQuery(api.favorites.listProjectIds) ?? [];
+
+  const favoriteProjectIdSet = new Set(favoriteProjectIds);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -96,9 +101,8 @@ export default function Sidebar({
   };
 
   const handleToggleFavorite = async (board: any) => {
-    await updateProject({
-      id: board._id,
-      favorite: !board.favorite,
+    await toggleProjectFavorite({
+      boardId: board._id,
     });
   };
   const { t, i18n } = useTranslation();
@@ -147,6 +151,7 @@ export default function Sidebar({
                   <SortableBoardItem
                     key={board._id}
                     board={board}
+                    isFavorite={favoriteProjectIdSet.has(board._id)}
                     currentBoard={currentBoard}
                     onBoardSelect={onBoardSelect}
                     onEditProject={onEditProject}
@@ -357,6 +362,7 @@ export default function Sidebar({
                 <SortableBoardItem
                   key={board._id}
                   board={board}
+                  isFavorite={favoriteProjectIdSet.has(board._id)}
                   can={can}
                   currentBoard={currentBoard}
                   onBoardSelect={onBoardSelect}
@@ -464,6 +470,7 @@ export default function Sidebar({
 
 function SortableBoardItem({
   board,
+  isFavorite,
   currentBoard,
   onBoardSelect,
   onProjectMembers,
@@ -562,8 +569,12 @@ function SortableBoardItem({
         title="Favorite Project"
       >
         <Star
-          className={`size-3.5 ${
-            board.favorite ? "fill-yellow-400 text-yellow-400" : ""
+          className={`size-3.5 transition-colors ${
+            isFavorite
+              ? "fill-yellow-400 text-yellow-400"
+              : theme === "dark"
+                ? "text-slate-500 hover:text-yellow-400"
+                : "text-slate-400 hover:text-yellow-500"
           }`}
         />
       </button>

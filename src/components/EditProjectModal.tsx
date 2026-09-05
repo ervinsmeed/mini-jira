@@ -8,10 +8,16 @@ import { useTranslation } from "react-i18next";
 import { api } from "../../convex/_generated/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
 
-export default function EditProjectModal({ project, onClose, theme }: any) {
+export default function EditProjectModal({
+  project,
+  onProjectUpdated,
+  onClose,
+  theme,
+}: any) {
   const { t } = useTranslation();
 
   const [name, setName] = useState(project.name ?? "");
+  const [description, setDescription] = useState(project.description ?? "");
   const [status, setStatus] = useState<"active" | "completed" | "archived">(
     project.status ?? "active",
   );
@@ -20,19 +26,30 @@ export default function EditProjectModal({ project, onClose, theme }: any) {
 
   useEffect(() => {
     setName(project.name ?? "");
+    setDescription(project.description ?? "");
     setStatus(project.status ?? "active");
-  }, [project._id]);
+  }, [project._id, project.name, project.description, project.status]);
 
   const handleSubmit = async (event: any) => {
     event.preventDefault();
 
-    if (!name.trim()) return;
+    const trimmedName = name.trim();
+    const trimmedDescription = description.trim();
 
-    await updateProject({
+    if (!trimmedName) return;
+
+    const updatedProject = await updateProject({
       id: project._id,
-      name: name.trim(),
+      name: trimmedName,
+      description: trimmedDescription,
       status,
     });
+
+    onProjectUpdated(updatedProject);
+
+    toast.success(t("editProjectModal.updated"));
+
+    onClose();
 
     toast.success(t("editProjectModal.updated"));
 
@@ -83,6 +100,28 @@ export default function EditProjectModal({ project, onClose, theme }: any) {
                 theme === "dark" ? "text-slate-300" : "text-slate-700"
               }`}
             >
+              {t("editProjectModal.description")}
+            </label>
+
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder={t("editProjectModal.descriptionPlaceholder")}
+              rows={4}
+              className={`w-full resize-none rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
+                theme === "dark"
+                  ? "border-slate-800 bg-slate-900 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
+                  : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
+              }`}
+            />
+          </div>
+
+          <div>
+            <label
+              className={`mb-2 block text-sm font-medium ${
+                theme === "dark" ? "text-slate-300" : "text-slate-700"
+              }`}
+            >
               {t("editProjectModal.status")}
             </label>
 
@@ -100,11 +139,9 @@ export default function EditProjectModal({ project, onClose, theme }: any) {
               }`}
             >
               <option value="active">{t("editProjectModal.active")}</option>
-
               <option value="completed">
                 {t("editProjectModal.completed")}
               </option>
-
               <option value="archived">{t("editProjectModal.archived")}</option>
             </select>
           </div>
