@@ -13,26 +13,35 @@ export default function CreateBoardModal({
   theme,
 }: any) {
   const { t } = useTranslation();
+
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+
   const createBoard = useMutation(api.boards.create);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
-    if (!name.trim()) return;
+    const trimmedName = name.trim();
+    const trimmedDescription = description.trim();
+
+    if (!trimmedName) return;
 
     const board = await createBoard({
-      name: name.trim(),
+      name: trimmedName,
+      description: trimmedDescription || undefined,
       workspaceId: workspaceId ?? undefined,
     });
 
     setName("");
+    setDescription("");
+
     onClose();
     onBoardCreated(board);
 
     toast.success(
       t("createBoardModal.created", {
-        name,
+        name: trimmedName,
       }),
     );
   };
@@ -73,6 +82,28 @@ export default function CreateBoardModal({
                   : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
               }`}
               required
+            />
+          </div>
+
+          <div>
+            <label
+              className={`block text-sm font-medium mb-2 ${
+                theme === "dark" ? "text-slate-300" : "text-slate-700"
+              }`}
+            >
+              {t("createBoardModal.description")}
+            </label>
+
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t("createBoardModal.descriptionPlaceholder")}
+              rows={4}
+              className={`w-full px-3 py-2 rounded-lg border resize-none focus:outline-none focus:ring-2 transition ${
+                theme === "dark"
+                  ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
+                  : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
+              }`}
             />
           </div>
 

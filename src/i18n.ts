@@ -33,9 +33,25 @@ i18n
             title: "Create New Board",
             boardName: "Board Name",
             placeholder: "e.g Web Design",
+            description: "Description",
+            descriptionPlaceholder: "Enter project description",
             create: "Create Board",
             created: "Board {{name}} created",
           },
+          template: "Task Template",
+          noTemplate: "Without Template",
+          templateNamePlaceholder: "Template name, e.g. Bug",
+          saveTemplate: "Save Template",
+          savingTemplate: "Saving...",
+          deleteTemplate: "Delete",
+          templateHint:
+            "The template saves the current title, description, priority and Story Points.",
+          templateNameRequired: "Enter a template name",
+          templateCreated: "Template created",
+          templateCreateError: "Failed to create template",
+          deleteTemplateQuestion: "Delete selected template?",
+          templateDeleted: "Template deleted",
+          templateDeleteError: "Failed to delete template",
 
           column: {
             edit: "Edit",
@@ -142,6 +158,8 @@ i18n
           editProjectModal: {
             title: "Edit Project",
             projectName: "Project Name",
+            description: "Description",
+            descriptionPlaceholder: "Enter project description",
             status: "Status",
             active: "Active",
             completed: "Completed",
@@ -195,6 +213,20 @@ i18n
             create: "Создать Workspace",
             created: 'Workspace "{{name}}" успешно создан',
           },
+          template: "Шаблон задачи",
+          noTemplate: "Без шаблона",
+          templateNamePlaceholder: "Название шаблона, например Bug",
+          saveTemplate: "Сохранить шаблон",
+          savingTemplate: "Сохранение...",
+          deleteTemplate: "Удалить",
+          templateHint:
+            "Шаблон сохраняет текущее название, описание, приоритет и Story Points.",
+          templateNameRequired: "Введите название шаблона",
+          templateCreated: "Шаблон создан",
+          templateCreateError: "Не удалось создать шаблон",
+          deleteTemplateQuestion: "Удалить выбранный шаблон?",
+          templateDeleted: "Шаблон удалён",
+          templateDeleteError: "Не удалось удалить шаблон",
 
           column: {
             edit: "Редактировать",
@@ -289,6 +321,8 @@ i18n
           editProjectModal: {
             title: "Редактировать проект",
             projectName: "Название проекта",
+            description: "Описание",
+            descriptionPlaceholder: "Введите описание проекта",
             status: "Статус",
             active: "Активный",
             completed: "Завершён",
@@ -296,6 +330,7 @@ i18n
             save: "Сохранить изменения",
             updated: "Проект успешно обновлён",
           },
+
           editColumn: {
             updated: "Колонка обновлена",
             title: "Редактировать колонку",

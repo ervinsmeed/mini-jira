@@ -130,6 +130,7 @@ async function getBoardPermissionAccess(ctx, boardId, permission) {
 export const create = mutation({
   args: {
     name: v.string(),
+    description: v.optional(v.string()),
     workspaceId: v.optional(v.id("workspaces")),
   },
 
@@ -162,6 +163,7 @@ export const create = mutation({
 
     const boardId = await ctx.db.insert("boards", {
       name: args.name,
+      description: args.description,
       userId: user._id,
       workspaceId: args.workspaceId,
       status: "active",
@@ -270,6 +272,7 @@ export const update = mutation({
   args: {
     id: v.id("boards"),
     name: v.optional(v.string()),
+    description: v.optional(v.string()),
     status: v.optional(
       v.union(
         v.literal("active"),
@@ -292,6 +295,10 @@ export const update = mutation({
 
     if (args.name !== undefined) {
       updates.name = args.name;
+    }
+
+    if (args.description !== undefined) {
+      updates.description = args.description;
     }
 
     if (args.status !== undefined) {

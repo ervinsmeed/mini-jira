@@ -6,10 +6,11 @@ import {
 } from "@dnd-kit/sortable";
 import { Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { useMutation } from "convex/react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 import { api } from "../../../convex/_generated/api";
 import TaskCard from "../TaskCard";
-import { useTranslation } from "react-i18next";
 
 import {
   DropdownMenu,
@@ -32,7 +33,6 @@ import {
   DialogTrigger,
 } from "./Dialog";
 
-import { toast } from "sonner";
 export default function Column({
   column,
   taskCount,
@@ -42,6 +42,8 @@ export default function Column({
   onEditColumn,
   selectedTaskIds,
   onToggleTaskSelection,
+  favoriteTaskIdSet,
+  onToggleTaskFavorite,
   theme,
 }: any) {
   const { t } = useTranslation();
@@ -75,7 +77,7 @@ export default function Column({
           <div
             className="size-4 rounded-full"
             style={{ backgroundColor: column.color }}
-          ></div>
+          />
 
           <h3
             className={`text-xs font-semibold uppercase tracking-wider ${
@@ -125,7 +127,7 @@ export default function Column({
                 onOpenChange={setShowDeleteConfirm}
               >
                 <DialogTrigger
-                  className={`flex items-center cursor-pointer ${
+                  className={`flex cursor-pointer items-center ${
                     theme === "dark"
                       ? "text-red-400 hover:bg-red-900"
                       : "text-red-600 hover:bg-red-100"
@@ -138,8 +140,8 @@ export default function Column({
                 <DialogContent
                   className={`max-w-md border ${
                     theme === "dark"
-                      ? "bg-slate-950 border-slate-800 text-slate-100"
-                      : "bg-white border-slate-200 text-slate-900"
+                      ? "border-slate-800 bg-slate-950 text-slate-100"
+                      : "border-slate-200 bg-white text-slate-900"
                   }`}
                 >
                   <DialogHeader>
@@ -190,12 +192,12 @@ export default function Column({
 
       <div
         ref={setNodeRef}
-        className={`space-y-4 min-h-[200px] p-2 rounded-lg ${
+        className={`min-h-[200px] space-y-4 rounded-lg p-2 ${
           theme === "dark" ? "bg-slate-900" : "bg-slate-200"
         }`}
       >
         <SortableContext
-          items={tasks.map((t: any) => t._id)}
+          items={tasks.map((task: any) => task._id)}
           strategy={verticalListSortingStrategy}
         >
           {tasks.map((task: any) => (
@@ -210,6 +212,8 @@ export default function Column({
               onClick={() => onTaskClick(task)}
               isSelected={selectedTaskIds.includes(task._id)}
               onToggleSelect={() => onToggleTaskSelection(task._id)}
+              isFavorite={favoriteTaskIdSet.has(task._id)}
+              onToggleFavorite={() => onToggleTaskFavorite(task._id)}
               theme={theme}
             />
           ))}

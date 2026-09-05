@@ -102,6 +102,19 @@ export default function Board({ board, theme, can }: BoardProps) {
         }
       : "skip",
   );
+  const favoriteTaskIdsResult = useQuery(
+    api.favorites.listTaskIds,
+    board?._id
+      ? {
+          boardId: board._id,
+        }
+      : "skip",
+  );
+
+  const favoriteTaskIds = favoriteTaskIdsResult ?? [];
+  const favoriteTaskIdSet = new Set(favoriteTaskIds);
+
+  const toggleTaskFavorite = useMutation(api.favorites.toggleTask);
   const projectMembers: any[] = (useQuery(
     api.boardMembers.list,
     board?._id
@@ -378,6 +391,11 @@ export default function Board({ board, theme, can }: BoardProps) {
 
     clearTaskSelection();
   };
+  const handleToggleTaskFavorite = async (taskId: Id<"tasks">) => {
+    await toggleTaskFavorite({
+      taskId,
+    });
+  };
   const handleDragStart = (event: DragStartEvent) => {
     const task = tasks.find((item) => item._id === event.active.id);
 
@@ -481,13 +499,25 @@ export default function Board({ board, theme, can }: BoardProps) {
           theme === "dark" ? "border-slate-800" : "border-slate-200"
         }`}
       >
-        <h1
-          className={`text-2xl font-bold transition-colors ${
-            theme === "dark" ? "text-slate-100" : "text-slate-900"
-          }`}
-        >
-          {board.name}
-        </h1>
+        <div className="min-w-0">
+          <h1
+            className={`break-words text-2xl font-bold transition-colors ${
+              theme === "dark" ? "text-slate-100" : "text-slate-900"
+            }`}
+          >
+            {board.name}
+          </h1>
+
+          {board.description && (
+            <p
+              className={`mt-1 max-w-2xl whitespace-pre-wrap break-words text-sm transition-colors ${
+                theme === "dark" ? "text-slate-400" : "text-slate-600"
+              }`}
+            >
+              {board.description}
+            </p>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-3">
           {can("analytics.view") && (
             <button
@@ -1035,6 +1065,8 @@ export default function Board({ board, theme, can }: BoardProps) {
                   onEditColumn={setEditingColumn}
                   selectedTaskIds={selectedTaskIds}
                   onToggleTaskSelection={toggleTaskSelection}
+                  favoriteTaskIdSet={favoriteTaskIdSet}
+                  onToggleTaskFavorite={handleToggleTaskFavorite}
                   theme={theme}
                 />
               ))}

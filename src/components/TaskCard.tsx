@@ -1,8 +1,9 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, CalendarDays } from "lucide-react";
-import { Progress } from "./ui/progress";
+import { CalendarDays, GripVertical, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
+
+import { Progress } from "./ui/progress";
 
 export default function TaskCard({
   task,
@@ -10,6 +11,8 @@ export default function TaskCard({
   onClick,
   isSelected = false,
   onToggleSelect,
+  isFavorite = false,
+  onToggleFavorite,
   isDragging = false,
   theme,
 }: any) {
@@ -32,7 +35,7 @@ export default function TaskCard({
   };
 
   const completedSubtasks = task.subtasks
-    ? task.subtasks.filter((st: any) => st.completed).length
+    ? task.subtasks.filter((subtask: any) => subtask.completed).length
     : 0;
 
   const totalSubtasks = task.subtasks ? task.subtasks.length : 0;
@@ -83,15 +86,15 @@ export default function TaskCard({
       ref={setNodeRef}
       style={style}
       onClick={onClick}
-      className={`p-6 rounded-md cursor-pointer transition-all border shadow-sm border-l-6 ${getPriorityColor(
+      className={`cursor-pointer rounded-md border border-l-6 p-6 shadow-sm transition-all ${getPriorityColor(
         task.priority,
       )} ${
         theme === "dark"
-          ? "bg-slate-950 hover:bg-slate-900 border-slate-800"
-          : "bg-white hover:bg-slate-50 border-slate-200"
+          ? "border-slate-800 bg-slate-950 hover:bg-slate-900"
+          : "border-slate-200 bg-white hover:bg-slate-50"
       } ${
         isDragging || isSortableDragging
-          ? "shadow-lg rotate-1 scale-105 opacity-50"
+          ? "rotate-1 scale-105 opacity-50 shadow-lg"
           : ""
       } ${isSelected ? "ring-2 ring-purple-500" : ""}`}
     >
@@ -120,25 +123,59 @@ export default function TaskCard({
         </div>
       )}
 
-      <div className="flex items-start justify-between mb-2">
+      <div className="mb-2 flex items-start justify-between gap-2">
         <h4
-          className={`font-semibold leading-tight flex-1 ${
+          className={`min-w-0 flex-1 break-words font-semibold leading-tight ${
             theme === "dark" ? "text-slate-100" : "text-slate-900"
           }`}
         >
           {task.title}
         </h4>
 
-        <div
-          className={`size-2 rounded-full ml-2 mt-1 shrink-0 ${getPriorityDot(
-            task.priority,
-          )}`}
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          {onToggleFavorite && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleFavorite();
+              }}
+              onPointerDown={(event) => event.stopPropagation()}
+              className={`rounded p-1 transition-colors ${
+                isFavorite
+                  ? "text-yellow-400"
+                  : theme === "dark"
+                    ? "text-slate-500 hover:text-yellow-400"
+                    : "text-slate-400 hover:text-yellow-500"
+              }`}
+              title={t("taskCard.favorite", {
+                defaultValue: isFavorite
+                  ? "Remove from favorites"
+                  : "Add to favorites",
+              })}
+              aria-label={
+                isFavorite
+                  ? "Remove task from favorites"
+                  : "Add task to favorites"
+              }
+            >
+              <Star
+                className={`size-4 ${
+                  isFavorite ? "fill-yellow-400 text-yellow-400" : ""
+                }`}
+              />
+            </button>
+          )}
+
+          <div
+            className={`size-2 rounded-full ${getPriorityDot(task.priority)}`}
+          />
+        </div>
       </div>
 
       {task.description && (
         <p
-          className={`mb-2 text-sm! leading-4 line-clamp-2 ${
+          className={`mb-2 line-clamp-2 text-sm! leading-4 ${
             theme === "dark" ? "text-slate-400" : "text-slate-500"
           }`}
         >
@@ -183,7 +220,6 @@ export default function TaskCard({
           }`}
         >
           <CalendarDays className="size-4" />
-
           <span>{formattedDeadline}</span>
         </div>
       )}
@@ -191,7 +227,7 @@ export default function TaskCard({
       {totalSubtasks > 0 && (
         <>
           <p
-            className={`text-sm! font-medium mb-2 ${
+            className={`mb-2 text-sm! font-medium ${
               theme === "dark" ? "text-slate-400" : "text-slate-500"
             }`}
           >
@@ -208,12 +244,12 @@ export default function TaskCard({
       <div
         {...attributes}
         {...listeners}
-        className={`mt-2 p-1 cursor-grab active:cursor-grabbing inline-flex ${
+        className={`mt-2 inline-flex cursor-grab p-1 active:cursor-grabbing ${
           theme === "dark"
             ? "text-slate-400 hover:text-slate-100"
             : "text-slate-500 hover:text-slate-900"
         }`}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <GripVertical className="size-4" />
       </div>

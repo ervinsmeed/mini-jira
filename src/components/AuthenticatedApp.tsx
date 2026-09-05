@@ -197,6 +197,12 @@ export default function AuthenticatedApp() {
     setEditingProject(project);
   };
 
+  const handleProjectUpdated = (updatedProject: any) => {
+    if (!updatedProject) return;
+
+    setCurrentBoard(updatedProject);
+  };
+
   const handleProjectMembers = (project: any) => {
     setMembersProject(project);
   };
@@ -285,6 +291,7 @@ export default function AuthenticatedApp() {
       {editingProject && (
         <EditProjectModal
           project={editingProject}
+          onProjectUpdated={handleProjectUpdated}
           onClose={() => setEditingProject(null)}
           theme={theme}
         />
