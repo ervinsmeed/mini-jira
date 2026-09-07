@@ -12,6 +12,7 @@ import {
   Star,
   Users,
   Shield,
+  BarChart3,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -47,6 +48,8 @@ export default function Sidebar({
   onWorkspaceRoles,
   onEditProject,
   onProjectMembers,
+  currentView,
+  onViewChange,
   can,
   theme,
   onThemeToggle,
@@ -168,7 +171,25 @@ export default function Sidebar({
               </SortableContext>
             </DndContext>
           </div>
+
+          {currentBoard && can("analytics.view") && (
+            <button
+              type="button"
+              onClick={() => onViewChange("analytics")}
+              className={`flex size-10 items-center justify-center rounded transition-colors ${
+                currentView === "analytics"
+                  ? "bg-purple-500 text-white"
+                  : theme === "dark"
+                    ? "bg-slate-900 text-slate-300 hover:bg-purple-600 hover:text-white"
+                    : "bg-slate-100 text-slate-700 hover:bg-purple-600 hover:text-white"
+              }`}
+              title="Analytics"
+            >
+              <BarChart3 className="size-4" />
+            </button>
+          )}
         </div>
+
         <button
           onClick={onToggleCollapsed}
           className={`p-2 transition-colors ${
@@ -397,7 +418,25 @@ export default function Sidebar({
             </SortableContext>
           </div>
         </DndContext>
+
+        {currentBoard && can("analytics.view") && (
+          <button
+            type="button"
+            onClick={() => onViewChange("analytics")}
+            className={`mt-4 flex w-full items-center gap-3 rounded-r-full px-4 py-3 text-sm font-semibold transition-colors ${
+              currentView === "analytics"
+                ? "bg-purple-500 text-white"
+                : theme === "dark"
+                  ? "text-slate-400 hover:bg-purple-600/20 hover:text-slate-100"
+                  : "text-slate-600 hover:bg-purple-100 hover:text-slate-900"
+            }`}
+          >
+            <BarChart3 className="size-4" />
+            <span>Analytics</span>
+          </button>
+        )}
       </div>
+
       <div
         className={`flex items-center justify-center space-x-2 rounded-lg p-2 transition-colors ${
           theme === "dark" ? "bg-slate-900" : "bg-slate-100"

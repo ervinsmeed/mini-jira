@@ -1,9 +1,10 @@
 import { useUser } from "@clerk/clerk-react";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import RolesModal from "./RolesModal";
 import Sidebar from "./Sidebar";
 import Board from "./Board";
+
 import CreateBoardModal from "./CreateBoardModal";
 import CreateWorkspaceModal from "./CreateWorkspaceModal";
 import EditProjectModal from "./EditProjectModal";
@@ -12,9 +13,13 @@ import ProjectMembersModal from "./ProjectMembersModal";
 import WorkspaceMembersModal from "./WorkspaceMembersModal";
 import { api } from "../../convex/_generated/api";
 
+const ProjectAnalytics = lazy(() => import("./ProjectAnalytics"));
 export default function AuthenticatedApp() {
   const [currentBoard, setCurrentBoard] = useState(null);
   const [currentWorkspace, setCurrentWorkspace] = useState(null);
+  const [currentView, setCurrentView] = useState<"board" | "analytics">(
+    "board",
+  );
   const [editingWorkspace, setEditingWorkspace] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
   const [membersProject, setMembersProject] = useState<any>(null);
@@ -169,6 +174,7 @@ export default function AuthenticatedApp() {
   const handleWorkspaceCreated = (workspace: any) => {
     setCurrentWorkspace(workspace);
     setCurrentBoard(null);
+    setCurrentView("board");
   };
 
   const handleThemeToggle = () => {
@@ -182,11 +188,13 @@ export default function AuthenticatedApp() {
 
   const handleBoardSelect = (board: any) => {
     setCurrentBoard(board);
+    setCurrentView("board");
   };
 
   const handleWorkspaceSelect = (workspace: any) => {
     setCurrentWorkspace(workspace);
     setCurrentBoard(null);
+    setCurrentView("board");
   };
 
   const handleEditWorkspace = (workspace: any) => {
@@ -251,6 +259,8 @@ export default function AuthenticatedApp() {
         onWorkspaceRoles={handleWorkspaceRoles}
         onEditProject={handleEditProject}
         onProjectMembers={handleProjectMembers}
+        currentView={currentView}
+        onViewChange={setCurrentView}
         theme={theme}
         onThemeToggle={handleThemeToggle}
         isCollapsed={sidebarCollapsed}
@@ -262,7 +272,28 @@ export default function AuthenticatedApp() {
           sidebarCollapsed ? "flex-1" : "ml-72 w-[calc(100vw-18rem)]"
         }`}
       >
-        <Board board={displayBoard} theme={theme} can={canProject} />
+        {currentView === "analytics" && displayBoard ? (
+          <Suspense
+            fallback={
+              <div
+                className={`flex h-screen flex-1 items-center justify-center ${
+                  theme === "dark" ? "bg-slate-950" : "bg-slate-50"
+                }`}
+              >
+                <div className="size-10 animate-spin rounded-full border-4 border-slate-600 border-t-purple-500" />
+              </div>
+            }
+          >
+            <ProjectAnalytics
+              board={displayBoard}
+              theme={theme}
+              can={canProject}
+              onBack={() => setCurrentView("board")}
+            />
+          </Suspense>
+        ) : (
+          <Board board={displayBoard} theme={theme} can={canProject} />
+        )}
       </div>
 
       <CreateBoardModal
