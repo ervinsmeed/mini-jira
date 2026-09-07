@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 async function getTaskPermissionAccess(ctx, boardId, permission) {
   const identity = await ctx.auth.getUserIdentity();
 
@@ -270,6 +271,22 @@ export const list = query({
     }
 
     return [];
+  },
+});
+
+export const listPaginated = query({
+  args: {
+    boardId: v.id("boards"),
+    paginationOpts: paginationOptsValidator,
+  },
+
+  handler: async (ctx, args) => {
+    await getTaskPermissionAccess(ctx, args.boardId, "task.view");
+
+    return await ctx.db
+      .query("tasks")
+      .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+      .paginate(args.paginationOpts);
   },
 });
 

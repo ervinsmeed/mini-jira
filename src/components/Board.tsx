@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import RecentTasksMenu from "./ui/RecentTasksMenu";
 import { Plus } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import {
   closestCenter,
   DndContext,
@@ -76,13 +76,20 @@ export default function Board({ board, theme, can }: BoardProps) {
     "manual" | "title" | "deadline" | "created" | "storyPoints" | "priority"
   >("manual");
 
-  const tasksResult = useQuery(
-    api.tasks.list,
+  const {
+    results: paginatedTasks,
+    status: tasksPaginationStatus,
+    loadMore: loadMoreTasks,
+  } = usePaginatedQuery(
+    api.tasks.listPaginated,
     board?._id
       ? {
           boardId: board._id,
         }
       : "skip",
+    {
+      initialNumItems: 12,
+    },
   );
 
   const analytics = useQuery(
@@ -125,7 +132,7 @@ export default function Board({ board, theme, can }: BoardProps) {
       : "skip",
   ) ?? []) as any[];
 
-  const tasks: any[] = (tasksResult ?? []) as any[];
+  const tasks: any[] = paginatedTasks as any[];
   const columns: any[] = (columnsResult ?? []) as any[];
 
   const visibleTasks = tasks
@@ -1113,6 +1120,26 @@ export default function Board({ board, theme, can }: BoardProps) {
             </DragOverlay>
           </DndContext>
         </div>
+
+        {(tasksPaginationStatus === "CanLoadMore" ||
+          tasksPaginationStatus === "LoadingMore") && (
+          <div className="sticky left-0 mt-4 flex w-full justify-center">
+            <button
+              type="button"
+              disabled={tasksPaginationStatus === "LoadingMore"}
+              onClick={() => loadMoreTasks(12)}
+              className={`rounded-md border px-5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                theme === "dark"
+                  ? "border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                  : "border-slate-300 bg-white text-slate-900 hover:bg-slate-100"
+              }`}
+            >
+              {tasksPaginationStatus === "LoadingMore"
+                ? "Loading..."
+                : "Load more tasks"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Модальное окно задачи */}
