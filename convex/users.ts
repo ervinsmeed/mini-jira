@@ -7,26 +7,64 @@ import {
 import { v } from "convex/values";
 
 export const create = mutation({
-  args: {
-    clerkId: v.string(),
-    email: v.string(),
-    name: v.string(),
-  },
-  handler: async (ctx, args) => {
-    // Исправлено: правильно расставлены кавычки и скобки, исправлено ckerkId -> clerkId
-    const exisitingUser = await ctx.db
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const existingUser = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    if (exisitingUser) {
-      return exisitingUser._id;
+    const email = identity.email?.trim().toLowerCase();
+
+    if (!email) {
+      throw new Error("Email must be present in Clerk JWT claims (email)");
+    }
+
+    if (identity.emailVerified !== true) {
+      throw new Error(
+        "Email must be verified in Clerk JWT claims (email_verified: true)",
+      );
+    }
+
+    const name =
+      identity.name?.trim() ||
+      [identity.givenName?.trim(), identity.familyName?.trim()]
+        .filter(Boolean)
+        .join(" ") ||
+      identity.nickname?.trim() ||
+      identity.preferredUsername?.trim() ||
+      "User";
+
+    // Also detect legacy emails stored with whitespace or mixed case.
+    const users = await ctx.db.query("users").collect();
+    const emailConflict = users.some(
+      (user) =>
+        user.clerkId !== identity.subject &&
+        user.email.trim().toLowerCase() === email,
+    );
+
+    if (emailConflict) {
+      throw new Error("Email is already associated with another user");
+    }
+
+    if (existingUser) {
+      if (existingUser.email !== email || existingUser.name !== name) {
+        await ctx.db.patch("users", existingUser._id, { email, name });
+      }
+
+      return existingUser._id;
     }
 
     const userId = await ctx.db.insert("users", {
-      clerkId: args.clerkId,
-      email: args.email,
-      name: args.name,
+      clerkId: identity.subject,
+      email,
+      name,
     });
 
     return userId;

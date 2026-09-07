@@ -403,6 +403,10 @@ export default function Board({ board, theme, can }: BoardProps) {
     });
   };
   const handleDragStart = (event: DragStartEvent) => {
+    if (!canUpdateTask) {
+      return;
+    }
+
     const task = tasks.find((item) => item._id === event.active.id);
 
     setActiveTask(task ?? null);
@@ -412,6 +416,10 @@ export default function Board({ board, theme, can }: BoardProps) {
     const { active, over } = event;
 
     setActiveTask(null);
+
+    if (!canUpdateTask) {
+      return;
+    }
 
     if (!over) return;
 
@@ -867,6 +875,7 @@ export default function Board({ board, theme, can }: BoardProps) {
       <div className="flex-1 overflow-auto p-6">
         <div className="flex h-full min-w-max items-start space-x-6">
           <DndContext
+            key={canUpdateTask ? "dnd-enabled" : "dnd-disabled"}
             sensors={canUpdateTask ? sensors : []}
             collisionDetection={closestCenter}
             onDragStart={handleDragStart}

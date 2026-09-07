@@ -89,11 +89,9 @@ export default function AuthenticatedApp() {
   // Create user in Convex
   useEffect(() => {
     if (user) {
-      createUser({
-        clerkId: user.id,
-        email: user.emailAddresses[0]?.emailAddress || "",
-        name: user.fullName || user.firstName || "User",
-      }).catch(() => {});
+      createUser({}).catch((error) => {
+        console.error("Failed to synchronize user:", error);
+      });
     }
   }, [user, createUser]);
 
