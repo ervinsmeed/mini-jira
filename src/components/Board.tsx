@@ -935,8 +935,8 @@ export default function Board({ board, theme, can }: BoardProps) {
               }`}
             >
               {tasksPaginationStatus === "LoadingMore"
-                ? "Loading..."
-                : "Load more tasks"}
+                ? t("pagination.loading")
+                : t("pagination.loadMore")}
             </button>
           </div>
         )}

@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useTranslation } from "react-i18next";
 
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -47,10 +48,21 @@ const PRIORITY_COLORS: Record<string, string> = {
   low: "#22c55e",
 };
 
+const STATUS_TRANSLATION_KEYS: Record<string, string> = {
+  backlog: "analytics.status.backlog",
+  "to do": "analytics.status.toDo",
+  "in progress": "analytics.status.inProgress",
+  review: "analytics.status.review",
+  testing: "analytics.status.testing",
+  done: "analytics.status.done",
+};
+
 export default function AnalyticsCharts({
   analytics,
   theme,
 }: AnalyticsChartsProps) {
+  const { t } = useTranslation();
+
   const textColor = theme === "dark" ? "#cbd5e1" : "#475569";
   const gridColor = theme === "dark" ? "#334155" : "#e2e8f0";
   const tooltipBackground = theme === "dark" ? "#0f172a" : "#ffffff";
@@ -68,29 +80,58 @@ export default function AnalyticsCharts({
     color: textColor,
   };
 
+  const localizedStatusData = analytics.byStatus.map((status) => {
+    const normalizedName = status.name.trim().toLowerCase();
+    const translationKey = STATUS_TRANSLATION_KEYS[normalizedName];
+
+    return {
+      ...status,
+      name: translationKey ? t(translationKey) : status.name,
+    };
+  });
+
+  const localizedPriorityData = analytics.byPriority.map((priority) => ({
+    ...priority,
+    name: t(`analytics.priority.${priority.priority}`, {
+      defaultValue: priority.name,
+    }),
+  }));
+
+  const localizedAssigneeData = analytics.byAssignee.map((assignee) => ({
+    ...assignee,
+    name:
+      assignee.assigneeId === null ? t("analytics.unassigned") : assignee.name,
+  }));
+
   return (
     <div className="grid w-full min-w-0 gap-6 px-6 pb-6 xl:grid-cols-3">
       <div className={`min-w-0 rounded-lg border p-4 ${chartCardClass}`}>
-        <h3 className="mb-4 text-lg font-semibold">Tasks by status</h3>
+        <h3 className="mb-4 text-lg font-semibold">
+          {t("analytics.byStatus")}
+        </h3>
 
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={analytics.byStatus}>
+            <BarChart data={localizedStatusData}>
               <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
+
               <XAxis
                 dataKey="name"
                 stroke={textColor}
                 tick={{ fill: textColor, fontSize: 12 }}
               />
+
               <YAxis
                 allowDecimals={false}
                 stroke={textColor}
                 tick={{ fill: textColor, fontSize: 12 }}
               />
+
               <Tooltip contentStyle={tooltipStyle} />
+
               <Bar
                 dataKey="count"
-                name="Tasks"
+                name={t("analytics.tasks")}
                 fill="#8b5cf6"
                 radius={[4, 4, 0, 0]}
               />
@@ -100,13 +141,15 @@ export default function AnalyticsCharts({
       </div>
 
       <div className={`min-w-0 rounded-lg border p-4 ${chartCardClass}`}>
-        <h3 className="mb-4 text-lg font-semibold">Tasks by priority</h3>
+        <h3 className="mb-4 text-lg font-semibold">
+          {t("analytics.byPriority")}
+        </h3>
 
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={analytics.byPriority}
+                data={localizedPriorityData}
                 dataKey="count"
                 nameKey="name"
                 cx="50%"
@@ -114,13 +157,14 @@ export default function AnalyticsCharts({
                 outerRadius={90}
                 label
               >
-                {analytics.byPriority.map((item) => (
+                {localizedPriorityData.map((item) => (
                   <Cell
                     key={item.priority}
                     fill={PRIORITY_COLORS[item.priority] ?? "#8b5cf6"}
                   />
                 ))}
               </Pie>
+
               <Tooltip contentStyle={tooltipStyle} />
               <Legend wrapperStyle={{ color: textColor }} />
             </PieChart>
@@ -129,29 +173,35 @@ export default function AnalyticsCharts({
       </div>
 
       <div className={`min-w-0 rounded-lg border p-4 ${chartCardClass}`}>
-        <h3 className="mb-4 text-lg font-semibold">Tasks by assignee</h3>
+        <h3 className="mb-4 text-lg font-semibold">
+          {t("analytics.byAssignee")}
+        </h3>
 
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={analytics.byAssignee} layout="vertical">
+            <BarChart data={localizedAssigneeData} layout="vertical">
               <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
+
               <XAxis
                 type="number"
                 allowDecimals={false}
                 stroke={textColor}
                 tick={{ fill: textColor, fontSize: 12 }}
               />
+
               <YAxis
                 type="category"
                 dataKey="name"
-                width={100}
+                width={110}
                 stroke={textColor}
                 tick={{ fill: textColor, fontSize: 12 }}
               />
+
               <Tooltip contentStyle={tooltipStyle} />
+
               <Bar
                 dataKey="count"
-                name="Tasks"
+                name={t("analytics.tasks")}
                 fill="#06b6d4"
                 radius={[0, 4, 4, 0]}
               />
