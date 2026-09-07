@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { assertRoleDelegation } from "./lib/roleDelegation";
 
 async function getProjectMemberManagementAccess(ctx, boardId) {
   const identity = await ctx.auth.getUserIdentity();
@@ -23,12 +24,37 @@ async function getProjectMemberManagementAccess(ctx, boardId) {
     throw new Error("Project not found");
   }
 
-  const isOwner = board.userId === currentUser._id;
+  const workspace = board.workspaceId
+    ? await ctx.db.get(board.workspaceId)
+    : null;
+
+  if (board.workspaceId && !workspace) {
+    throw new Error("Workspace not found");
+  }
+
+  const isWorkspaceOwner = workspace?.ownerId === currentUser._id;
+  const isProjectOwner = board.userId === currentUser._id;
+
+  if (workspace && isProjectOwner && !isWorkspaceOwner) {
+    const workspaceMembership = await ctx.db
+      .query("workspaceMembers")
+      .withIndex("by_workspace_user", (q) =>
+        q.eq("workspaceId", workspace._id).eq("userId", currentUser._id),
+      )
+      .unique();
+
+    if (!workspaceMembership) {
+      throw new Error("Project owner must have active workspace access");
+    }
+  }
+
+  const isOwner = isWorkspaceOwner || isProjectOwner;
 
   if (isOwner) {
     return {
       currentUser,
       board,
+      workspace,
       isOwner: true,
       currentRole: null,
     };
@@ -62,6 +88,7 @@ async function getProjectMemberManagementAccess(ctx, boardId) {
   return {
     currentUser,
     board,
+    workspace,
     isOwner: false,
     currentRole,
   };
@@ -100,7 +127,15 @@ export const list = query({
       )
       .unique();
 
-    const isOwner = board.userId === currentUser._id;
+    const workspace = board.workspaceId
+      ? await ctx.db.get(board.workspaceId)
+      : null;
+    const isOwner = board.userId === currentUser._id ||
+      workspace?.ownerId === currentUser._id;
+
+    if (isOwner) {
+      await getProjectMemberManagementAccess(ctx, args.boardId);
+    }
 
     if (!isOwner && !currentMembership) {
       throw new Error("Access denied");
@@ -153,7 +188,8 @@ export const addByEmail = mutation({
   },
 
   handler: async (ctx, args) => {
-    const { board } = await getProjectMemberManagementAccess(ctx, args.boardId);
+    const { currentUser, board, workspace } =
+      await getProjectMemberManagementAccess(ctx, args.boardId);
 
     const email = args.email.trim().toLowerCase();
 
@@ -170,6 +206,29 @@ export const addByEmail = mutation({
       throw new Error("Owner is already in project");
     }
 
+    if (user._id === workspace?.ownerId) {
+      throw new Error("Workspace owner already has project access");
+    }
+
+    if (user._id === currentUser._id) {
+      throw new Error("You cannot add yourself as a project member");
+    }
+
+    if (board.workspaceId && user._id !== workspace?.ownerId) {
+      const workspaceMembership = await ctx.db
+        .query("workspaceMembers")
+        .withIndex("by_workspace_user", (q) =>
+          q.eq("workspaceId", board.workspaceId).eq("userId", user._id),
+        )
+        .unique();
+
+      if (!workspaceMembership) {
+        throw new Error(
+          "User must be a workspace member before being added to the project",
+        );
+      }
+    }
+
     const existingMember = await ctx.db
       .query("boardMembers")
       .withIndex("by_board_user", (q) =>
@@ -179,23 +238,6 @@ export const addByEmail = mutation({
 
     if (existingMember) {
       throw new Error("User is already a member");
-    }
-
-    if (board.workspaceId) {
-      const workspaceMembership = await ctx.db
-        .query("workspaceMembers")
-        .withIndex("by_workspace_user", (q) =>
-          q.eq("workspaceId", board.workspaceId).eq("userId", user._id),
-        )
-        .unique();
-
-      if (!workspaceMembership) {
-        await ctx.db.insert("workspaceMembers", {
-          workspaceId: board.workspaceId,
-          userId: user._id,
-          joinedAt: Date.now(),
-        });
-      }
     }
 
     const membershipId = await ctx.db.insert("boardMembers", {
@@ -215,11 +257,15 @@ export const remove = mutation({
   },
 
   handler: async (ctx, args) => {
-    const { board, isOwner, currentRole } =
+    const { board, workspace, isOwner, currentRole } =
       await getProjectMemberManagementAccess(ctx, args.boardId);
 
     if (args.userId === board.userId) {
       throw new Error("Project owner cannot be removed");
+    }
+
+    if (args.userId === workspace?.ownerId) {
+      throw new Error("Workspace owner cannot be removed");
     }
 
     const membership = await ctx.db
@@ -258,7 +304,7 @@ export const changeRole = mutation({
   },
 
   handler: async (ctx, args) => {
-    const { board, isOwner, currentRole } =
+    const { currentUser, board, workspace, isOwner, currentRole } =
       await getProjectMemberManagementAccess(ctx, args.boardId);
 
     if (!board.workspaceId) {
@@ -267,6 +313,14 @@ export const changeRole = mutation({
 
     if (args.userId === board.userId) {
       throw new Error("Project owner role cannot be changed");
+    }
+
+    if (args.userId === workspace?.ownerId) {
+      throw new Error("Workspace owner role cannot be changed");
+    }
+
+    if (args.userId === currentUser._id) {
+      throw new Error("You cannot assign a role to yourself");
     }
 
     const membership = await ctx.db
@@ -285,6 +339,8 @@ export const changeRole = mutation({
     if (!role || role.workspaceId !== board.workspaceId) {
       throw new Error("Role not found");
     }
+
+    assertRoleDelegation({ isOwner, currentRole }, board.workspaceId, role);
 
     if (!isOwner && currentRole) {
       if (role.level >= currentRole.level) {
