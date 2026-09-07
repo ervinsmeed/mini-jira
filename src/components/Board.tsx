@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import RecentTasksMenu from "./ui/RecentTasksMenu";
 import { Plus } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -115,6 +115,7 @@ export default function Board({ board, theme, can }: BoardProps) {
   const favoriteTaskIdSet = new Set(favoriteTaskIds);
 
   const toggleTaskFavorite = useMutation(api.favorites.toggleTask);
+  const recordRecentTaskView = useMutation(api.recentTasks.recordView);
   const projectMembers: any[] = (useQuery(
     api.boardMembers.list,
     board?._id
@@ -396,6 +397,15 @@ export default function Board({ board, theme, can }: BoardProps) {
       taskId,
     });
   };
+  const handleTaskClick = (task: Doc<"tasks">) => {
+    setSelectedTask(task);
+
+    void recordRecentTaskView({
+      taskId: task._id,
+    }).catch((error) => {
+      console.error("Failed to record recent task:", error);
+    });
+  };
   const handleDragStart = (event: DragStartEvent) => {
     const task = tasks.find((item) => item._id === event.active.id);
 
@@ -518,7 +528,9 @@ export default function Board({ board, theme, can }: BoardProps) {
             </p>
           )}
         </div>
+
         <div className="flex flex-wrap items-center gap-3">
+          <RecentTasksMenu theme={theme} onTaskClick={handleTaskClick} />
           {can("analytics.view") && (
             <button
               type="button"
@@ -1061,7 +1073,7 @@ export default function Board({ board, theme, can }: BoardProps) {
                   taskCount={getTaskCount(column._id)}
                   tasks={getVisibleTasksByColumn(column._id)}
                   allTasks={tasks}
-                  onTaskClick={setSelectedTask}
+                  onTaskClick={handleTaskClick}
                   onEditColumn={setEditingColumn}
                   selectedTaskIds={selectedTaskIds}
                   onToggleTaskSelection={toggleTaskSelection}

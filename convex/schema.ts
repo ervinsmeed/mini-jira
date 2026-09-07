@@ -109,6 +109,18 @@ export default defineSchema({
     .index("by_user_task", ["userId", "taskId"])
     .index("by_board", ["boardId"])
     .index("by_task", ["taskId"]),
+  recentTasks: defineTable({
+    userId: v.id("users"),
+    taskId: v.id("tasks"),
+    boardId: v.id("boards"),
+    viewedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_viewed_at", ["userId", "viewedAt"])
+    .index("by_user_task", ["userId", "taskId"])
+    .index("by_task", ["taskId"])
+    .index("by_board", ["boardId"]),
+
   columns: defineTable({
     name: v.string(),
     color: v.string(),
