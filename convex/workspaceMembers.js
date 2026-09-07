@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { assertRoleDelegation } from "./lib/roleDelegation";
 
 async function getMemberManagementAccess(ctx, workspaceId) {
   const identity = await ctx.auth.getUserIdentity();
@@ -242,13 +243,17 @@ export const changeRole = mutation({
   },
 
   handler: async (ctx, args) => {
-    const { workspace, isOwner, currentRole } = await getMemberManagementAccess(
+    const { currentUser, workspace, isOwner, currentRole } = await getMemberManagementAccess(
       ctx,
       args.workspaceId,
     );
 
     if (args.userId === workspace.ownerId) {
       throw new Error("Workspace owner role cannot be changed");
+    }
+
+    if (args.userId === currentUser._id) {
+      throw new Error("You cannot assign a role to yourself");
     }
 
     const membership = await ctx.db
@@ -271,6 +276,8 @@ export const changeRole = mutation({
     if (role.workspaceId !== args.workspaceId) {
       throw new Error("Role does not belong to this workspace");
     }
+
+    assertRoleDelegation({ isOwner, currentRole }, args.workspaceId, role);
 
     if (!isOwner && currentRole) {
       if (role.level >= currentRole.level) {

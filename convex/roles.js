@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { assertRoleDelegation } from "./lib/roleDelegation";
 
 const permissionValidator = v.union(
   v.literal("project.view"),
@@ -97,6 +98,7 @@ export const create = mutation({
     if (!isOwner && currentRole && args.level >= currentRole.level) {
       throw new Error("You cannot create a role with equal or higher level");
     }
+    assertRoleDelegation({ isOwner, currentRole }, args.workspaceId, args);
     const existingRoles = await ctx.db
       .query("roles")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
@@ -140,7 +142,7 @@ export const update = mutation({
       throw new Error("Role not found");
     }
 
-    const { isOwner, currentRole } = await getRoleManagementAccess(
+    const { user, isOwner, currentRole } = await getRoleManagementAccess(
       ctx,
       role.workspaceId,
     );
@@ -152,6 +154,36 @@ export const update = mutation({
 
       if (args.level !== undefined && args.level >= currentRole.level) {
         throw new Error("You cannot set an equal or higher role level");
+      }
+    }
+
+    const nextRole = {
+      workspaceId: role.workspaceId,
+      level: args.level ?? role.level,
+      permissions: args.permissions ?? role.permissions,
+    };
+    assertRoleDelegation({ isOwner, currentRole }, role.workspaceId, nextRole);
+
+    if (!isOwner) {
+      const workspaceMemberships = await ctx.db
+        .query("workspaceMembers")
+        .withIndex("by_user", (q) => q.eq("userId", user._id))
+        .collect();
+      const projectMemberships = await ctx.db
+        .query("boardMembers")
+        .withIndex("by_user", (q) => q.eq("userId", user._id))
+        .collect();
+      const assignedToSelf = [...workspaceMemberships, ...projectMemberships].some(
+        (membership) => membership.roleId === role._id,
+      );
+
+      if (
+        assignedToSelf && (
+          nextRole.level > role.level ||
+          nextRole.permissions.some((permission) => !role.permissions.includes(permission))
+        )
+      ) {
+        throw new Error("You cannot increase a role assigned to yourself");
       }
     }
 
