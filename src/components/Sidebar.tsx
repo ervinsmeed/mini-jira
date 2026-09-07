@@ -295,7 +295,23 @@ export default function Sidebar({
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
-                        onDeleteWorkspace(workspace._id);
+
+                        const confirmation = window.prompt(
+                          `To delete the workspace and all its projects, enter its exact name: ${workspace.name}`,
+                        );
+
+                        if (confirmation === null) {
+                          return;
+                        }
+
+                        if (confirmation.trim() !== workspace.name.trim()) {
+                          window.alert(
+                            "The workspace name does not match. Deletion cancelled.",
+                          );
+                          return;
+                        }
+
+                        void onDeleteWorkspace(workspace._id);
                         setShowDeleteWorkspaceConfirm(null);
                       }}
                       className="text-xs text-red-400 hover:text-red-500"
@@ -608,13 +624,39 @@ function SortableBoardItem({
         (showDeleteConfirm === board._id ? (
           <div className="flex items-center space-x-1">
             <button
-              onClick={() => handleDeleteBoard(board._id)}
-              className="p-1 text-red-400 hover:text-red-500 text-xs"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+
+                const confirmation = window.prompt(
+                  `To delete the project, enter its exact name: ${board.name}`,
+                );
+
+                if (confirmation === null) {
+                  return;
+                }
+
+                if (confirmation.trim() !== board.name.trim()) {
+                  window.alert(
+                    "The project name does not match. Deletion cancelled.",
+                  );
+                  return;
+                }
+
+                void handleDeleteBoard(board._id);
+              }}
+              className="p-1 text-xs text-red-400 hover:text-red-500"
             >
               Yes
             </button>
-
-            <button onClick={() => setShowDeleteConfirm(null)} className="p-1">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setShowDeleteConfirm(null);
+              }}
+              className="p-1"
+            >
               No
             </button>
           </div>

@@ -500,7 +500,6 @@ export const updateOrder = mutation({
     return await ctx.db.get("tasks", args.taskId);
   },
 });
-
 export const remove = mutation({
   args: {
     id: v.id("tasks"),
@@ -515,7 +514,32 @@ export const remove = mutation({
 
     await getTaskPermissionAccess(ctx, task.boardId, "task.delete");
 
-    await ctx.db.delete("tasks", args.id);
+    const comments = await ctx.db
+      .query("comments")
+      .withIndex("by_task", (q) => q.eq("taskId", task._id))
+      .collect();
+
+    for (const comment of comments) {
+      await ctx.db.delete("comments", comment._id);
+    }
+
+    const activityLogs = await ctx.db
+      .query("activityLogs")
+      .withIndex("by_task", (q) => q.eq("taskId", task._id))
+      .collect();
+
+    for (const activityLog of activityLogs) {
+      await ctx.db.delete("activityLogs", activityLog._id);
+    }
+
+    const favorites = await ctx.db
+      .query("favorites")
+      .withIndex("by_task", (q) => q.eq("taskId", task._id))
+      .collect();
+
+    for (const favorite of favorites) {
+      await ctx.db.delete("favorites", favorite._id);
+    }
 
     if (task.taskType === "epic") {
       const tasks = await ctx.db
@@ -532,6 +556,12 @@ export const remove = mutation({
         }
       }
     }
+
+    await ctx.db.delete("tasks", args.id);
+
+    return {
+      deletedTaskId: args.id,
+    };
   },
 });
 export const startTimer = mutation({
@@ -867,9 +897,10 @@ export const bulkRemove = mutation({
   },
 
   handler: async (ctx, args) => {
+    const uniqueTaskIds = [...new Set(args.taskIds)];
     const tasksToDelete = [];
 
-    for (const taskId of args.taskIds) {
+    for (const taskId of uniqueTaskIds) {
       const task = await ctx.db.get("tasks", taskId);
 
       if (!task) {
@@ -879,6 +910,35 @@ export const bulkRemove = mutation({
       await getTaskPermissionAccess(ctx, task.boardId, "task.delete");
 
       tasksToDelete.push(task);
+    }
+
+    for (const task of tasksToDelete) {
+      const comments = await ctx.db
+        .query("comments")
+        .withIndex("by_task", (q) => q.eq("taskId", task._id))
+        .collect();
+
+      for (const comment of comments) {
+        await ctx.db.delete("comments", comment._id);
+      }
+
+      const activityLogs = await ctx.db
+        .query("activityLogs")
+        .withIndex("by_task", (q) => q.eq("taskId", task._id))
+        .collect();
+
+      for (const activityLog of activityLogs) {
+        await ctx.db.delete("activityLogs", activityLog._id);
+      }
+
+      const favorites = await ctx.db
+        .query("favorites")
+        .withIndex("by_task", (q) => q.eq("taskId", task._id))
+        .collect();
+
+      for (const favorite of favorites) {
+        await ctx.db.delete("favorites", favorite._id);
+      }
     }
 
     for (const task of tasksToDelete) {
