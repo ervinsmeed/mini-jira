@@ -263,7 +263,12 @@ export const remove = mutation({
 
     const tasks = await ctx.db
       .query("tasks")
-      .filter((q) => q.eq(q.field("columnId"), args.id))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("columnId"), args.id),
+          q.eq(q.field("boardId"), column.boardId),
+        ),
+      )
       .collect();
 
     for (const task of tasks) {

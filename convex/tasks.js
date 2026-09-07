@@ -255,7 +255,12 @@ export const list = query({
 
       const tasks = await ctx.db
         .query("tasks")
-        .filter((q) => q.eq(q.field("columnId"), args.columnId))
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("columnId"), args.columnId),
+            q.eq(q.field("boardId"), column.boardId),
+          ),
+        )
         .collect();
 
       return tasks.sort((a, b) => {
@@ -405,6 +410,16 @@ export const update = mutation({
     }
 
     if (args.columnId !== undefined) {
+      const column = await ctx.db.get("columns", args.columnId);
+
+      if (!column) {
+        throw new Error("Column not found");
+      }
+
+      if (column.boardId !== task.boardId) {
+        throw new Error("Column does not belong to this project");
+      }
+
       updates.columnId = args.columnId;
     }
 
@@ -558,9 +573,6 @@ export const remove = mutation({
       await ctx.db.delete("favorites", favorite._id);
     }
 
-    for (const recentTaskEntry of recentTaskEntries) {
-      await ctx.db.delete("recentTasks", recentTaskEntry._id);
-    }
     const recentTaskEntries = await ctx.db
       .query("recentTasks")
       .withIndex("by_task", (q) => q.eq("taskId", task._id))
