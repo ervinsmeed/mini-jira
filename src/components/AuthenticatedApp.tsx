@@ -14,12 +14,13 @@ import WorkspaceMembersModal from "./WorkspaceMembersModal";
 import { api } from "../../convex/_generated/api";
 
 const ProjectAnalytics = lazy(() => import("./ProjectAnalytics"));
+const Profile = lazy(() => import("./Profile"));
 export default function AuthenticatedApp() {
   const [currentBoard, setCurrentBoard] = useState(null);
   const [currentWorkspace, setCurrentWorkspace] = useState(null);
-  const [currentView, setCurrentView] = useState<"board" | "analytics">(
-    "board",
-  );
+  const [currentView, setCurrentView] = useState<
+    "board" | "analytics" | "profile"
+  >("board");
   const [editingWorkspace, setEditingWorkspace] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
   const [membersProject, setMembersProject] = useState<any>(null);
@@ -272,28 +273,30 @@ export default function AuthenticatedApp() {
           sidebarCollapsed ? "flex-1" : "ml-72 w-[calc(100vw-18rem)]"
         }`}
       >
-        {currentView === "analytics" && displayBoard ? (
-          <Suspense
-            fallback={
-              <div
-                className={`flex h-screen flex-1 items-center justify-center ${
-                  theme === "dark" ? "bg-slate-950" : "bg-slate-50"
-                }`}
-              >
-                <div className="size-10 animate-spin rounded-full border-4 border-slate-600 border-t-purple-500" />
-              </div>
-            }
-          >
+        <Suspense
+          fallback={
+            <div
+              className={`flex h-screen flex-1 items-center justify-center ${
+                theme === "dark" ? "bg-slate-950" : "bg-slate-50"
+              }`}
+            >
+              <div className="size-10 animate-spin rounded-full border-4 border-slate-600 border-t-purple-500" />
+            </div>
+          }
+        >
+          {currentView === "profile" ? (
+            <Profile theme={theme} onBack={() => setCurrentView("board")} />
+          ) : currentView === "analytics" && displayBoard ? (
             <ProjectAnalytics
               board={displayBoard}
               theme={theme}
               can={canProject}
               onBack={() => setCurrentView("board")}
             />
-          </Suspense>
-        ) : (
-          <Board board={displayBoard} theme={theme} can={canProject} />
-        )}
+          ) : (
+            <Board board={displayBoard} theme={theme} can={canProject} />
+          )}
+        </Suspense>
       </div>
 
       <CreateBoardModal

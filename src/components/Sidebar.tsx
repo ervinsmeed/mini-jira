@@ -13,6 +13,7 @@ import {
   Users,
   Shield,
   BarChart3,
+  UserRound,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -188,6 +189,20 @@ export default function Sidebar({
               <BarChart3 className="size-4" />
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => onViewChange("profile")}
+            className={`flex size-10 items-center justify-center rounded transition-colors ${
+              currentView === "profile"
+                ? "bg-purple-500 text-white"
+                : theme === "dark"
+                  ? "bg-slate-900 text-slate-300 hover:bg-purple-600 hover:text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-purple-600 hover:text-white"
+            }`}
+            title="Profile"
+          >
+            <UserRound className="size-4" />
+          </button>
         </div>
 
         <button
@@ -435,6 +450,21 @@ export default function Sidebar({
             <span>Analytics</span>
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={() => onViewChange("profile")}
+          className={`mt-2 flex w-full items-center gap-3 rounded-r-full px-4 py-3 text-sm font-semibold transition-colors ${
+            currentView === "profile"
+              ? "bg-purple-500 text-white"
+              : theme === "dark"
+                ? "text-slate-400 hover:bg-purple-600/20 hover:text-slate-100"
+                : "text-slate-600 hover:bg-purple-100 hover:text-slate-900"
+          }`}
+        >
+          <UserRound className="size-4" />
+          <span>Profile</span>
+        </button>
       </div>
 
       <div
