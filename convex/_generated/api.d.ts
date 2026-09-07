@@ -13,6 +13,7 @@ import type * as boardMembers from "../boardMembers.js";
 import type * as boards from "../boards.js";
 import type * as columns from "../columns.js";
 import type * as favorites from "../favorites.js";
+import type * as recentTasks from "../recentTasks.js";
 import type * as roles from "../roles.js";
 import type * as taskTemplates from "../taskTemplates.js";
 import type * as tasks from "../tasks.js";
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   boards: typeof boards;
   columns: typeof columns;
   favorites: typeof favorites;
+  recentTasks: typeof recentTasks;
   roles: typeof roles;
   taskTemplates: typeof taskTemplates;
   tasks: typeof tasks;

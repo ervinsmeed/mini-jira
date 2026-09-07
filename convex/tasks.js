@@ -541,6 +541,18 @@ export const remove = mutation({
       await ctx.db.delete("favorites", favorite._id);
     }
 
+    for (const recentTaskEntry of recentTaskEntries) {
+      await ctx.db.delete("recentTasks", recentTaskEntry._id);
+    }
+    const recentTaskEntries = await ctx.db
+      .query("recentTasks")
+      .withIndex("by_task", (q) => q.eq("taskId", task._id))
+      .collect();
+
+    for (const recentTaskEntry of recentTaskEntries) {
+      await ctx.db.delete("recentTasks", recentTaskEntry._id);
+    }
+
     if (task.taskType === "epic") {
       const tasks = await ctx.db
         .query("tasks")

@@ -378,6 +378,15 @@ export const remove = mutation({
       await ctx.db.delete(favorite._id);
     }
 
+    const recentTaskEntries = await ctx.db
+      .query("recentTasks")
+      .withIndex("by_board", (q) => q.eq("boardId", args.id))
+      .collect();
+
+    for (const recentTaskEntry of recentTaskEntries) {
+      await ctx.db.delete(recentTaskEntry._id);
+    }
+
     const taskTemplates = await ctx.db
       .query("taskTemplates")
       .withIndex("by_board", (q) => q.eq("boardId", args.id))
