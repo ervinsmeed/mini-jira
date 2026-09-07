@@ -350,6 +350,44 @@ export const remove = mutation({
       .collect();
 
     for (const task of tasks) {
+      const comments = await ctx.db
+        .query("comments")
+        .withIndex("by_task", (q) => q.eq("taskId", task._id))
+        .collect();
+
+      for (const comment of comments) {
+        await ctx.db.delete(comment._id);
+      }
+    }
+
+    const activityLogs = await ctx.db
+      .query("activityLogs")
+      .withIndex("by_board", (q) => q.eq("boardId", args.id))
+      .collect();
+
+    for (const activityLog of activityLogs) {
+      await ctx.db.delete(activityLog._id);
+    }
+
+    const favorites = await ctx.db
+      .query("favorites")
+      .withIndex("by_board", (q) => q.eq("boardId", args.id))
+      .collect();
+
+    for (const favorite of favorites) {
+      await ctx.db.delete(favorite._id);
+    }
+
+    const taskTemplates = await ctx.db
+      .query("taskTemplates")
+      .withIndex("by_board", (q) => q.eq("boardId", args.id))
+      .collect();
+
+    for (const taskTemplate of taskTemplates) {
+      await ctx.db.delete(taskTemplate._id);
+    }
+
+    for (const task of tasks) {
       await ctx.db.delete(task._id);
     }
 
