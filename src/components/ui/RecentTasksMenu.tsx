@@ -1,6 +1,6 @@
 import { Clock3, Trash2 } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
-
+import { useTranslation } from "react-i18next";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
@@ -22,6 +22,7 @@ export default function RecentTasksMenu({
   theme,
   onTaskClick,
 }: RecentTasksMenuProps) {
+  const { t } = useTranslation();
   const recentTasks = useQuery(api.recentTasks.list, {
     limit: 8,
   });
@@ -42,7 +43,7 @@ export default function RecentTasksMenu({
         }`}
       >
         <Clock3 className="size-4" />
-        Recent
+        {t("recentTasks.button")}
       </summary>
 
       <div
@@ -58,7 +59,7 @@ export default function RecentTasksMenu({
               theme === "dark" ? "text-slate-100" : "text-slate-900"
             }`}
           >
-            Recent tasks
+            {t("recentTasks.title")}
           </h3>
 
           {recentTasks && recentTasks.length > 0 && (
@@ -70,7 +71,7 @@ export default function RecentTasksMenu({
                   ? "text-slate-400 hover:bg-slate-800 hover:text-red-400"
                   : "text-slate-500 hover:bg-slate-100 hover:text-red-500"
               }`}
-              title="Clear recent tasks"
+              title={t("recentTasks.clear")}
             >
               <Trash2 className="size-4" />
             </button>
@@ -83,7 +84,7 @@ export default function RecentTasksMenu({
               theme === "dark" ? "text-slate-400" : "text-slate-500"
             }`}
           >
-            Loading...
+            {t("recentTasks.loading")}
           </p>
         ) : recentTasks.length === 0 ? (
           <p
@@ -91,7 +92,7 @@ export default function RecentTasksMenu({
               theme === "dark" ? "text-slate-400" : "text-slate-500"
             }`}
           >
-            No recently viewed tasks
+            {t("recentTasks.empty")}
           </p>
         ) : (
           <div className="max-h-80 space-y-2 overflow-y-auto">

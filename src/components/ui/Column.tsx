@@ -33,6 +33,15 @@ import {
   DialogTrigger,
 } from "./Dialog";
 
+const COLUMN_TRANSLATION_KEYS: Record<string, string> = {
+  backlog: "analytics.status.backlog",
+  "to do": "analytics.status.toDo",
+  "in progress": "analytics.status.inProgress",
+  review: "analytics.status.review",
+  testing: "analytics.status.testing",
+  done: "analytics.status.done",
+};
+
 export default function Column({
   column,
   taskCount,
@@ -54,6 +63,15 @@ export default function Column({
   const { setNodeRef } = useDroppable({
     id: column._id,
   });
+
+  const normalizedColumnName = column.name.trim().toLowerCase();
+  const columnTranslationKey = COLUMN_TRANSLATION_KEYS[normalizedColumnName];
+
+  const displayedColumnName = columnTranslationKey
+    ? t(columnTranslationKey, {
+        defaultValue: column.name,
+      })
+    : column.name;
 
   const handleDeleteColumn = async () => {
     await deleteColumn({
@@ -84,7 +102,7 @@ export default function Column({
               theme === "dark" ? "text-slate-400" : "text-slate-700"
             }`}
           >
-            {column.name} ({taskCount})
+            {displayedColumnName} ({taskCount})
           </h3>
         </div>
 

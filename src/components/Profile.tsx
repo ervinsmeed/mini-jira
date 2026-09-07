@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ArrowLeft, UserRound } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { api } from "../../convex/_generated/api";
 
@@ -11,6 +12,8 @@ type ProfileProps = {
 };
 
 export default function Profile({ theme, onBack }: ProfileProps) {
+  const { t } = useTranslation();
+
   const currentUser = useQuery(api.users.getCurrent);
   const updateProfile = useMutation(api.users.updateProfile);
 
@@ -43,10 +46,10 @@ export default function Profile({ theme, onBack }: ProfileProps) {
         avatar,
       });
 
-      toast.success("Profile updated");
+      toast.success(t("profile.updated"));
     } catch (error) {
       console.error("Failed to update profile:", error);
-      toast.error("Failed to update profile");
+      toast.error(t("profile.updateError"));
     } finally {
       setIsSaving(false);
     }
@@ -85,13 +88,14 @@ export default function Profile({ theme, onBack }: ProfileProps) {
         }`}
       >
         <div>
-          <h1 className="text-2xl font-bold">Profile</h1>
+          <h1 className="text-2xl font-bold">{t("profile.title")}</h1>
+
           <p
             className={`mt-1 text-sm ${
               theme === "dark" ? "text-slate-400" : "text-slate-500"
             }`}
           >
-            Manage your personal information
+            {t("profile.subtitle")}
           </p>
         </div>
 
@@ -105,7 +109,7 @@ export default function Profile({ theme, onBack }: ProfileProps) {
           }`}
         >
           <ArrowLeft className="size-4" />
-          Back to board
+          {t("navigation.backToBoard")}
         </button>
       </header>
 
@@ -135,6 +139,7 @@ export default function Profile({ theme, onBack }: ProfileProps) {
               <h2 className="truncate text-xl font-semibold">
                 {currentUser.name}
               </h2>
+
               <p
                 className={`truncate text-sm ${
                   theme === "dark" ? "text-slate-400" : "text-slate-500"
@@ -147,54 +152,67 @@ export default function Profile({ theme, onBack }: ProfileProps) {
 
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="space-y-2">
-              <span className="text-sm font-medium">First name</span>
+              <span className="text-sm font-medium">
+                {t("profile.firstName")}
+              </span>
+
               <input
                 type="text"
                 value={firstName}
                 onChange={(event) => setFirstName(event.target.value)}
-                placeholder="First name"
+                placeholder={t("profile.firstName")}
                 maxLength={60}
                 className={`w-full rounded-md border px-3 py-2 outline-none ${inputClass}`}
               />
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm font-medium">Last name</span>
+              <span className="text-sm font-medium">
+                {t("profile.lastName")}
+              </span>
+
               <input
                 type="text"
                 value={lastName}
                 onChange={(event) => setLastName(event.target.value)}
-                placeholder="Last name"
+                placeholder={t("profile.lastName")}
                 maxLength={60}
                 className={`w-full rounded-md border px-3 py-2 outline-none ${inputClass}`}
               />
             </label>
 
             <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-medium">Position</span>
+              <span className="text-sm font-medium">
+                {t("profile.position")}
+              </span>
+
               <input
                 type="text"
                 value={position}
                 onChange={(event) => setPosition(event.target.value)}
-                placeholder="Frontend Developer"
+                placeholder={t("profile.positionPlaceholder")}
                 maxLength={100}
                 className={`w-full rounded-md border px-3 py-2 outline-none ${inputClass}`}
               />
             </label>
 
             <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-medium">Avatar URL</span>
+              <span className="text-sm font-medium">
+                {t("profile.avatarUrl")}
+              </span>
+
               <input
                 type="url"
                 value={avatar}
                 onChange={(event) => setAvatar(event.target.value)}
-                placeholder="https://example.com/avatar.jpg"
+                placeholder={t("profile.avatarPlaceholder")}
                 className={`w-full rounded-md border px-3 py-2 outline-none ${inputClass}`}
               />
             </label>
 
             <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-medium">Email</span>
+              <span className="text-sm font-medium">{t("profile.email")}</span>
+
               <input
                 type="email"
                 value={currentUser.email}
@@ -210,7 +228,7 @@ export default function Profile({ theme, onBack }: ProfileProps) {
               disabled={isSaving}
               className="rounded-md bg-purple-500 px-5 py-2 font-medium text-white hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSaving ? "Saving..." : "Save profile"}
+              {isSaving ? t("profile.saving") : t("profile.save")}
             </button>
           </div>
         </form>

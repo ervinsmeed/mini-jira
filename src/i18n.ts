@@ -28,6 +28,7 @@ i18n
             sortDeadline: "By deadline",
             sortStoryPoints: "By Story Points",
             sortPriority: "By priority",
+            filters: "Filters",
           },
           createBoardModal: {
             title: "Create New Board",
@@ -65,6 +66,72 @@ i18n
           common: {
             yes: "Yes",
             no: "No",
+          },
+          navigation: {
+            analytics: "Analytics",
+            profile: "Profile",
+            backToBoard: "Back to board",
+            workspaces: "Workspaces",
+          },
+
+          recentTasks: {
+            button: "Recent",
+            title: "Recent tasks",
+            loading: "Loading...",
+            empty: "No recently viewed tasks",
+            clear: "Clear recent tasks",
+          },
+
+          pagination: {
+            loading: "Loading...",
+            loadMore: "Load more tasks",
+          },
+
+          analytics: {
+            title: "Project analytics",
+            noPermission: "You do not have permission to view analytics.",
+            totalTasks: "Total tasks",
+            completed: "Completed",
+            active: "Active",
+            overdue: "Overdue",
+            byStatus: "Tasks by status",
+            byPriority: "Tasks by priority",
+            byAssignee: "Tasks by assignee",
+            statusDetails: "Status details",
+            assigneeDetails: "Assignee details",
+            tasks: "Tasks",
+            unassigned: "Unassigned",
+
+            priority: {
+              high: "High",
+              medium: "Medium",
+              low: "Low",
+            },
+
+            status: {
+              backlog: "Backlog",
+              toDo: "To Do",
+              inProgress: "In Progress",
+              review: "Review",
+              testing: "Testing",
+              done: "Done",
+            },
+          },
+
+          profile: {
+            title: "Profile",
+            subtitle: "Manage your personal information",
+            firstName: "First name",
+            lastName: "Last name",
+            position: "Position",
+            positionPlaceholder: "Frontend Developer",
+            avatarUrl: "Avatar URL",
+            avatarPlaceholder: "https://example.com/avatar.jpg",
+            email: "Email",
+            save: "Save profile",
+            saving: "Saving...",
+            updated: "Profile updated",
+            updateError: "Failed to update profile",
           },
 
           taskCard: {
@@ -168,11 +235,7 @@ i18n
             updated: "Project updated successfully",
           },
 
-          priority: {
-            high: "High",
-            medium: "Medium",
-            low: "Low",
-          },
+          unassigned: "Unassigned",
         },
       },
 
@@ -193,6 +256,7 @@ i18n
             allPriorities: "Все приоритеты",
             manualOrder: "Ручной порядок",
             sortDeadline: "По сроку",
+            filters: "Фильтры",
             sortStoryPoints: "По Story Points",
             sortPriority: "По приоритету",
           },
@@ -242,6 +306,73 @@ i18n
             no: "Нет",
           },
 
+          navigation: {
+            analytics: "Аналитика",
+            profile: "Профиль",
+            backToBoard: "Назад к доске",
+            workspaces: "Рабочие пространства",
+          },
+
+          recentTasks: {
+            button: "Недавние",
+            title: "Недавние задачи",
+            loading: "Загрузка...",
+            empty: "Недавно просмотренных задач нет",
+            clear: "Очистить недавние задачи",
+          },
+
+          pagination: {
+            loading: "Загрузка...",
+            loadMore: "Загрузить ещё задачи",
+          },
+
+          analytics: {
+            title: "Аналитика проекта",
+            noPermission: "У вас нет разрешения на просмотр аналитики.",
+            totalTasks: "Всего задач",
+            completed: "Завершено",
+            active: "Активные",
+            overdue: "Просроченные",
+            byStatus: "Задачи по статусам",
+            byPriority: "Задачи по приоритетам",
+            byAssignee: "Задачи по исполнителям",
+            statusDetails: "Подробности по статусам",
+            assigneeDetails: "Подробности по исполнителям",
+            tasks: "Задачи",
+            unassigned: "Без исполнителя",
+
+            priority: {
+              high: "Высокий",
+              medium: "Средний",
+              low: "Низкий",
+            },
+
+            status: {
+              backlog: "Бэклог",
+              toDo: "К выполнению",
+              inProgress: "В процессе",
+              review: "Проверка",
+              testing: "Тестирование",
+              done: "Готово",
+            },
+          },
+
+          profile: {
+            title: "Профиль",
+            subtitle: "Управление личной информацией",
+            firstName: "Имя",
+            lastName: "Фамилия",
+            position: "Должность",
+            positionPlaceholder: "Frontend-разработчик",
+            avatarUrl: "URL аватара",
+            avatarPlaceholder: "https://example.com/avatar.jpg",
+            email: "Электронная почта",
+            save: "Сохранить профиль",
+            saving: "Сохранение...",
+            updated: "Профиль обновлён",
+            updateError: "Не удалось обновить профиль",
+          },
+
           taskCard: {
             subtasksProgress: "{{completed}} из {{total}} подзадач",
           },
@@ -285,10 +416,21 @@ i18n
             deadline: "Срок выполнения",
           },
 
+          unassigned: "Без исполнителя",
+
           priority: {
             high: "Высокий",
             medium: "Средний",
             low: "Низкий",
+          },
+
+          status: {
+            backlog: "Бэклог",
+            toDo: "К выполнению",
+            inProgress: "В процессе",
+            review: "Проверка",
+            testing: "Тестирование",
+            done: "Готово",
           },
           createColumn: {
             created: "Новая колонка создана",

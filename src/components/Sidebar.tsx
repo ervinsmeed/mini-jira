@@ -184,7 +184,7 @@ export default function Sidebar({
                     ? "bg-slate-900 text-slate-300 hover:bg-purple-600 hover:text-white"
                     : "bg-slate-100 text-slate-700 hover:bg-purple-600 hover:text-white"
               }`}
-              title="Analytics"
+              title={t("navigation.analytics")}
             >
               <BarChart3 className="size-4" />
             </button>
@@ -199,7 +199,7 @@ export default function Sidebar({
                   ? "bg-slate-900 text-slate-300 hover:bg-purple-600 hover:text-white"
                   : "bg-slate-100 text-slate-700 hover:bg-purple-600 hover:text-white"
             }`}
-            title="Profile"
+            title={t("navigation.profile")}
           >
             <UserRound className="size-4" />
           </button>
@@ -251,7 +251,7 @@ export default function Sidebar({
               theme === "dark" ? "text-slate-400" : "text-slate-500"
             }`}
           >
-            Workspaces ({workspaces.length})
+            {t("navigation.workspaces")} ({workspaces.length})
           </div>
 
           <button
@@ -447,7 +447,7 @@ export default function Sidebar({
             }`}
           >
             <BarChart3 className="size-4" />
-            <span>Analytics</span>
+            <span>{t("navigation.analytics")}</span>
           </button>
         )}
 
@@ -463,7 +463,7 @@ export default function Sidebar({
           }`}
         >
           <UserRound className="size-4" />
-          <span>Profile</span>
+          <span>{t("navigation.profile")}</span>
         </button>
       </div>
 
