@@ -126,6 +126,26 @@ export const getProjectAnalytics = query({
       });
     }
 
+    const byPriority = [
+      {
+        priority: "high",
+        name: "High",
+        count: tasks.filter((task) => task.priority === "high").length,
+      },
+      {
+        priority: "medium",
+        name: "Medium",
+        count: tasks.filter(
+          (task) => !task.priority || task.priority === "medium",
+        ).length,
+      },
+      {
+        priority: "low",
+        name: "Low",
+        count: tasks.filter((task) => task.priority === "low").length,
+      },
+    ];
+
     return {
       project: {
         boardId: board._id,
@@ -139,6 +159,7 @@ export const getProjectAnalytics = query({
       overdue,
       byStatus,
       byAssignee,
+      byPriority,
     };
   },
 });
