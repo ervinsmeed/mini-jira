@@ -208,7 +208,7 @@ export default function RolesModal({ workspace, onClose }: any) {
             <button
               type="button"
               onClick={handleSubmit}
-              className="rounded-md border px-4 py-2 text-sm"
+              className="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-purple-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
             >
               {editingRole ? "Save Role" : "Create Role"}
             </button>

@@ -38,6 +38,15 @@ export default function Board({ board, theme, can }: BoardProps) {
   const [selectedTask, setSelectedTask] = useState<Doc<"tasks"> | null>(null);
   const { t } = useTranslation();
   const canUpdateTask = can("task.update");
+  const canDeleteTask = can("task.delete");
+  const canSelectTasks = canUpdateTask || canDeleteTask;
+  const currentUser = useQuery(api.users.getCurrent, board ? {} : "skip");
+  const workspaces = useQuery(api.workspaces.list);
+  const parentWorkspace = workspaces?.find((workspace: Doc<"workspaces">) => workspace._id === board?.workspaceId);
+  const canManageColumn = (column: Doc<"columns">): boolean => Boolean(
+    currentUser && (!board?.workspaceId || parentWorkspace) &&
+    (parentWorkspace?.ownerId === currentUser._id || column.userId === currentUser._id),
+  );
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
@@ -108,7 +117,7 @@ export default function Board({ board, theme, can }: BoardProps) {
   );
 
   const favoriteTaskIds = favoriteTaskIdsResult ?? [];
-  const favoriteTaskIdSet = new Set(favoriteTaskIds);
+  const favoriteTaskIdSet = new Set<Id<"tasks">>(favoriteTaskIds);
 
   const toggleTaskFavorite = useMutation(api.favorites.toggleTask);
   const recordRecentTaskView = useMutation(api.recentTasks.recordView);
@@ -330,6 +339,7 @@ export default function Board({ board, theme, can }: BoardProps) {
     return getVisibleTasksByColumn(columnId).length;
   };
   const toggleTaskSelection = (taskId: Id<"tasks">) => {
+    if (!canSelectTasks) return;
     setSelectedTaskIds((currentTaskIds) =>
       currentTaskIds.includes(taskId)
         ? currentTaskIds.filter((id) => id !== taskId)
@@ -341,7 +351,7 @@ export default function Board({ board, theme, can }: BoardProps) {
     setSelectedTaskIds([]);
   };
   const handleBulkStatusChange = async (value: string) => {
-    if (selectedTaskIds.length === 0) return;
+    if (!canUpdateTask || selectedTaskIds.length === 0) return;
 
     await bulkUpdateTasks({
       taskIds: selectedTaskIds,
@@ -352,7 +362,7 @@ export default function Board({ board, theme, can }: BoardProps) {
   };
 
   const handleBulkAssigneeChange = async (value: string) => {
-    if (selectedTaskIds.length === 0) return;
+    if (!canUpdateTask || selectedTaskIds.length === 0) return;
 
     await bulkUpdateTasks({
       taskIds: selectedTaskIds,
@@ -362,7 +372,7 @@ export default function Board({ board, theme, can }: BoardProps) {
     clearTaskSelection();
   };
   const handleBulkPriorityChange = async (value: string) => {
-    if (selectedTaskIds.length === 0) return;
+    if (!canUpdateTask || selectedTaskIds.length === 0) return;
 
     const taskIds = [...selectedTaskIds];
 
@@ -374,7 +384,7 @@ export default function Board({ board, theme, can }: BoardProps) {
     });
   };
   const handleBulkDelete = async () => {
-    if (selectedTaskIds.length === 0) return;
+    if (!canDeleteTask || selectedTaskIds.length === 0) return;
 
     const confirmed = window.confirm(
       `Delete ${selectedTaskIds.length} selected task(s)?`,
@@ -751,7 +761,7 @@ export default function Board({ board, theme, can }: BoardProps) {
           <UserButton />
         </div>
       </div>
-      {selectedTaskIds.length > 0 && (
+      {canSelectTasks && selectedTaskIds.length > 0 && (
         <div
           className={`mx-6 mb-2 flex flex-wrap items-center gap-3 rounded-lg border p-3 ${
             theme === "dark"
@@ -846,7 +856,7 @@ export default function Board({ board, theme, can }: BoardProps) {
             </>
           )}
 
-          {can("task.delete") && (
+          {canDeleteTask && (
             <button
               type="button"
               onClick={() => void handleBulkDelete()}
@@ -891,8 +901,11 @@ export default function Board({ board, theme, can }: BoardProps) {
                   allTasks={tasks}
                   onTaskClick={handleTaskClick}
                   onEditColumn={setEditingColumn}
+                  canEditColumn={canManageColumn(column)}
+                  canDeleteColumn={canManageColumn(column)}
+                  canDragTasks={canUpdateTask}
                   selectedTaskIds={selectedTaskIds}
-                  onToggleTaskSelection={toggleTaskSelection}
+                  onToggleTaskSelection={canSelectTasks ? toggleTaskSelection : undefined}
                   favoriteTaskIdSet={favoriteTaskIdSet}
                   onToggleTaskFavorite={handleToggleTaskFavorite}
                   theme={theme}

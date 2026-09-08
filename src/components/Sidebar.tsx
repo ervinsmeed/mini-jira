@@ -15,7 +15,8 @@ import {
   BarChart3,
   UserRound,
 } from "lucide-react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useConvex } from "convex/react";
+import type { DragEndEvent } from "@dnd-kit/core";
 import { api } from "../../convex/_generated/api";
 import { useTranslation } from "react-i18next";
 import {
@@ -76,6 +77,7 @@ export default function Sidebar({
     : allBoardsResult) ?? []) as any[];
   const deleteBoard = useMutation(api.boards.remove);
   const updateBoardOrder = useMutation(api.boards.updateOrder);
+  const convex = useConvex();
 
   const toggleProjectFavorite = useMutation(api.favorites.toggleProject);
 
@@ -111,21 +113,27 @@ export default function Sidebar({
   };
   const { t, i18n } = useTranslation();
 
-  const handleDragEnd = async (event: any) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-    if (active.id !== over?.id) {
-      const oldIndex = boards.findIndex((board) => board._id === active.id);
-      const newIndex = boards.findIndex((board) => board._id === over.id);
+    const oldIndex = boards.findIndex((board) => board._id === active.id);
+    const newIndex = boards.findIndex((board) => board._id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
 
-      const reorderBoards = arrayMove(boards, oldIndex, newIndex);
+    const reorderedBoards = arrayMove(boards, oldIndex, newIndex);
+    const changes = reorderedBoards
+      .map((board, index) => ({ boardId: board._id, newOrder: index }))
+      .filter((change, index) => boards[index]._id !== change.boardId);
+    const accessResults = await Promise.all(changes.map((change) =>
+      convex.query(api.boards.getCurrentAccess, { boardId: change.boardId }),
+    ));
+    if (accessResults.some((access: { isOwner: boolean; permissions: string[] } | null) =>
+      !access?.isOwner && !access?.permissions.includes("project.update"),
+    )) return;
 
-      for (let i = 0; i < reorderBoards.length; i++) {
-        await updateBoardOrder({
-          boardId: reorderBoards[i]._id,
-          newOrder: i,
-        });
-      }
+    for (const change of changes) {
+      await updateBoardOrder(change);
     }
   };
   if (isCollapsed) {
@@ -569,6 +577,10 @@ function SortableBoardItem({
   theme,
 }: any) {
   const { t } = useTranslation();
+  const projectAccess = useQuery(api.boards.getCurrentAccess, { boardId: board._id });
+  const canReorder: boolean = Boolean(
+    projectAccess?.isOwner || projectAccess?.permissions.includes("project.update"),
+  );
   const {
     attributes,
     listeners,
@@ -578,6 +590,7 @@ function SortableBoardItem({
     isDragging,
   } = useSortable({
     id: board._id,
+    disabled: !canReorder,
   });
 
   const style = {
@@ -627,14 +640,14 @@ function SortableBoardItem({
         onClick={() => onBoardSelect(board)}
         className="flex items-center space-x-3 flex-1"
       >
-        <div
+        {canReorder && <div
           {...attributes}
           {...listeners}
           className="cursor-grab active:cursor-grabbing inline-flex"
           onClick={(e) => e.stopPropagation()}
         >
           <GripVertical className="size-4" />
-        </div>
+        </div>}
         <div className="min-w-0 flex-1 text-left">
           <div className="font-medium truncate">{board.name}</div>
 

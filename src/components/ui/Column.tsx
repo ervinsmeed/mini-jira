@@ -11,6 +11,24 @@ import { toast } from "sonner";
 
 import { api } from "../../../convex/_generated/api";
 import TaskCard from "../TaskCard";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
+
+type ColumnProps = {
+  column: Doc<"columns">;
+  taskCount: number;
+  tasks: Doc<"tasks">[];
+  allTasks: Doc<"tasks">[];
+  onTaskClick: (task: Doc<"tasks">) => void;
+  onEditColumn: (column: Doc<"columns">) => void;
+  selectedTaskIds: Id<"tasks">[];
+  onToggleTaskSelection?: (id: Id<"tasks">) => void;
+  favoriteTaskIdSet: Set<Id<"tasks">>;
+  onToggleTaskFavorite: (id: Id<"tasks">) => void;
+  theme: "light" | "dark";
+  canEditColumn: boolean;
+  canDeleteColumn: boolean;
+  canDragTasks: boolean;
+};
 
 import {
   DropdownMenu,
@@ -54,7 +72,10 @@ export default function Column({
   favoriteTaskIdSet,
   onToggleTaskFavorite,
   theme,
-}: any) {
+  canEditColumn,
+  canDeleteColumn,
+  canDragTasks,
+}: ColumnProps) {
   const { t } = useTranslation();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -62,6 +83,7 @@ export default function Column({
 
   const { setNodeRef } = useDroppable({
     id: column._id,
+    disabled: !canDragTasks,
   });
 
   const normalizedColumnName = column.name.trim().toLowerCase();
@@ -74,6 +96,7 @@ export default function Column({
     : column.name;
 
   const handleDeleteColumn = async () => {
+    if (!canDeleteColumn) return;
     await deleteColumn({
       id: column._id,
     });
@@ -106,7 +129,7 @@ export default function Column({
           </h3>
         </div>
 
-        <div className="relative">
+        {(canEditColumn || canDeleteColumn) && <div className="relative">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <MoreHorizontal
@@ -126,7 +149,7 @@ export default function Column({
                   : "border-slate-200 bg-white text-slate-900"
               }`}
             >
-              <DropdownMenuItem
+              {canEditColumn && <DropdownMenuItem
                 onClick={() => onEditColumn(column)}
                 className={`cursor-pointer ${
                   theme === "dark" ? "hover:bg-slate-800" : "hover:bg-slate-100"
@@ -134,13 +157,13 @@ export default function Column({
               >
                 <Edit className="mr-2 size-3" />
                 <span>{t("column.edit")}</span>
-              </DropdownMenuItem>
+              </DropdownMenuItem>}
 
-              <DropdownMenuSeparator
+              {canEditColumn && canDeleteColumn && <DropdownMenuSeparator
                 className={theme === "dark" ? "bg-slate-800" : "bg-slate-200"}
-              />
+              />}
 
-              <Dialog
+              {canDeleteColumn && <Dialog
                 open={showDeleteConfirm}
                 onOpenChange={setShowDeleteConfirm}
               >
@@ -202,10 +225,10 @@ export default function Column({
                     </div>
                   </DialogFooter>
                 </DialogContent>
-              </Dialog>
+              </Dialog>}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
+        </div>}
       </div>
 
       <div
@@ -215,23 +238,24 @@ export default function Column({
         }`}
       >
         <SortableContext
-          items={tasks.map((task: any) => task._id)}
+          items={tasks.map((task) => task._id)}
           strategy={verticalListSortingStrategy}
         >
-          {tasks.map((task: any) => (
+          {tasks.map((task) => (
             <TaskCard
               key={task._id}
               task={task}
               epic={
                 task.epicId
-                  ? allTasks.find((item: any) => item._id === task.epicId)
+                  ? allTasks.find((item) => item._id === task.epicId)
                   : null
               }
               onClick={() => onTaskClick(task)}
-              isSelected={selectedTaskIds.includes(task._id)}
-              onToggleSelect={() => onToggleTaskSelection(task._id)}
+              isSelected={Boolean(onToggleTaskSelection) && selectedTaskIds.includes(task._id)}
+              onToggleSelect={onToggleTaskSelection ? () => onToggleTaskSelection(task._id) : undefined}
               isFavorite={favoriteTaskIdSet.has(task._id)}
               onToggleFavorite={() => onToggleTaskFavorite(task._id)}
+              canDrag={canDragTasks}
               theme={theme}
             />
           ))}
