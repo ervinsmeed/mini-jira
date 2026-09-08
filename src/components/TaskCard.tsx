@@ -3,6 +3,21 @@ import { CSS } from "@dnd-kit/utilities";
 import { CalendarDays, GripVertical, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import type { Doc } from "../../convex/_generated/dataModel";
+
+type TaskCardProps = {
+  task: Doc<"tasks">;
+  epic?: Doc<"tasks"> | null;
+  onClick: () => void;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
+  isDragging?: boolean;
+  canDrag?: boolean;
+  theme: "light" | "dark";
+};
+
 import { Progress } from "./ui/progress";
 
 export default function TaskCard({
@@ -15,7 +30,8 @@ export default function TaskCard({
   onToggleFavorite,
   isDragging = false,
   theme,
-}: any) {
+  canDrag = false,
+}: TaskCardProps) {
   const { t } = useTranslation();
 
   const {
@@ -27,6 +43,7 @@ export default function TaskCard({
     isDragging: isSortableDragging,
   } = useSortable({
     id: task._id,
+    disabled: !canDrag,
   });
 
   const style = {
@@ -35,7 +52,7 @@ export default function TaskCard({
   };
 
   const completedSubtasks = task.subtasks
-    ? task.subtasks.filter((subtask: any) => subtask.completed).length
+    ? task.subtasks.filter((subtask) => subtask.completed).length
     : 0;
 
   const totalSubtasks = task.subtasks ? task.subtasks.length : 0;
@@ -49,7 +66,7 @@ export default function TaskCard({
   const percentageCompletion =
     totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
 
-  const getPriorityColor = (priority: any) => {
+  const getPriorityColor = (priority: string | undefined) => {
     switch (priority) {
       case "high":
         return "border-l-red-500";
@@ -65,7 +82,7 @@ export default function TaskCard({
     }
   };
 
-  const getPriorityDot = (priority: any) => {
+  const getPriorityDot = (priority: string | undefined) => {
     switch (priority) {
       case "high":
         return "bg-red-500";
@@ -241,7 +258,7 @@ export default function TaskCard({
         </>
       )}
 
-      <div
+      {canDrag && <div
         {...attributes}
         {...listeners}
         className={`mt-2 inline-flex cursor-grab p-1 active:cursor-grabbing ${
@@ -252,7 +269,7 @@ export default function TaskCard({
         onClick={(event) => event.stopPropagation()}
       >
         <GripVertical className="size-4" />
-      </div>
+      </div>}
     </div>
   );
 }

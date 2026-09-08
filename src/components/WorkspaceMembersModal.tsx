@@ -8,14 +8,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
 export default function WorkspaceMembersModal({ workspace, onClose }: any) {
   const [email, setEmail] = useState("");
 
+  const access = useQuery(
+    api.workspaceMembers.getCurrentAccess,
+    workspace?._id ? { workspaceId: workspace._id } : "skip",
+  );
+  const canManageMembers = Boolean(
+    access?.isOwner || access?.permissions.includes("members.manage"),
+  );
+  const canViewMembers = canManageMembers;
+
   const members = useQuery(
     api.workspaceMembers.list,
-    workspace?._id ? { workspaceId: workspace._id } : "skip",
+    canViewMembers ? { workspaceId: workspace._id } : "skip",
   );
 
   const roles = useQuery(
     api.roles.list,
-    workspace?._id ? { workspaceId: workspace._id } : "skip",
+    canManageMembers ? { workspaceId: workspace._id } : "skip",
   );
 
   const addMember = useMutation(api.workspaceMembers.addByEmail);
@@ -23,7 +32,7 @@ export default function WorkspaceMembersModal({ workspace, onClose }: any) {
   const changeRole = useMutation(api.workspaceMembers.changeRole);
 
   const handleAddMember = async () => {
-    if (!email.trim()) return;
+    if (!canManageMembers || !email.trim()) return;
 
     try {
       await addMember({
@@ -39,6 +48,7 @@ export default function WorkspaceMembersModal({ workspace, onClose }: any) {
   };
 
   const handleRemoveMember = async (userId: any) => {
+    if (!canManageMembers) return;
     try {
       await removeMember({
         workspaceId: workspace._id,
@@ -51,6 +61,7 @@ export default function WorkspaceMembersModal({ workspace, onClose }: any) {
     }
   };
   const handleChangeRole = async (userId: any, roleId: any) => {
+    if (!canManageMembers) return;
     try {
       await changeRole({
         workspaceId: workspace._id,
@@ -71,7 +82,7 @@ export default function WorkspaceMembersModal({ workspace, onClose }: any) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="flex gap-2">
+          {canManageMembers && <div className="flex gap-2">
             <input
               type="email"
               value={email}
@@ -87,10 +98,12 @@ export default function WorkspaceMembersModal({ workspace, onClose }: any) {
             >
               Add
             </button>
-          </div>
+          </div>}
 
           <div className="space-y-2">
-            {members === undefined ? (
+            {access !== undefined && !canViewMembers ? (
+              <div className="text-sm opacity-70">Access denied</div>
+            ) : members === undefined ? (
               <div className="text-sm opacity-70">Loading...</div>
             ) : members.length === 0 ? (
               <div className="text-sm opacity-70">No members</div>
@@ -98,12 +111,12 @@ export default function WorkspaceMembersModal({ workspace, onClose }: any) {
               members.map((member: any) => (
                 <div
                   key={member._id}
-                  className="flex items-center justify-between rounded-md border p-3"
+                  className="flex min-w-0 flex-col gap-3 rounded-md border p-3"
                 >
                   <div className="min-w-0">
                     <div className="truncate font-medium">{member.name}</div>
 
-                    <div className="truncate text-sm opacity-70">
+                    <div className="break-all text-sm opacity-70">
                       {member.email}
                     </div>
 
@@ -112,8 +125,8 @@ export default function WorkspaceMembersModal({ workspace, onClose }: any) {
                     )}
                   </div>
 
-                  {!member.isOwner && (
-                    <div className="flex items-center gap-2">
+                  {canManageMembers && !member.isOwner && (
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                       <select
                         value={member.roleId ?? ""}
                         onChange={(event) => {
@@ -121,7 +134,7 @@ export default function WorkspaceMembersModal({ workspace, onClose }: any) {
 
                           handleChangeRole(member._id, event.target.value);
                         }}
-                        className="rounded-md border bg-transparent px-2 py-1 text-sm"
+                        className="min-w-0 max-w-full flex-1 rounded-md border bg-transparent px-2 py-1 text-sm"
                       >
                         <option value="">No role</option>
 
@@ -135,7 +148,7 @@ export default function WorkspaceMembersModal({ workspace, onClose }: any) {
                       <button
                         type="button"
                         onClick={() => handleRemoveMember(member._id)}
-                        className="text-sm text-red-400 hover:text-red-500"
+                        className="shrink-0 text-sm text-red-400 hover:text-red-500"
                       >
                         Remove
                       </button>

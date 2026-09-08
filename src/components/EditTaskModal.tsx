@@ -55,6 +55,7 @@ type SortableSubTaskProps = {
 };
 
 type EditTaskModalProps = {
+  canUpdate: boolean;
   task: Doc<"tasks">;
   onClose: () => void;
   theme: Theme;
@@ -129,6 +130,7 @@ export default function EditTaskModal({
   task,
   onClose,
   theme,
+  canUpdate,
 }: EditTaskModalProps) {
   const { t } = useTranslation();
 
@@ -246,6 +248,7 @@ export default function EditTaskModal({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!canUpdate) return;
 
     if (!title.trim() || !columnId) return;
 
@@ -297,7 +300,8 @@ export default function EditTaskModal({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="mt-2 space-y-6">
+        <form onSubmit={handleSubmit} className="mt-2">
+          <fieldset disabled={!canUpdate} className="min-w-0 space-y-6">
           <div>
             <label
               className={`mb-2 block text-sm font-medium ${
@@ -558,6 +562,7 @@ export default function EditTaskModal({
               {t("editTask.updateTask")}
             </button>
           </div>
+          </fieldset>
         </form>
       </DialogContent>
     </Dialog>

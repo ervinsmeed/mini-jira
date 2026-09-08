@@ -128,6 +128,7 @@ export default function TaskModal({
   };
 
   const handleDeleteTask = async () => {
+    if (!can("task.delete")) return;
     await deleteTask({
       id: task._id,
     });
@@ -184,11 +185,12 @@ export default function TaskModal({
     });
   };
 
-  if (showEditModal) {
+  if (showEditModal && can("task.update")) {
     return (
       <EditTaskModal
         task={task}
         onClose={() => setShowEditModal(false)}
+        canUpdate={can("task.update")}
         theme={theme}
       />
     );
@@ -222,7 +224,7 @@ export default function TaskModal({
             </DialogTitle>
 
             <div className="absolute right-0 top-0 z-20 flex items-center gap-[10px]">
-              <div className="relative">
+              {(can("task.update") || can("task.delete")) && <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowActions(!showActions)}
@@ -244,7 +246,7 @@ export default function TaskModal({
                         : "border-slate-200 bg-white"
                     }`}
                   >
-                    <button
+                    {can("task.update") && <button
                       type="button"
                       onClick={() => {
                         setShowEditModal(true);
@@ -262,7 +264,7 @@ export default function TaskModal({
                         }`}
                       />
                       <span>{t("taskModal.editTask")}</span>
-                    </button>
+                    </button>}
 
                     {can("task.delete") && (
                       <>
@@ -326,7 +328,7 @@ export default function TaskModal({
                     )}
                   </div>
                 )}
-              </div>
+              </div>}
 
               <button
                 type="button"
