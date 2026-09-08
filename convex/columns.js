@@ -1,3 +1,4 @@
+import { getParentWorkspaceAccess, requireParentWorkspaceAccess } from "./lib/workspaceAccess";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
@@ -26,7 +27,9 @@ export const create = mutation({
 
     const board = await ctx.db.get(args.boardId);
 
-    if (!board || board.userId !== user._id) {
+    if (!board) throw new Error("Board not found");
+    const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
+    if (!parentAccess.isWorkspaceOwner && board.userId !== user._id) {
       throw new Error("Board not found");
     }
 
@@ -76,7 +79,10 @@ export const list = query({
       return [];
     }
 
-    if (board.userId !== user._id) {
+    const parentAccess = await getParentWorkspaceAccess(ctx, user._id, board);
+    if (!parentAccess) return [];
+
+    if (!parentAccess.isWorkspaceOwner && board.userId !== user._id) {
       if (!board.workspaceId) {
         return [];
       }
@@ -135,7 +141,9 @@ export const initializeDefaultColumns = mutation({
 
     const board = await ctx.db.get(args.boardId);
 
-    if (!board || board.userId !== user._id) {
+    if (!board) throw new Error("Board not found");
+    const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
+    if (!parentAccess.isWorkspaceOwner && board.userId !== user._id) {
       throw new Error("Board not found");
     }
 
@@ -224,8 +232,13 @@ export const update = mutation({
     if (!user) throw new Error("User not found");
 
     const column = await ctx.db.get(args.id);
-    if (!column || column.userId !== user._id)
+    if (!column) throw new Error("Column not found");
+    const board = await ctx.db.get(column.boardId);
+    if (!board) throw new Error("Board not found");
+    const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
+    if (!parentAccess.isWorkspaceOwner && column.userId !== user._id) {
       throw new Error("Column not found");
+    }
 
     const updates = {};
 
@@ -257,7 +270,11 @@ export const remove = mutation({
 
     const column = await ctx.db.get(args.id);
 
-    if (!column || column.userId !== user._id) {
+    if (!column) throw new Error("Column not found");
+    const board = await ctx.db.get(column.boardId);
+    if (!board) throw new Error("Board not found");
+    const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
+    if (!parentAccess.isWorkspaceOwner && column.userId !== user._id) {
       throw new Error("Column not found");
     }
 

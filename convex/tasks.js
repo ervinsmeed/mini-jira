@@ -1,3 +1,4 @@
+import { requireParentWorkspaceAccess } from "./lib/workspaceAccess";
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
@@ -23,7 +24,9 @@ async function getTaskPermissionAccess(ctx, boardId, permission) {
     throw new Error("Project not found");
   }
 
-  if (board.userId === user._id) {
+  const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
+
+  if (parentAccess.isWorkspaceOwner || board.userId === user._id) {
     return {
       user,
       board,

@@ -1,3 +1,4 @@
+import { getParentWorkspaceAccess, requireParentWorkspaceAccess } from "./lib/workspaceAccess";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { assertRoleDelegation } from "./lib/roleDelegation";
@@ -24,29 +25,9 @@ async function getProjectMemberManagementAccess(ctx, boardId) {
     throw new Error("Project not found");
   }
 
-  const workspace = board.workspaceId
-    ? await ctx.db.get(board.workspaceId)
-    : null;
-
-  if (board.workspaceId && !workspace) {
-    throw new Error("Workspace not found");
-  }
-
-  const isWorkspaceOwner = workspace?.ownerId === currentUser._id;
+  const { workspace, isWorkspaceOwner } =
+    await requireParentWorkspaceAccess(ctx, currentUser._id, board);
   const isProjectOwner = board.userId === currentUser._id;
-
-  if (workspace && isProjectOwner && !isWorkspaceOwner) {
-    const workspaceMembership = await ctx.db
-      .query("workspaceMembers")
-      .withIndex("by_workspace_user", (q) =>
-        q.eq("workspaceId", workspace._id).eq("userId", currentUser._id),
-      )
-      .unique();
-
-    if (!workspaceMembership) {
-      throw new Error("Project owner must have active workspace access");
-    }
-  }
 
   const isOwner = isWorkspaceOwner || isProjectOwner;
 
@@ -127,11 +108,9 @@ export const list = query({
       )
       .unique();
 
-    const workspace = board.workspaceId
-      ? await ctx.db.get(board.workspaceId)
-      : null;
-    const isOwner = board.userId === currentUser._id ||
-      workspace?.ownerId === currentUser._id;
+    const parentAccess = await getParentWorkspaceAccess(ctx, currentUser._id, board);
+    if (!parentAccess) throw new Error("Active workspace access required");
+    const isOwner = board.userId === currentUser._id || parentAccess.isWorkspaceOwner;
 
     if (isOwner) {
       await getProjectMemberManagementAccess(ctx, args.boardId);
