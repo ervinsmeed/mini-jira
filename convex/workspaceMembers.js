@@ -70,39 +70,7 @@ export const list = query({
   },
 
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const currentUser = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!currentUser) {
-      throw new Error("User not found");
-    }
-
-    const workspace = await ctx.db.get(args.workspaceId);
-
-    if (!workspace) {
-      throw new Error("Workspace not found");
-    }
-
-    const currentMembership = await ctx.db
-      .query("workspaceMembers")
-      .withIndex("by_workspace_user", (q) =>
-        q.eq("workspaceId", args.workspaceId).eq("userId", currentUser._id),
-      )
-      .unique();
-
-    const isOwner = workspace.ownerId === currentUser._id;
-
-    if (!isOwner && !currentMembership) {
-      throw new Error("Access denied");
-    }
+    const { workspace } = await getMemberManagementAccess(ctx, args.workspaceId);
 
     const memberships = await ctx.db
       .query("workspaceMembers")
@@ -118,10 +86,10 @@ export const list = query({
 
       if (user) {
         members.push({
-          ...user,
-          membershipId: membership._id,
-          roleId: membership.roleId,
-          joinedAt: membership.joinedAt,
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          roleId: membership.roleId ?? null,
           isOwner: false,
         });
       }
@@ -130,9 +98,10 @@ export const list = query({
     if (owner) {
       return [
         {
-          ...owner,
-          membershipId: null,
-          joinedAt: workspace.createdAt,
+          _id: owner._id,
+          name: owner.name,
+          email: owner.email,
+          roleId: null,
           isOwner: true,
         },
         ...members,

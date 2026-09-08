@@ -790,9 +790,11 @@ export default function CreateTaskModal({
 
                 {projectMembers.map(
                   (
-                    member: Doc<"users"> & {
-                      membershipId: Id<"boardMembers"> | null;
-                      joinedAt: number;
+                    member: {
+                      _id: Id<"users">;
+                      name: string;
+                      email: string;
+                      roleId: Id<"roles"> | null;
                       isOwner: boolean;
                     },
                   ) => (
