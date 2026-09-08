@@ -1,3 +1,4 @@
+import { requireParentWorkspaceAccess } from "./lib/workspaceAccess";
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -23,7 +24,9 @@ async function getAnalyticsAccess(ctx, boardId) {
     throw new Error("Project not found");
   }
 
-  if (board.userId === user._id) {
+  const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
+
+  if (parentAccess.isWorkspaceOwner || board.userId === user._id) {
     return { user, board };
   }
 
@@ -40,7 +43,7 @@ async function getAnalyticsAccess(ctx, boardId) {
 
   const role = await ctx.db.get("roles", membership.roleId);
 
-  if (!role || !role.permissions.includes("analytics.view")) {
+  if (!role || role.workspaceId !== board.workspaceId || !role.permissions.includes("analytics.view")) {
     throw new Error("Missing permission: analytics.view");
   }
 

@@ -14,6 +14,7 @@ import type * as boards from "../boards.js";
 import type * as columns from "../columns.js";
 import type * as favorites from "../favorites.js";
 import type * as lib_roleDelegation from "../lib/roleDelegation.js";
+import type * as lib_workspaceAccess from "../lib/workspaceAccess.js";
 import type * as recentTasks from "../recentTasks.js";
 import type * as roles from "../roles.js";
 import type * as taskTemplates from "../taskTemplates.js";
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   columns: typeof columns;
   favorites: typeof favorites;
   "lib/roleDelegation": typeof lib_roleDelegation;
+  "lib/workspaceAccess": typeof lib_workspaceAccess;
   recentTasks: typeof recentTasks;
   roles: typeof roles;
   taskTemplates: typeof taskTemplates;

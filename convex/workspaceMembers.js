@@ -231,6 +231,27 @@ export const remove = mutation({
       }
     }
 
+    const boards = await ctx.db
+      .query("boards")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+      .collect();
+
+    if (boards.some((board) => board.userId === args.userId)) {
+      throw new Error("Transfer project ownership before removing this workspace member");
+    }
+
+    const boardIds = new Set(boards.map((board) => board._id));
+    const projectMemberships = await ctx.db
+      .query("boardMembers")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    for (const projectMembership of projectMemberships) {
+      if (boardIds.has(projectMembership.boardId)) {
+        await ctx.db.delete(projectMembership._id);
+      }
+    }
+
     await ctx.db.delete(membership._id);
   },
 });

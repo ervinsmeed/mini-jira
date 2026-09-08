@@ -1,3 +1,4 @@
+import { getParentWorkspaceAccess, requireParentWorkspaceAccess } from "./lib/workspaceAccess";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -85,7 +86,9 @@ async function getBoardPermissionAccess(ctx, boardId, permission) {
     throw new Error("Project not found");
   }
 
-  if (board.userId === user._id) {
+  const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
+
+  if (parentAccess.isWorkspaceOwner || board.userId === user._id) {
     return {
       user,
       board,
@@ -193,11 +196,14 @@ export const list = query({
       return [];
     }
 
-    return await ctx.db
+    const boards = await ctx.db
       .query("boards")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect()
-      .then((boards) => boards.sort((a, b) => (a.order || 0) - (b.order || 0)));
+      .collect();
+    const visible = await Promise.all(boards.map(async (board) =>
+      await getParentWorkspaceAccess(ctx, user._id, board) ? board : null,
+    ));
+    return visible.filter(Boolean).sort((a, b) => (a.order || 0) - (b.order || 0));
   },
 });
 export const listByWorkspace = query({
@@ -234,7 +240,9 @@ export const listByWorkspace = query({
 
     const visibleBoards = await Promise.all(
       boards.map(async (board) => {
-        if (board.userId === user._id) {
+        const parentAccess = await getParentWorkspaceAccess(ctx, user._id, board);
+        if (!parentAccess) return null;
+        if (parentAccess.isWorkspaceOwner || board.userId === user._id) {
           return board;
         }
 
@@ -448,7 +456,10 @@ export const getCurrentAccess = query({
       return null;
     }
 
-    if (board.userId === currentUser._id) {
+    const parentAccess = await getParentWorkspaceAccess(ctx, currentUser._id, board);
+    if (!parentAccess) return null;
+
+    if (parentAccess.isWorkspaceOwner || board.userId === currentUser._id) {
       return {
         isOwner: true,
         roleId: null,

@@ -1,3 +1,4 @@
+import { getParentWorkspaceAccess } from "./lib/workspaceAccess";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -21,7 +22,9 @@ async function getCurrentUser(ctx) {
 }
 
 async function canViewBoard(ctx, user, board) {
-  if (board.userId === user._id) {
+  const parentAccess = await getParentWorkspaceAccess(ctx, user._id, board);
+  if (!parentAccess) return false;
+  if (parentAccess.isWorkspaceOwner || board.userId === user._id) {
     return true;
   }
 
