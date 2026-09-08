@@ -120,6 +120,20 @@ export const list = query({
       throw new Error("Access denied");
     }
 
+    if (!isOwner && board.workspaceId) {
+      const role = currentMembership.roleId
+        ? await ctx.db.get(currentMembership.roleId)
+        : null;
+      if (
+        !role || role.workspaceId !== board.workspaceId ||
+        !role.permissions.some((permission) =>
+          ["project.view", "task.view", "members.manage"].includes(permission),
+        )
+      ) {
+        throw new Error("Access denied");
+      }
+    }
+
     const memberships = await ctx.db
       .query("boardMembers")
       .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
@@ -134,10 +148,10 @@ export const list = query({
 
       if (user) {
         members.push({
-          ...user,
-          membershipId: membership._id,
+          _id: user._id,
+          name: user.name,
+          email: user.email,
           roleId: membership.roleId ?? null,
-          joinedAt: membership.joinedAt,
           isOwner: false,
         });
       }
@@ -146,10 +160,10 @@ export const list = query({
     if (owner) {
       return [
         {
-          ...owner,
-          membershipId: null,
+          _id: owner._id,
+          name: owner.name,
+          email: owner.email,
           roleId: null,
-          joinedAt: board.createdAt,
           isOwner: true,
         },
         ...members,
