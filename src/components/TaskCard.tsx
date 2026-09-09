@@ -118,6 +118,7 @@ export default function TaskCard({
       {onToggleSelect && (
         <input
           type="checkbox"
+          aria-label={t("taskCard.select", { title: task.title })}
           checked={isSelected}
           onChange={onToggleSelect}
           onClick={(event) => event.stopPropagation()}
@@ -135,7 +136,7 @@ export default function TaskCard({
                 : "bg-purple-100 text-purple-700"
             }`}
           >
-            EPIC
+            <span title={t("hints.epic")}>{t("createTask.epic")}</span>
           </span>
         </div>
       )}
@@ -165,16 +166,8 @@ export default function TaskCard({
                     ? "text-slate-500 hover:text-yellow-400"
                     : "text-slate-400 hover:text-yellow-500"
               }`}
-              title={t("taskCard.favorite", {
-                defaultValue: isFavorite
-                  ? "Remove from favorites"
-                  : "Add to favorites",
-              })}
-              aria-label={
-                isFavorite
-                  ? "Remove task from favorites"
-                  : "Add task to favorites"
-              }
+              title={t(isFavorite ? "favorites.remove" : "favorites.add")}
+              aria-label={t(isFavorite ? "favorites.remove" : "favorites.add")}
             >
               <Star
                 className={`size-4 ${
@@ -185,6 +178,9 @@ export default function TaskCard({
           )}
 
           <div
+            title={t("taskCard.priority", {
+              priority: t(`priority.${task.priority || "medium"}`),
+            })}
             className={`size-2 rounded-full ${getPriorityDot(task.priority)}`}
           />
         </div>
@@ -207,7 +203,7 @@ export default function TaskCard({
               theme === "dark" ? "text-purple-300" : "text-purple-700"
             }`}
           >
-            Epic: {epic.title}
+            {t("createTask.epic")}: {epic.title}
           </span>
         </div>
       )}
@@ -221,7 +217,7 @@ export default function TaskCard({
                 : "bg-slate-100 text-purple-700"
             }`}
           >
-            {task.storyPoints} SP
+            <span title={t("hints.storyPoints")}>{task.storyPoints} SP</span>
           </span>
         </div>
       )}
@@ -258,18 +254,21 @@ export default function TaskCard({
         </>
       )}
 
-      {canDrag && <div
-        {...attributes}
-        {...listeners}
-        className={`mt-2 inline-flex cursor-grab p-1 active:cursor-grabbing ${
-          theme === "dark"
-            ? "text-slate-400 hover:text-slate-100"
-            : "text-slate-500 hover:text-slate-900"
-        }`}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <GripVertical className="size-4" />
-      </div>}
+      {canDrag && (
+        <div
+          {...attributes}
+          {...listeners}
+          aria-label={t("taskCard.move")}
+          className={`mt-2 inline-flex cursor-grab p-1 active:cursor-grabbing ${
+            theme === "dark"
+              ? "text-slate-400 hover:text-slate-100"
+              : "text-slate-500 hover:text-slate-900"
+          }`}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <GripVertical className="size-4" />
+        </div>
+      )}
     </div>
   );
 }

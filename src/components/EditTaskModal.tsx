@@ -1,3 +1,4 @@
+import { getColumnLabel } from "../lib/columnLabel";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 
 import { GripVertical, X } from "lucide-react";
@@ -90,6 +91,8 @@ function SortableSubTask({
       <button
         type="button"
         {...listeners}
+        aria-label={t("common.moveSubtask")}
+        title={t("common.moveSubtask")}
         className={`cursor-grab p-1 transition-colors ${
           theme === "dark"
             ? "text-slate-400 hover:text-slate-100"
@@ -114,6 +117,8 @@ function SortableSubTask({
       <button
         type="button"
         onClick={() => onRemove(index)}
+        aria-label={t("common.removeSubtask")}
+        title={t("common.removeSubtask")}
         className={`p-2 transition-colors ${
           theme === "dark"
             ? "text-slate-400 hover:text-red-400"
@@ -315,7 +320,7 @@ export default function EditTaskModal({
               type="text"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="e.g Take coffee break"
+              placeholder={t("editTask.titlePlaceholder")}
               className={`w-full rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
                 theme === "dark"
                   ? "border-slate-800 bg-slate-900 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
@@ -477,7 +482,7 @@ export default function EditTaskModal({
                 >
                   {columns.map((column) => (
                     <SelectItem key={column._id} value={column._id}>
-                      {column.name}
+                      {getColumnLabel(column.name, t)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -492,6 +497,7 @@ export default function EditTaskModal({
               }`}
             >
               {t("editTask.storyPoints")}
+              <span className="block text-xs font-normal opacity-70">{t("hints.storyPoints")}</span>
             </label>
 
             <Select value={storyPoints} onValueChange={setStoryPoints}>

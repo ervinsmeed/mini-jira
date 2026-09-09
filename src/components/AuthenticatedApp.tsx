@@ -249,6 +249,7 @@ export default function AuthenticatedApp() {
         onCreateBoard={handleOpenCreateModal}
         currentWorkspace={displayWorkspace}
         can={can}
+        canViewAnalytics={canProject("analytics.view")}
         workspaces={workspaces}
         onWorkspaceSelect={handleWorkspaceSelect}
         onCreateWorkspace={handleOpenCreateWorkspaceModal}

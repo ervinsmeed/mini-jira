@@ -97,7 +97,7 @@ export default function ProjectAnalytics({
         className={`sticky top-0 z-30 flex flex-wrap items-center justify-between gap-4 border-b px-6 py-4 ${
           theme === "dark"
             ? "border-slate-800 bg-slate-950"
-            : "border-slate-200 bg-white"
+            : "border-slate-200 bg-sidebar"
         }`}
       >
         <div>

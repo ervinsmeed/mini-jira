@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -21,22 +22,23 @@ const permissionsList: {
   value: Permission;
   label: string;
 }[] = [
-  { value: "project.view", label: "View Projects" },
-  { value: "project.create", label: "Create Projects" },
-  { value: "project.update", label: "Edit Projects" },
-  { value: "project.delete", label: "Delete Projects" },
+  { value: "project.view", label: "permissions.project.view" },
+  { value: "project.create", label: "permissions.project.create" },
+  { value: "project.update", label: "permissions.project.update" },
+  { value: "project.delete", label: "permissions.project.delete" },
 
-  { value: "task.view", label: "View Tasks" },
-  { value: "task.create", label: "Create Tasks" },
-  { value: "task.update", label: "Edit Tasks" },
-  { value: "task.delete", label: "Delete Tasks" },
+  { value: "task.view", label: "permissions.task.view" },
+  { value: "task.create", label: "permissions.task.create" },
+  { value: "task.update", label: "permissions.task.update" },
+  { value: "task.delete", label: "permissions.task.delete" },
 
-  { value: "members.manage", label: "Manage Members" },
-  { value: "roles.manage", label: "Manage Roles" },
-  { value: "analytics.view", label: "View Analytics" },
+  { value: "members.manage", label: "permissions.members.manage" },
+  { value: "roles.manage", label: "permissions.roles.manage" },
+  { value: "analytics.view", label: "permissions.analytics.view" },
 ];
 
 export default function RolesModal({ workspace, onClose }: any) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [level, setLevel] = useState(10);
@@ -76,7 +78,7 @@ export default function RolesModal({ workspace, onClose }: any) {
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      toast.error("Role name is required");
+      toast.error(t("roles.nameRequired"));
       return;
     }
 
@@ -90,7 +92,7 @@ export default function RolesModal({ workspace, onClose }: any) {
           permissions,
         });
 
-        toast.success("Role updated successfully");
+        toast.success(t("roles.updated"));
       } else {
         await createRole({
           workspaceId: workspace._id,
@@ -100,14 +102,12 @@ export default function RolesModal({ workspace, onClose }: any) {
           permissions,
         });
 
-        toast.success("Role created successfully");
+        toast.success(t("roles.created"));
       }
 
       resetForm();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Something went wrong",
-      );
+      toast.error(error instanceof Error ? error.message : t("roles.error"));
     }
   };
 
@@ -129,10 +129,10 @@ export default function RolesModal({ workspace, onClose }: any) {
         resetForm();
       }
 
-      toast.success("Role deleted successfully");
+      toast.success(t("roles.deleted"));
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete role",
+        error instanceof Error ? error.message : t("roles.deleteError"),
       );
     }
   };
@@ -141,34 +141,37 @@ export default function RolesModal({ workspace, onClose }: any) {
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Workspace Roles</DialogTitle>
+          <DialogTitle className="pr-6 leading-snug">{t("roles.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          <p className="text-sm opacity-70">{t("hints.separateRoles")}</p>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Role Name</label>
+            <label className="text-sm font-medium">{t("roles.name")}</label>
 
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Developer"
+              placeholder={t("roles.namePlaceholder")}
               className="w-full rounded-md border bg-transparent px-3 py-2 text-sm"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Description</label>
+            <label className="text-sm font-medium">
+              {t("common.description")}
+            </label>
 
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Role description"
+              placeholder={t("roles.descriptionPlaceholder")}
               className="min-h-20 w-full resize-none rounded-md border bg-transparent px-3 py-2 text-sm"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Level</label>
+            <label className="text-sm font-medium">{t("roles.level")}</label>
 
             <input
               type="number"
@@ -178,13 +181,11 @@ export default function RolesModal({ workspace, onClose }: any) {
               className="w-full rounded-md border bg-transparent px-3 py-2 text-sm"
             />
 
-            <p className="text-xs opacity-60">
-              Higher number means higher role level.
-            </p>
+            <p className="text-xs opacity-60">{t("hints.roleLevel")}</p>
           </div>
 
           <div className="space-y-2">
-            <p className="text-sm font-medium">Permissions</p>
+            <p className="text-sm font-medium">{t("roles.permissions")}</p>
 
             <div className="grid gap-2 sm:grid-cols-2">
               {permissionsList.map((permission) => (
@@ -198,7 +199,7 @@ export default function RolesModal({ workspace, onClose }: any) {
                     onChange={() => handlePermissionChange(permission.value)}
                   />
 
-                  <span>{permission.label}</span>
+                  <span>{t(permission.label)}</span>
                 </label>
               ))}
             </div>
@@ -210,7 +211,7 @@ export default function RolesModal({ workspace, onClose }: any) {
               onClick={handleSubmit}
               className="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-purple-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
             >
-              {editingRole ? "Save Role" : "Create Role"}
+              {editingRole ? t("roles.save") : t("roles.create")}
             </button>
 
             {editingRole && (
@@ -219,20 +220,22 @@ export default function RolesModal({ workspace, onClose }: any) {
                 onClick={resetForm}
                 className="rounded-md border px-4 py-2 text-sm"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
             )}
           </div>
 
           <div className="border-t pt-4">
-            <h3 className="mb-3 text-sm font-semibold">Existing Roles</h3>
+            <h3 className="mb-3 text-sm font-semibold">
+              {t("roles.existing")}
+            </h3>
 
             {roles === undefined && (
-              <p className="text-sm opacity-60">Loading...</p>
+              <p className="text-sm opacity-60">{t("common.loading")}</p>
             )}
 
             {roles?.length === 0 && (
-              <p className="text-sm opacity-60">No roles yet.</p>
+              <p className="text-sm opacity-60">{t("roles.empty")}</p>
             )}
 
             <div className="space-y-2">
@@ -242,7 +245,9 @@ export default function RolesModal({ workspace, onClose }: any) {
                     <div>
                       <p className="font-medium">{role.name}</p>
 
-                      <p className="text-xs opacity-60">Level: {role.level}</p>
+                      <p className="text-xs opacity-60">
+                        {t("roles.level")}: {role.level}
+                      </p>
 
                       {role.description && (
                         <p className="mt-1 text-sm opacity-70">
@@ -257,7 +262,7 @@ export default function RolesModal({ workspace, onClose }: any) {
                         onClick={() => handleEditRole(role)}
                         className="rounded-md border px-2 py-1 text-xs"
                       >
-                        Edit
+                        {t("common.edit")}
                       </button>
 
                       <button
@@ -265,7 +270,7 @@ export default function RolesModal({ workspace, onClose }: any) {
                         onClick={() => handleDeleteRole(role._id)}
                         className="rounded-md border px-2 py-1 text-xs"
                       >
-                        Delete
+                        {t("common.delete")}
                       </button>
                     </div>
                   </div>
@@ -276,7 +281,7 @@ export default function RolesModal({ workspace, onClose }: any) {
                         key={permission}
                         className="rounded-md border px-2 py-1 text-xs"
                       >
-                        {permission}
+                        {t(`permissions.${permission}`)}
                       </span>
                     ))}
                   </div>
@@ -290,7 +295,7 @@ export default function RolesModal({ workspace, onClose }: any) {
             onClick={onClose}
             className="w-full rounded-md border px-4 py-2 text-sm"
           >
-            Close
+            {t("common.close")}
           </button>
         </div>
       </DialogContent>

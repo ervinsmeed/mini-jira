@@ -235,7 +235,7 @@ export const list = query({
         .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
         .collect();
 
-      return tasks.sort((a, b) => {
+      const sortedTasks = tasks.sort((a, b) => {
         const aPriority = priorityOrder[a.priority || "medium"];
         const bPriority = priorityOrder[b.priority || "medium"];
 
@@ -245,6 +245,13 @@ export const list = query({
 
         return a.order - b.order;
       });
+      const userIds = [...new Set(tasks.flatMap((task) => [task.userId, task.assigneeId]).filter(Boolean))];
+      const users = await Promise.all(userIds.map((id) => ctx.db.get("users", id)));
+      const searchUsers = new Map(users.filter(Boolean).map((user) => [user._id, `${user.name} ${user.email}`]));
+      return sortedTasks.map((task) => ({
+        ...task,
+        searchUserText: [searchUsers.get(task.userId), searchUsers.get(task.assigneeId)].filter(Boolean).join(" "),
+      }));
     }
 
     if (args.columnId) {
@@ -633,8 +640,7 @@ export const startTimer = mutation({
     await ctx.db.patch("tasks", args.id, {
       timerStatus: "running",
       timerStartedAt: Date.now(),
-      timerElapsedMs:
-        task.timerStatus === "stopped" ? 0 : (task.timerElapsedMs ?? 0),
+      timerElapsedMs: task.timerElapsedMs ?? 0,
       updatedAt: Date.now(),
     });
 

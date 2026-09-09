@@ -1,3 +1,4 @@
+import { getColumnLabel } from "../../lib/columnLabel";
 import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {
@@ -51,15 +52,6 @@ import {
   DialogTrigger,
 } from "./Dialog";
 
-const COLUMN_TRANSLATION_KEYS: Record<string, string> = {
-  backlog: "analytics.status.backlog",
-  "to do": "analytics.status.toDo",
-  "in progress": "analytics.status.inProgress",
-  review: "analytics.status.review",
-  testing: "analytics.status.testing",
-  done: "analytics.status.done",
-};
-
 export default function Column({
   column,
   taskCount,
@@ -86,14 +78,7 @@ export default function Column({
     disabled: !canDragTasks,
   });
 
-  const normalizedColumnName = column.name.trim().toLowerCase();
-  const columnTranslationKey = COLUMN_TRANSLATION_KEYS[normalizedColumnName];
-
-  const displayedColumnName = columnTranslationKey
-    ? t(columnTranslationKey, {
-        defaultValue: column.name,
-      })
-    : column.name;
+  const displayedColumnName = getColumnLabel(column.name, t);
 
   const handleDeleteColumn = async () => {
     if (!canDeleteColumn) return;
@@ -110,7 +95,7 @@ export default function Column({
       className={`w-72 shrink-0 rounded-lg border p-3 ${
         theme === "dark"
           ? "border-slate-800 bg-slate-950"
-          : "border-slate-200 bg-white"
+          : "border-slate-200 bg-input"
       }`}
     >
       <div className="group mb-6 flex items-center justify-between">
