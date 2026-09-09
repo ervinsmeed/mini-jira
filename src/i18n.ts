@@ -11,13 +11,14 @@ i18n
     resources: {
       en: {
         translation: {
+          auth: { welcome: "Welcome to your task management workspace", description: "Organize your projects with Kanban boards" },
           kanban: "Kanban",
           allBoards: "PROJECTS",
           createBoard: "Create Project",
           hideSidebar: "Hide Sidebar",
           logout: "Log out",
-
           board: {
+            noMatchingTasks: "No matching tasks",
             welcome: "Welcome to your Kanban Board",
             getStarted: "Create or select a board to get started",
             addTask: "Add New Task",
@@ -26,46 +27,59 @@ i18n
             allPriorities: "All priorities",
             manualOrder: "Manual order",
             sortDeadline: "By deadline",
-            sortStoryPoints: "By Story Points",
+            sortStoryPoints: "By effort estimate (SP)",
             sortPriority: "By priority",
             filters: "Filters",
+            sortTitle: "By title",
+            sortCreated: "By creation date",
+            allStatuses: "All columns",
+            allAssignees: "All assignees",
+            unassigned: "Unassigned",
+            allStoryPoints: "Any effort estimate",
+            allDeadlines: "Any deadline",
+            overdue: "Overdue",
+            today: "Today",
+            upcoming: "Upcoming",
+            noDeadline: "No deadline",
+            clearFilters: "Reset filters",
+            selected: "Selected:",
+            column: "Column",
+            assignee: "Assignee",
+            priority: "Priority",
+            clearSelection: "Clear selection",
+            deleteSelected: "Delete selected",
+            deleteQuestion: "Delete selected tasks ({{count}})?",
           },
           createBoardModal: {
-            title: "Create New Board",
-            boardName: "Board Name",
+            title: "Create project",
+            boardName: "Project name",
             placeholder: "e.g Web Design",
             description: "Description",
             descriptionPlaceholder: "Enter project description",
-            create: "Create Board",
-            created: "Board {{name}} created",
+            create: "Create project",
+            created: 'Project "{{name}}" created',
           },
-          template: "Task Template",
-          noTemplate: "Without Template",
-          templateNamePlaceholder: "Template name, e.g. Bug",
-          saveTemplate: "Save Template",
-          savingTemplate: "Saving...",
-          deleteTemplate: "Delete",
-          templateHint:
-            "The template saves the current title, description, priority and Story Points.",
-          templateNameRequired: "Enter a template name",
-          templateCreated: "Template created",
-          templateCreateError: "Failed to create template",
-          deleteTemplateQuestion: "Delete selected template?",
-          templateDeleted: "Template deleted",
-          templateDeleteError: "Failed to delete template",
-
           column: {
             edit: "Edit",
             delete: "Delete",
             deleteTitle: "Delete Column?",
             deleteDescription:
-              "This column will no longer appear in this board. Continue?",
+              "This column and all its tasks will be deleted. Continue?",
             deleted: "Column deleted",
           },
-
           common: {
             yes: "Yes",
             no: "No",
+            close: "Close",
+            moveSubtask: "Move subtask",
+            removeSubtask: "Remove subtask",
+            cancel: "Cancel",
+            add: "Add",
+            remove: "Remove member",
+            edit: "Edit",
+            delete: "Delete",
+            loading: "Loading...",
+            description: "Description",
           },
           navigation: {
             analytics: "Analytics",
@@ -73,7 +87,6 @@ i18n
             backToBoard: "Back to board",
             workspaces: "Workspaces",
           },
-
           recentTasks: {
             button: "Recent",
             title: "Recent tasks",
@@ -81,12 +94,10 @@ i18n
             empty: "No recently viewed tasks",
             clear: "Clear recent tasks",
           },
-
           pagination: {
             loading: "Loading...",
-            loadMore: "Load more tasks",
+            loadMore: "Show more tasks",
           },
-
           analytics: {
             title: "Project analytics",
             noPermission: "You do not have permission to view analytics.",
@@ -101,13 +112,11 @@ i18n
             assigneeDetails: "Assignee details",
             tasks: "Tasks",
             unassigned: "Unassigned",
-
             priority: {
               high: "High",
               medium: "Medium",
               low: "Low",
             },
-
             status: {
               backlog: "Backlog",
               toDo: "To Do",
@@ -117,7 +126,6 @@ i18n
               done: "Done",
             },
           },
-
           profile: {
             title: "Profile",
             subtitle: "Manage your personal information",
@@ -133,11 +141,12 @@ i18n
             updated: "Profile updated",
             updateError: "Failed to update profile",
           },
-
           taskCard: {
-            subtasksProgress: "{{completed}} of {{total}} subtasks",
+            subtasksProgress: "Subtasks: {{completed}} of {{total}}",
+            select: 'Select task "{{title}}"',
+            move: "Move task",
+            priority: "Priority: {{priority}}",
           },
-
           taskModal: {
             editTask: "Edit Task",
             deleteTask: "Delete Task",
@@ -146,8 +155,40 @@ i18n
             subtasks: "Subtasks ({{completed}} of {{total}})",
             column: "Column",
             selectColumn: "Select column",
-            storyPoints: "Story Points",
+            storyPoints: "Effort estimate (SP)",
             deadline: "Deadline",
+            timer: "Timer",
+            timerPending: "Updating timer...",
+            timerErrors: {
+              start: "Could not start the timer. Please try again.",
+              pause: "Could not pause the timer. Please try again.",
+              stop: "Could not stop the timer. Please try again.",
+            },
+            start: "Start",
+            pause: "Pause",
+            stop: "Stop",
+            comments: "Comments",
+            noComments: "No comments yet",
+            commentPlaceholder: "Write a comment...",
+            addComment: "Add comment",
+            activity: "Activity history",
+            activityEvents: {
+              "task": {
+                "created": "Task created",
+                "assignee_changed": "Assignee changed",
+                "story_points_changed": "Effort estimate changed",
+                "deadline_changed": "Deadline changed",
+                "status_changed": "Task column changed",
+                "timer_started": "Timer started",
+                "timer_paused": "Timer paused",
+                "timer_stopped": "Timer stopped",
+                "comment_added": "Comment added",
+                "bulk_updated": "Task updated in bulk"
+              }
+            },
+            noActivity: "No activity yet",
+            actions: "Task actions",
+            close: "Close task",
           },
           editTask: {
             updated: "Task updated",
@@ -164,11 +205,11 @@ i18n
             cancel: "Cancel",
             updateTask: "Update Task",
             subtaskPlaceholder: "e.g Make coffee",
-            storyPoints: "Story Points",
-            selectStoryPoints: "Select Story Points",
+            storyPoints: "Effort estimate (SP)",
+            selectStoryPoints: "Select effort estimate",
             deadline: "Deadline",
+            titlePlaceholder: "e.g. Prepare a mockup",
           },
-
           createTask: {
             created: "New task added",
             title: "Add New Task",
@@ -184,19 +225,40 @@ i18n
             column: "Column",
             selectColumn: "Select column",
             create: "Create Task",
-            storyPoints: "Story Points",
-            selectStoryPoints: "Select Story Points",
+            storyPoints: "Effort estimate (SP)",
+            selectStoryPoints: "Select effort estimate",
             deadline: "Deadline",
+            type: "Type",
+            selectType: "Select type",
+            task: "Task",
+            epic: "Epic",
+            selectEpic: "Select epic",
+            noEpic: "No epic",
+            assignee: "Assignee",
+            selectAssignee: "Select assignee",
+            template: "Task Template",
+            noTemplate: "Without Template",
+            templateNamePlaceholder: "Template name, e.g. Bug",
+            saveTemplate: "Save Template",
+            savingTemplate: "Saving...",
+            deleteTemplate: "Delete",
+            templateHint:
+              "The template saves the title, description, priority and effort estimate (SP).",
+            templateNameRequired: "Enter a template name",
+            templateCreated: "Template created",
+            templateCreateError: "Failed to create template",
+            deleteTemplateQuestion: "Delete selected template?",
+            templateDeleted: "Template deleted",
+            templateDeleteError: "Failed to delete template",
           },
-
           createWorkspaceModal: {
             title: "Create Workspace",
             workspaceName: "Workspace Name",
             namePlaceholder: "Enter workspace name",
             description: "Description",
             descriptionPlaceholder: "Enter workspace description",
-            create: "Create Workspace",
-            created: 'Workspace "{{name}}" created successfully',
+            create: "Create workspace",
+            created: 'Workspace "{{name}}" created',
           },
           editColumn: {
             updated: "Column Updated",
@@ -215,13 +277,12 @@ i18n
             create: "Create Column",
           },
           editWorkspaceModal: {
-            title: "Edit Workspace",
+            title: "Edit workspace",
             workspaceName: "Workspace Name",
             description: "Description",
             save: "Save Changes",
-            updated: "Workspace updated successfully",
+            updated: "Workspace updated",
           },
-
           editProjectModal: {
             title: "Edit Project",
             projectName: "Project Name",
@@ -234,20 +295,116 @@ i18n
             save: "Save Changes",
             updated: "Project updated successfully",
           },
-
           unassigned: "Unassigned",
+          priority: {
+            high: "High",
+            medium: "Medium",
+            low: "Low",
+          },
+          hints: {
+            storyPoints: "SP measures relative effort, not hours.",
+            epic: "An epic groups related tasks.",
+            roleLevel:
+              "Higher numbers mean higher rank. Rank does not grant permissions.",
+            separateRoles:
+              "Workspace and project roles are assigned separately.",
+            registerFirst:
+              "The user must register and sign in to the app first.",
+            removeWorkspaceMember:
+              "Removing a workspace member revokes access to its projects.",
+          },
+          members: {
+            workspaceTitle: "Workspace members",
+            projectTitle: "Project members",
+            email: "User email",
+            denied: "Access denied",
+            empty: "No members",
+            owner: "Owner",
+            noRole: "No role assigned",
+            selectRole: "Select role",
+            added: "Member added",
+            removed: "Member removed",
+            roleChanged: "Role changed",
+            addError: "Failed to add member",
+            removeError: "Failed to remove member",
+            roleError: "Failed to change role",
+          },
+          roles: {
+            title: "Workspace roles",
+            name: "Role name",
+            namePlaceholder: "e.g. Developer",
+            descriptionPlaceholder: "Describe the role",
+            level: "Level",
+            permissions: "Permissions",
+            save: "Save role",
+            create: "Create role",
+            existing: "Existing roles",
+            empty: "No roles yet",
+            nameRequired: "Enter a role name",
+            updated: "Role updated",
+            created: "Role created",
+            deleted: "Role deleted",
+            error: "Something went wrong",
+            deleteError: "Failed to delete role",
+          },
+          favorites: {
+            add: "Add to favorites",
+            remove: "Remove from favorites",
+          },
+          sidebar: {
+            editWorkspace: "Edit workspace",
+            deleteWorkspace: "Delete workspace",
+            editProject: "Edit project",
+            deleteProject: "Delete project",
+            moveProject: "Move project",
+            expand: "Expand sidebar",
+            light: "Switch to light theme",
+            dark: "Switch to dark theme",
+            language: "Interface language",
+            deleteWorkspacePrompt:
+              "To delete the workspace and all its projects, enter its exact name: {{name}}",
+            workspaceMismatch:
+              "The workspace name does not match. Deletion cancelled.",
+            deleteProjectPrompt:
+              "To delete the project, enter its exact name: {{name}}",
+            projectMismatch:
+              "The project name does not match. Deletion cancelled.",
+          },
+          permissions: {
+            project: {
+              view: "View projects",
+              create: "Create projects",
+              update: "Edit projects",
+              delete: "Delete projects",
+            },
+            task: {
+              view: "View tasks",
+              create: "Create tasks",
+              update: "Edit tasks",
+              delete: "Delete tasks",
+            },
+            members: {
+              manage: "Manage members",
+            },
+            roles: {
+              manage: "Manage roles",
+            },
+            analytics: {
+              view: "View analytics",
+            },
+          },
         },
       },
-
       ru: {
         translation: {
+          auth: { welcome: "Управляйте проектами и задачами", description: "Планируйте работу на канбан-досках" },
           kanban: "Канбан",
           allBoards: "ПРОЕКТЫ",
           createBoard: "Создать проект",
           hideSidebar: "Скрыть боковую панель",
           logout: "Выйти",
-
           board: {
+            noMatchingTasks: "Подходящих задач нет",
             welcome: "Добро пожаловать на вашу Канбан-доску",
             getStarted: "Создайте или выберите доску, чтобы начать",
             addTask: "Добавить задачу",
@@ -257,62 +414,72 @@ i18n
             manualOrder: "Ручной порядок",
             sortDeadline: "По сроку",
             filters: "Фильтры",
-            sortStoryPoints: "По Story Points",
+            sortStoryPoints: "По оценке сложности (SP)",
             sortPriority: "По приоритету",
+            sortTitle: "По названию",
+            sortCreated: "По дате создания",
+            allStatuses: "Все колонки",
+            allAssignees: "Все исполнители",
+            unassigned: "Без исполнителя",
+            allStoryPoints: "Любая оценка сложности",
+            allDeadlines: "Любой срок",
+            overdue: "Просроченные",
+            today: "Сегодня",
+            upcoming: "Предстоящие",
+            noDeadline: "Без срока",
+            clearFilters: "Сбросить фильтры",
+            selected: "Выбрано:",
+            column: "Колонка",
+            assignee: "Исполнитель",
+            priority: "Приоритет",
+            clearSelection: "Снять выделение",
+            deleteSelected: "Удалить выбранные",
+            deleteQuestion: "Удалить выбранные задачи ({{count}})?",
           },
           editWorkspaceModal: {
-            title: "Редактировать Workspace",
+            title: "Редактировать рабочее пространство",
             workspaceName: "Название",
             description: "Описание",
             save: "Сохранить изменения",
-            updated: "Workspace успешно обновлён",
+            updated: "Рабочее пространство обновлено",
           },
-
           createWorkspaceModal: {
             title: "Создать рабочее пространство",
             workspaceName: "Название",
             namePlaceholder: "Введите название рабочего пространства",
             description: "Описание",
             descriptionPlaceholder: "Введите описание рабочего пространства",
-            create: "Создать Workspace",
-            created: 'Workspace "{{name}}" успешно создан',
+            create: "Создать рабочее пространство",
+            created: "Рабочее пространство «{{name}}» создано",
           },
-          template: "Шаблон задачи",
-          noTemplate: "Без шаблона",
-          templateNamePlaceholder: "Название шаблона, например Bug",
-          saveTemplate: "Сохранить шаблон",
-          savingTemplate: "Сохранение...",
-          deleteTemplate: "Удалить",
-          templateHint:
-            "Шаблон сохраняет текущее название, описание, приоритет и Story Points.",
-          templateNameRequired: "Введите название шаблона",
-          templateCreated: "Шаблон создан",
-          templateCreateError: "Не удалось создать шаблон",
-          deleteTemplateQuestion: "Удалить выбранный шаблон?",
-          templateDeleted: "Шаблон удалён",
-          templateDeleteError: "Не удалось удалить шаблон",
-
           column: {
             edit: "Редактировать",
             delete: "Удалить",
             deleteTitle: "Удалить колонку?",
             deleteDescription:
-              "Эта колонка больше не будет отображаться на доске. Продолжить?",
+              "Колонка и все её задачи будут удалены. Продолжить?",
             deleted: "Колонка удалена",
           },
-
           common: {
             yes: "Да",
             no: "Нет",
+            close: "Закрыть",
+            moveSubtask: "Переместить подзадачу",
+            removeSubtask: "Удалить подзадачу",
+            cancel: "Отмена",
+            add: "Добавить",
+            remove: "Удалить участника",
+            edit: "Изменить",
+            delete: "Удалить",
+            loading: "Загрузка...",
+            description: "Описание",
           },
-
           navigation: {
             analytics: "Аналитика",
             profile: "Профиль",
             backToBoard: "Назад к доске",
             workspaces: "Рабочие пространства",
           },
-
           recentTasks: {
             button: "Недавние",
             title: "Недавние задачи",
@@ -320,12 +487,10 @@ i18n
             empty: "Недавно просмотренных задач нет",
             clear: "Очистить недавние задачи",
           },
-
           pagination: {
             loading: "Загрузка...",
-            loadMore: "Загрузить ещё задачи",
+            loadMore: "Показать ещё задачи",
           },
-
           analytics: {
             title: "Аналитика проекта",
             noPermission: "У вас нет разрешения на просмотр аналитики.",
@@ -340,13 +505,11 @@ i18n
             assigneeDetails: "Подробности по исполнителям",
             tasks: "Задачи",
             unassigned: "Без исполнителя",
-
             priority: {
               high: "Высокий",
               medium: "Средний",
               low: "Низкий",
             },
-
             status: {
               backlog: "Бэклог",
               toDo: "К выполнению",
@@ -356,7 +519,6 @@ i18n
               done: "Готово",
             },
           },
-
           profile: {
             title: "Профиль",
             subtitle: "Управление личной информацией",
@@ -372,18 +534,21 @@ i18n
             updated: "Профиль обновлён",
             updateError: "Не удалось обновить профиль",
           },
-
           taskCard: {
-            subtasksProgress: "{{completed}} из {{total}} подзадач",
+            subtasksProgress: "Подзадачи: {{completed}} из {{total}}",
+            select: "Выбрать задачу «{{title}}»",
+            move: "Переместить задачу",
+            priority: "Приоритет: {{priority}}",
           },
           createBoardModal: {
-            title: "Создать новую доску",
-            boardName: "Название доски",
+            title: "Создать проект",
+            boardName: "Название проекта",
             placeholder: "Например, веб-дизайн",
-            create: "Создать доску",
-            created: "Доска {{name}} создана",
+            create: "Создать проект",
+            created: "Проект «{{name}}» создан",
+            description: "Описание",
+            descriptionPlaceholder: "Введите описание проекта",
           },
-
           taskModal: {
             editTask: "Редактировать задачу",
             deleteTask: "Удалить задачу",
@@ -392,10 +557,41 @@ i18n
             subtasks: "Подзадачи ({{completed}} из {{total}})",
             column: "Колонка",
             selectColumn: "Выберите колонку",
-            storyPoints: "Story Points",
+            storyPoints: "Оценка сложности (SP)",
             deadline: "Срок выполнения",
+            timer: "Таймер",
+            timerPending: "Обновляем таймер...",
+            timerErrors: {
+              start: "Не удалось запустить таймер. Попробуйте ещё раз.",
+              pause: "Не удалось приостановить таймер. Попробуйте ещё раз.",
+              stop: "Не удалось остановить таймер. Попробуйте ещё раз.",
+            },
+            start: "Запустить",
+            pause: "Приостановить",
+            stop: "Остановить",
+            comments: "Комментарии",
+            noComments: "Комментариев пока нет",
+            commentPlaceholder: "Напишите комментарий...",
+            addComment: "Добавить комментарий",
+            activity: "История действий",
+            activityEvents: {
+              "task": {
+                "created": "Задача создана",
+                "assignee_changed": "Исполнитель изменён",
+                "story_points_changed": "Оценка сложности изменена",
+                "deadline_changed": "Срок изменён",
+                "status_changed": "Колонка задачи изменена",
+                "timer_started": "Таймер запущен",
+                "timer_paused": "Таймер приостановлен",
+                "timer_stopped": "Таймер остановлен",
+                "comment_added": "Добавлен комментарий",
+                "bulk_updated": "Задача изменена массовым действием"
+              }
+            },
+            noActivity: "Действий пока нет",
+            actions: "Действия с задачей",
+            close: "Закрыть задачу",
           },
-
           createTask: {
             created: "Новая задача добавлена",
             title: "Добавить новую задачу",
@@ -411,19 +607,38 @@ i18n
             column: "Колонка",
             selectColumn: "Выберите колонку",
             create: "Создать задачу",
-            storyPoints: "Story Points",
-            selectStoryPoints: "Выберите Story Points",
+            storyPoints: "Оценка сложности (SP)",
+            selectStoryPoints: "Выберите оценку сложности",
             deadline: "Срок выполнения",
+            type: "Тип",
+            selectType: "Выберите тип",
+            task: "Задача",
+            epic: "Эпик",
+            selectEpic: "Выберите эпик",
+            noEpic: "Без эпика",
+            assignee: "Исполнитель",
+            selectAssignee: "Выберите исполнителя",
+            template: "Шаблон задачи",
+            noTemplate: "Без шаблона",
+            templateNamePlaceholder: "Название шаблона, например Ошибка",
+            saveTemplate: "Сохранить шаблон",
+            savingTemplate: "Сохранение...",
+            deleteTemplate: "Удалить",
+            templateHint:
+              "Шаблон сохраняет название, описание, приоритет и оценку сложности (SP).",
+            templateNameRequired: "Введите название шаблона",
+            templateCreated: "Шаблон создан",
+            templateCreateError: "Не удалось создать шаблон",
+            deleteTemplateQuestion: "Удалить выбранный шаблон?",
+            templateDeleted: "Шаблон удалён",
+            templateDeleteError: "Не удалось удалить шаблон",
           },
-
           unassigned: "Без исполнителя",
-
           priority: {
             high: "Высокий",
             medium: "Средний",
             low: "Низкий",
           },
-
           status: {
             backlog: "Бэклог",
             toDo: "К выполнению",
@@ -455,11 +670,11 @@ i18n
             cancel: "Отмена",
             updateTask: "Обновить задачу",
             subtaskPlaceholder: "Например, приготовить кофе",
-            storyPoints: "Story Points",
-            selectStoryPoints: "Выберите Story Points",
+            storyPoints: "Оценка сложности (SP)",
+            selectStoryPoints: "Выберите оценку сложности",
             deadline: "Срок выполнения",
+            titlePlaceholder: "Например, подготовить макет",
           },
-
           editProjectModal: {
             title: "Редактировать проект",
             projectName: "Название проекта",
@@ -472,7 +687,6 @@ i18n
             save: "Сохранить изменения",
             updated: "Проект успешно обновлён",
           },
-
           editColumn: {
             updated: "Колонка обновлена",
             title: "Редактировать колонку",
@@ -480,6 +694,98 @@ i18n
             placeholder: "Например, На проверке",
             color: "Цвет колонки",
             update: "Обновить колонку",
+          },
+          hints: {
+            storyPoints: "SP — относительная сложность, а не часы.",
+            epic: "Эпик объединяет связанные задачи.",
+            roleLevel:
+              "Чем больше число, тем выше роль. Уровень не добавляет разрешений.",
+            separateRoles:
+              "Роли в рабочем пространстве и проекте назначаются отдельно.",
+            registerFirst:
+              "Пользователь должен сначала зарегистрироваться и войти в приложение.",
+            removeWorkspaceMember:
+              "Удаление из рабочего пространства отзывает доступ к его проектам.",
+          },
+          members: {
+            workspaceTitle: "Участники рабочего пространства",
+            projectTitle: "Участники проекта",
+            email: "Email пользователя",
+            denied: "Недостаточно прав",
+            empty: "Участников нет",
+            owner: "Владелец",
+            noRole: "Роль не назначена",
+            selectRole: "Выберите роль",
+            added: "Участник добавлен",
+            removed: "Участник удалён",
+            roleChanged: "Роль изменена",
+            addError: "Не удалось добавить участника",
+            removeError: "Не удалось удалить участника",
+            roleError: "Не удалось изменить роль",
+          },
+          roles: {
+            title: "Роли рабочего пространства",
+            name: "Название роли",
+            namePlaceholder: "Например, разработчик",
+            descriptionPlaceholder: "Опишите назначение роли",
+            level: "Уровень",
+            permissions: "Разрешения",
+            save: "Сохранить роль",
+            create: "Создать роль",
+            existing: "Созданные роли",
+            empty: "Роли ещё не созданы",
+            nameRequired: "Введите название роли",
+            updated: "Роль изменена",
+            created: "Роль создана",
+            deleted: "Роль удалена",
+            error: "Не удалось выполнить действие",
+            deleteError: "Не удалось удалить роль",
+          },
+          favorites: {
+            add: "Добавить в избранное",
+            remove: "Убрать из избранного",
+          },
+          sidebar: {
+            editWorkspace: "Изменить рабочее пространство",
+            deleteWorkspace: "Удалить рабочее пространство",
+            editProject: "Изменить проект",
+            deleteProject: "Удалить проект",
+            moveProject: "Переместить проект",
+            expand: "Развернуть боковую панель",
+            light: "Включить светлую тему",
+            dark: "Включить тёмную тему",
+            language: "Язык интерфейса",
+            deleteWorkspacePrompt:
+              "Чтобы удалить рабочее пространство и все его проекты, введите его точное название: {{name}}",
+            workspaceMismatch:
+              "Название рабочего пространства не совпадает. Удаление отменено.",
+            deleteProjectPrompt:
+              "Чтобы удалить проект, введите его точное название: {{name}}",
+            projectMismatch:
+              "Название проекта не совпадает. Удаление отменено.",
+          },
+          permissions: {
+            project: {
+              view: "Просмотр проектов",
+              create: "Создание проектов",
+              update: "Изменение проектов",
+              delete: "Удаление проектов",
+            },
+            task: {
+              view: "Просмотр задач",
+              create: "Создание задач",
+              update: "Изменение задач",
+              delete: "Удаление задач",
+            },
+            members: {
+              manage: "Управление участниками",
+            },
+            roles: {
+              manage: "Управление ролями",
+            },
+            analytics: {
+              view: "Просмотр аналитики",
+            },
           },
         },
       },

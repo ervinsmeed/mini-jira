@@ -1,3 +1,4 @@
+import { getColumnLabel } from "../../lib/columnLabel";
 import { useState, useEffect, type CSSProperties, type FormEvent } from "react";
 import { X, GripVertical } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
@@ -80,10 +81,12 @@ function SortableSubTask({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="flex items-center space-x-2"
+      className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2"
     >
       <div
         {...listeners}
+        aria-label={t("common.moveSubtask")}
+        title={t("common.moveSubtask")}
         className={`p-1 cursor-grab transition-colors ${
           theme === "dark"
             ? "text-slate-400 hover:text-slate-100"
@@ -98,7 +101,7 @@ function SortableSubTask({
         value={subtask}
         onChange={(e) => onChange(index, e.target.value)}
         placeholder={t("createTask.subtaskPlaceholder")}
-        className={`flex-1 px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
+        className={`min-w-0 w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
           theme === "dark"
             ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
             : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
@@ -108,6 +111,8 @@ function SortableSubTask({
       <button
         type="button"
         onClick={() => onRemove(index)}
+        aria-label={t("common.removeSubtask")}
+        title={t("common.removeSubtask")}
         className={`p-2 transition-colors ${
           theme === "dark"
             ? "text-slate-400 hover:text-red-400"
@@ -360,21 +365,24 @@ export default function CreateTaskModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className={`max-w-lg max-h-[600px] overflow-auto rounded-xl border shadow-lg transition-colors ${
+        className={`w-[calc(100%-2rem)] min-w-0 max-w-lg sm:max-w-lg max-h-[min(600px,calc(100dvh-2rem))] overflow-y-auto rounded-xl border shadow-lg transition-colors ${
           theme === "dark"
             ? "bg-slate-950 border-slate-800 text-slate-100"
             : "bg-white border-slate-200 text-slate-900"
         }`}
       >
         <DialogHeader>
-          <DialogTitle className="text-lg! font-semibold">
+          <DialogTitle className="min-w-0 pr-6 text-lg! font-semibold wrap-anywhere">
             {t("createTask.title")}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 mt-2">
+        <form
+          onSubmit={handleSubmit}
+          className="min-w-0 space-y-6 mt-2 [&>*]:min-w-0"
+        >
           <div
-            className={`rounded-lg border p-4 ${
+            className={`min-w-0 rounded-lg border p-3 sm:p-4 ${
               theme === "dark"
                 ? "border-slate-800 bg-slate-900/50"
                 : "border-slate-200 bg-slate-50"
@@ -390,11 +398,11 @@ export default function CreateTaskModal({
               })}
             </label>
 
-            <div className="flex gap-2">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
               <select
                 value={selectedTemplateId || "none"}
                 onChange={(event) => handleTemplateSelect(event.target.value)}
-                className={`min-w-0 flex-1 rounded-md border px-3 py-2 text-sm outline-none ${
+                className={`min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none ${
                   theme === "dark"
                     ? "border-slate-700 bg-slate-950 text-slate-100"
                     : "border-slate-300 bg-white text-slate-900"
@@ -417,7 +425,7 @@ export default function CreateTaskModal({
                 type="button"
                 onClick={handleDeleteTemplate}
                 disabled={!selectedTemplateId}
-                className={`rounded-md border px-3 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                className={`min-w-0 max-w-full whitespace-normal wrap-anywhere rounded-md border px-3 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
                   theme === "dark"
                     ? "border-red-900 text-red-400 hover:bg-red-950"
                     : "border-red-200 text-red-600 hover:bg-red-50"
@@ -429,7 +437,7 @@ export default function CreateTaskModal({
               </button>
             </div>
 
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
               <input
                 type="text"
                 value={templateName}
@@ -437,7 +445,7 @@ export default function CreateTaskModal({
                 placeholder={t("createTask.templateNamePlaceholder", {
                   defaultValue: "Template name, e.g. Bug",
                 })}
-                className={`min-w-0 flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 ${
+                className={`min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 ${
                   theme === "dark"
                     ? "border-slate-700 bg-slate-950 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
                     : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
@@ -448,7 +456,7 @@ export default function CreateTaskModal({
                 type="button"
                 onClick={handleSaveTemplate}
                 disabled={isSavingTemplate}
-                className="rounded-md bg-purple-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-w-0 max-w-full whitespace-normal wrap-anywhere rounded-md bg-purple-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSavingTemplate
                   ? t("createTask.savingTemplate", {
@@ -485,7 +493,7 @@ export default function CreateTaskModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t("createTask.titlePlaceholder")}
-              className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
+              className={`min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
                 theme === "dark"
                   ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
                   : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
@@ -508,7 +516,7 @@ export default function CreateTaskModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t("createTask.descriptionPlaceholder")}
               rows={4}
-              className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition resize-none ${
+              className={`min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition resize-none ${
                 theme === "dark"
                   ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
                   : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
@@ -522,7 +530,10 @@ export default function CreateTaskModal({
                 theme === "dark" ? "text-slate-300" : "text-slate-700"
               }`}
             >
-              Type
+              {t("createTask.type")}
+              <span className="block text-xs font-normal opacity-70">
+                {t("hints.epic")}
+              </span>
             </label>
 
             <Select
@@ -538,24 +549,25 @@ export default function CreateTaskModal({
               }}
             >
               <SelectTrigger
-                className={`w-full transition-colors ${
+                className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
                   theme === "dark"
                     ? "bg-slate-900 border-slate-800 text-slate-100"
                     : "bg-white border-slate-300 text-slate-900"
                 }`}
               >
-                <SelectValue placeholder="Select type" />
+                <SelectValue placeholder={t("createTask.selectType")} />
               </SelectTrigger>
 
               <SelectContent
-                className={`transition-colors ${
+                position="popper"
+                className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
                   theme === "dark"
                     ? "bg-slate-900 border-slate-800 text-slate-100"
                     : "bg-white border-slate-200 text-slate-900"
                 }`}
               >
-                <SelectItem value="task">Task</SelectItem>
-                <SelectItem value="epic">Epic</SelectItem>
+                <SelectItem value="task">{t("createTask.task")}</SelectItem>
+                <SelectItem value="epic">{t("createTask.epic")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -567,7 +579,7 @@ export default function CreateTaskModal({
                   theme === "dark" ? "text-slate-300" : "text-slate-700"
                 }`}
               >
-                Epic
+                {t("createTask.epic")}
               </label>
 
               <Select
@@ -577,23 +589,24 @@ export default function CreateTaskModal({
                 }
               >
                 <SelectTrigger
-                  className={`w-full transition-colors ${
+                  className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
                     theme === "dark"
                       ? "bg-slate-900 border-slate-800 text-slate-100"
                       : "bg-white border-slate-300 text-slate-900"
                   }`}
                 >
-                  <SelectValue placeholder="Select Epic" />
+                  <SelectValue placeholder={t("createTask.selectEpic")} />
                 </SelectTrigger>
 
                 <SelectContent
-                  className={`transition-colors ${
+                  position="popper"
+                  className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
                     theme === "dark"
                       ? "bg-slate-900 border-slate-800 text-slate-100"
                       : "bg-white border-slate-200 text-slate-900"
                   }`}
                 >
-                  <SelectItem value="none">No Epic</SelectItem>
+                  <SelectItem value="none">{t("createTask.noEpic")}</SelectItem>
 
                   {epics.map((epic) => (
                     <SelectItem key={epic._id} value={epic._id}>
@@ -640,7 +653,7 @@ export default function CreateTaskModal({
                   <button
                     type="button"
                     onClick={handleAddSubtask}
-                    className={`w-full py-2 border-2 border-dashed rounded-md font-medium transition ${
+                    className={`min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 border-2 border-dashed rounded-md font-medium transition ${
                       theme === "dark"
                         ? "border-slate-800 text-purple-400 hover:bg-slate-900"
                         : "border-slate-300 text-purple-600 hover:bg-slate-100"
@@ -653,7 +666,7 @@ export default function CreateTaskModal({
             </DndContext>
           </div>
 
-          <div className="grid gap-4 grid-cols-2">
+          <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
             <div>
               <label
                 className={`block text-sm font-medium mb-2 ${
@@ -668,7 +681,7 @@ export default function CreateTaskModal({
                 onValueChange={(value) => setPriority(value as Priority)}
               >
                 <SelectTrigger
-                  className={`w-full transition-colors ${
+                  className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
                     theme === "dark"
                       ? "bg-slate-900 border-slate-800 text-slate-100"
                       : "bg-white border-slate-300 text-slate-900"
@@ -681,7 +694,8 @@ export default function CreateTaskModal({
                 </SelectTrigger>
 
                 <SelectContent
-                  className={`transition-colors ${
+                  position="popper"
+                  className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
                     theme === "dark"
                       ? "bg-slate-900 border-slate-800 text-slate-100"
                       : "bg-white border-slate-200 text-slate-900"
@@ -724,7 +738,7 @@ export default function CreateTaskModal({
                 onValueChange={(value) => setColumnId(value as Id<"columns">)}
               >
                 <SelectTrigger
-                  className={`w-full transition-colors ${
+                  className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
                     theme === "dark"
                       ? "bg-slate-900 border-slate-800 text-slate-100"
                       : "bg-white border-slate-300 text-slate-900"
@@ -737,7 +751,8 @@ export default function CreateTaskModal({
                 </SelectTrigger>
 
                 <SelectContent
-                  className={`transition-colors ${
+                  position="popper"
+                  className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
                     theme === "dark"
                       ? "bg-slate-900 border-slate-800 text-slate-100"
                       : "bg-white border-slate-200 text-slate-900"
@@ -745,7 +760,7 @@ export default function CreateTaskModal({
                 >
                   {columns.map((column) => (
                     <SelectItem key={column._id} value={column._id}>
-                      {column.name}
+                      {getColumnLabel(column.name, t)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -758,7 +773,7 @@ export default function CreateTaskModal({
                 theme === "dark" ? "text-slate-300" : "text-slate-700"
               }`}
             >
-              Assignee
+              {t("createTask.assignee")}
             </label>
 
             <Select
@@ -770,34 +785,33 @@ export default function CreateTaskModal({
               }
             >
               <SelectTrigger
-                className={`w-full transition-colors ${
+                className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
                   theme === "dark"
                     ? "bg-slate-900 border-slate-800 text-slate-100"
                     : "bg-white border-slate-300 text-slate-900"
                 }`}
               >
-                <SelectValue placeholder="Select assignee" />
+                <SelectValue placeholder={t("createTask.selectAssignee")} />
               </SelectTrigger>
 
               <SelectContent
-                className={`transition-colors ${
+                position="popper"
+                className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
                   theme === "dark"
                     ? "bg-slate-900 border-slate-800 text-slate-100"
                     : "bg-white border-slate-200 text-slate-900"
                 }`}
               >
-                <SelectItem value="unassigned">Unassigned</SelectItem>
+                <SelectItem value="unassigned">{t("unassigned")}</SelectItem>
 
                 {projectMembers.map(
-                  (
-                    member: {
-                      _id: Id<"users">;
-                      name: string;
-                      email: string;
-                      roleId: Id<"roles"> | null;
-                      isOwner: boolean;
-                    },
-                  ) => (
+                  (member: {
+                    _id: Id<"users">;
+                    name: string;
+                    email: string;
+                    roleId: Id<"roles"> | null;
+                    isOwner: boolean;
+                  }) => (
                     <SelectItem key={member._id} value={member._id}>
                       {member.name || member.email}
                     </SelectItem>
@@ -815,6 +829,9 @@ export default function CreateTaskModal({
               }`}
             >
               {t("createTask.storyPoints")}
+              <span className="block text-xs font-normal opacity-70">
+                {t("hints.storyPoints")}
+              </span>
             </label>
 
             <Select
@@ -824,7 +841,7 @@ export default function CreateTaskModal({
               }
             >
               <SelectTrigger
-                className={`w-full transition-colors ${
+                className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
                   theme === "dark"
                     ? "bg-slate-900 border-slate-800 text-slate-100"
                     : "bg-white border-slate-300 text-slate-900"
@@ -834,7 +851,8 @@ export default function CreateTaskModal({
               </SelectTrigger>
 
               <SelectContent
-                className={`transition-colors ${
+                position="popper"
+                className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
                   theme === "dark"
                     ? "bg-slate-900 border-slate-800 text-slate-100"
                     : "bg-white border-slate-200 text-slate-900"
@@ -863,7 +881,7 @@ export default function CreateTaskModal({
               type="date"
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
-              className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
+              className={`min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
                 theme === "dark"
                   ? "bg-slate-900 border-slate-800 text-slate-100 focus:ring-purple-400"
                   : "bg-white border-slate-300 text-slate-900 focus:ring-purple-500"
@@ -873,7 +891,7 @@ export default function CreateTaskModal({
 
           <button
             type="submit"
-            className={`w-full py-2 rounded-lg transition focus:outline-none focus:ring-2 ${
+            className={`min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 rounded-lg transition focus:outline-none focus:ring-2 ${
               theme === "dark"
                 ? "bg-purple-500 text-white hover:bg-purple-600 focus:ring-purple-400"
                 : "bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500"

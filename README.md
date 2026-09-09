@@ -1,75 +1,230 @@
-# React + TypeScript + Vite
+﻿# Mini Jira
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Mini Jira — веб-приложение для управления рабочими пространствами, проектами и задачами на канбан-доске. Интерфейс работает на React, авторизация — через Clerk, данные и серверные проверки доступа — в Convex.
 
-Currently, two official plugins are available:
+## Реализованные возможности
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Перечень подтверждён реализацией frontend и backend; это не отчёт о прохождении всех пользовательских сценариев.
 
-## React Compiler
+- Регистрация и вход через Clerk, создание/синхронизация пользователя в Convex после входа; редактирование профиля.
+- Создание, редактирование и удаление workspace и проектов (в коде проекты называются `boards`), статусы проектов `active`, `completed`, `archived`.
+- Канбан-колонки, создание и редактирование задач, перенос задач между колонками и изменение порядка перетаскиванием.
+- Описание, приоритет, исполнитель, срок, story points, задачи и эпики со связью задачи с эпиком.
+- Поиск по названию, описанию, имени/email автора и исполнителя; фильтры и сортировка по всему списку задач выбранного проекта, показ результатов порциями по 12; массовое изменение и удаление.
+- Шаблоны задач, комментарии, журнал активности, накопительный таймер с запуском, паузой и остановкой. Повторный запуск после остановки сохраняет общий итог; отдельных записей длительности сеансов нет.
+- Избранные проекты и задачи, недавно просмотренные задачи, аналитика проекта.
+- Добавление зарегистрированных пользователей в workspace и проекты по email; пользовательские роли и серверные проверки разрешений.
+- Светлая/тёмная тема, русские и английские переводы, обновление данных через подписки Convex.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Стек
 
-## Expanding the ESLint configuration
+Версии ниже — диапазоны из `package.json`; точные версии установки фиксирует `package-lock.json`.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+| Назначение | Зависимости |
+| --- | --- |
+| Интерфейс | React / React DOM `^19.2.7`, TypeScript `~6.0.2` |
+| Сборка | Vite `^8.1.1`, `@vitejs/plugin-react` `^6.0.3`, `vite-tsconfig-paths` `^6.1.1` |
+| Backend и база данных | Convex `^1.42.1` |
+| Авторизация | `@clerk/clerk-react` `^5.61.8` |
+| Стили и UI | Tailwind CSS `^4.3.2`, Radix UI, shadcn, Lucide React, Sonner, Geist; clsx, class-variance-authority, tailwind-merge |
+| Перетаскивание | `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` |
+| Графики | Recharts `^3.10.1` |
+| Локализация | i18next `^26.3.6`, react-i18next `^17.0.11`, browser language detector |
+| Проверка кода | ESLint `^10.6.0`, typescript-eslint, плагины React Hooks и React Refresh |
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Структура проекта
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```text
+src/                         # Frontend: React SPA
+  main.tsx                   # ClerkProvider → ConvexProviderWithClerk → App
+  App.tsx                    # Состояния авторизации
+  components/                # Доска, профиль, аналитика, модальные окна, участники и роли
+    ui/                      # UI-компоненты, колонки, формы и просмотр задач
+  lib/                       # Утилиты frontend
+  i18n.ts                    # Переводы и настройка языка
+  index.css, App.css         # Стили
+convex/                      # Backend: запросы и мутации Convex
+  schema.ts                  # Таблицы и индексы
+  auth.config.ts             # Проверка JWT Clerk
+  users.ts                   # Синхронизация пользователя и профиль
+  workspaces.js, boards.js    # Workspace и проекты
+  workspaceMembers.js        # Участники workspace
+  boardMembers.js, roles.js  # Участники проектов и роли
+  tasks.js, columns.js        # Задачи, комментарии, активность, таймер и колонки
+  taskTemplates.js           # Шаблоны задач
+  favorites.js, recentTasks.js
+  analytics.js               # Агрегация аналитики
+  lib/                       # Проверка доступа к workspace и делегирования ролей
+  _generated/                # Генерируемый Convex API и типы
+package.json                 # Зависимости и npm-команды
+package-lock.json            # Фиксация версий для npm ci
+vite.config.ts               # Конфигурация сборки frontend
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Frontend вызывает Convex через сгенерированный API. Backend выполняется в отдельном deployment Convex; собственного Express-сервера в репозитории нет. Clerk подтверждает личность, а прикладные роли хранятся в Convex, не в Clerk Organizations.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Запуск после клонирования
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Подготовить окружение
 
+Нужны Git, Node.js с npm, доступ к интернету и собственные аккаунты Clerk и Convex. Используйте Node.js 24.x. По `engines` установленных зависимостей Vite требует `^20.19.0 || >=22.12.0`, ESLint — `^20.19.0 || ^22.13.0 || >=24`, Convex — Node.js `>=18` и npm `>=7`. Поэтому для ветки 22 нужен минимум **22.13**, а не просто Node.js 18+.
+
+В каталоге клонированного репозитория:
+
+```sh
+node --version
+npm --version
+npm ci
 ```
+
+### 2. Создать собственное приложение Clerk
+
+В [Clerk Dashboard](https://dashboard.clerk.com/) создайте приложение для разработки, включите регистрацию по email и подтверждение адреса. В разделе API keys возьмите Publishable Key и Frontend API URL своего приложения. Secret Key для текущего frontend не требуется.
+
+### 3. Настроить токен для Convex
+
+В Clerk откройте **JWT templates → New template**, выберите Convex (или пустой шаблон), задайте имя **`convex`** и сохраните claims:
+
+```json
+{
+  "aud": "convex",
+  "email": "{{user.primary_email_address}}",
+  "email_verified": "{{user.email_verified}}",
+  "name": "{{user.full_name}}"
+}
+```
+
+`aud` должен совпадать с `applicationID: "convex"`. Clerk сам добавляет `iss` и `sub`. Значение shortcode сохраняет тип исходного поля: после подтверждения email claim `email_verified` должен быть логическим **`true`**, а не строкой `"true"`. Не заменяйте проверку адреса константой `true`. Настройка шаблонов описана в [официальной документации Clerk](https://clerk.com/docs/guides/sessions/jwt-templates).
+
+В `convex/users.ts` мутация `users.create` требует непустой `email` и `identity.emailVerified === true` (это JWT claim `email_verified`). Адрес нормализуется; привязка одного email к разным Clerk ID запрещена. Одной успешной авторизации в Clerk недостаточно, если этих claims нет: синхронизация пользователя завершится ошибкой.
+
+Актуальные руководства предлагают новый путь: **Activate Convex integration** в Clerk и дополнительные claims в **Sessions → Claims**. Установленный Convex поддерживает оба варианта: при `sessionClaims.aud === "convex"` использует session token, иначе запрашивает JWT template `convex`. Если активируете интеграцию, добавьте `email` и `email_verified` также в session claims: изменение только шаблона тогда не поможет. См. [интеграцию Clerk](https://clerk.com/docs/guides/development/integrations/databases/convex).
+
+### 4. Указать свой issuer в backend
+
+В `convex/auth.config.ts` уже записан фиксированный домен чужого Clerk-приложения. В своей копии замените значение `domain` на **Frontend API URL собственного Clerk**, включая `https://`; `applicationID` оставьте равным `convex`:
+
+```ts
+export default {
+  providers: [
+    {
+      domain: "https://<your-clerk-instance>.clerk.accounts.dev",
+      applicationID: "convex",
+    },
+  ],
+};
+```
+
+Это issuer токена, а не адрес frontend или deployment Convex. Последовательность «настройка Clerk → auth.config → синхронизация Convex» соответствует [руководству Convex](https://docs.convex.dev/auth/clerk).
+
+### 5. Создать и связать Convex deployment
+
+Из корня репозитория выполните:
+
+```sh
+npx convex dev --once
+```
+
+Авторизуйтесь в своём аккаунте Convex, создайте новый проект и выберите собственный development deployment. CLI свяжет каталог с проектом, загрузит схему, функции и auth config, сгенерирует API и запишет параметры подключения. Используйте собственный облачный deployment для этого сценария. Первый запуск с `--once` позволяет закончить настройку до запуска двух постоянных процессов; такой порядок инициализации приведён в [инструкции Clerk](https://clerk.com/docs/guides/development/integrations/databases/convex).
+
+### 6. Настроить `.env.local`
+
+В корне проекта добавьте или обновите переменные, сохранив параметры, созданные CLI Convex:
+
+```dotenv
+VITE_CONVEX_URL=https://<your-dev-deployment>.convex.cloud
+VITE_CLERK_PUBLISHABLE_KEY=<your-clerk-publishable-key>
+```
+
+Замените placeholders собственными значениями: URL deployment берётся из Convex, Publishable Key — из того же Clerk-приложения, чей domain указан выше. Не используйте URL `convex.site` вместо URL API deployment.
+
+Обе переменные читает `src/main.tsx`. Значения `VITE_*` попадают в браузерную сборку: помещать туда пароли, Secret Key и deploy-токены нельзя. `.env.local` не нужно коммитить. После изменения переменных перезапустите Vite.
+
+### 7. Запустить два терминала
+
+Терминал 1, из корня проекта:
+
+```sh
+npx convex dev
+```
+
+Оставьте процесс работающим: он синхронизирует backend с development deployment.
+
+Терминал 2, из того же каталога:
+
+```sh
+npm run dev
+```
+
+Откройте адрес из вывода Vite (обычно `http://localhost:5173`), зарегистрируйтесь и подтвердите email. После входа приложение вызовет `users.create`. Если рабочие пространства не загружаются, проверьте совпадение Clerk domain, audience и наличие обязательных claims, не публикуя JWT и ключи.
+
+## Команды
+
+| Команда | Назначение |
+| --- | --- |
+| `npm run dev` | Сервер разработки Vite |
+| `npx convex dev` | Разработка и синхронизация backend Convex |
+| `npm run build` | `tsc -b && vite build`, сборка frontend в `dist/` |
+| `npm run lint` | `eslint .` |
+| `npm run preview` | Локальный просмотр предварительно собранного `dist/` |
+
+Для preview сначала выполните `npm run build`. **Preview не запускает и не развёртывает backend**: браузер обращается к Convex URL, включённому в сборку. Это не production-сервер.
+
+## RBAC по коду
+
+- **Workspace owner** — `workspaces.ownerId`. Может изменять/удалять workspace, управлять его участниками и ролями; получает доступ владельца к проектам внутри workspace.
+- **Project owner** — `boards.userId`. Получает доступ владельца к своему проекту, но для проекта с workspace сначала требуется действующий доступ к родительскому workspace. Это не делает его владельцем workspace или управляющим его ролями.
+- Роли создаются вручную и принадлежат конкретному workspace. Предустановленных Admin/Editor/Viewer и фиксированных уровней нет. `roleId` назначается отдельно в `workspaceMembers` и `boardMembers`; права двух назначений автоматически не объединяются. Участник без роли не получает разрешений.
+- Уровень — конечное число: большее число означает более высокий уровень, но само по себе не добавляет разрешений. Не-владелец может делегировать только роль строго ниже своей и только с подмножеством собственных разрешений. Нельзя управлять участниками/ролями равного или более высокого уровня, назначать роль себе или повышать назначенную себе роль. Назначенную участникам роль удалить нельзя.
+
+| Разрешение | Где применяется |
+| --- | --- |
+| `project.create` | Роль workspace: создание проекта |
+| `project.view` | Роль проекта: видимость проекта в workspace |
+| `project.update`, `project.delete` | Роль проекта: изменение/порядок и удаление проекта |
+| `task.view` | Чтение задач, колонок, комментариев, активности и шаблонов |
+| `task.create`, `task.update`, `task.delete` | Операции над задачами и шаблонами; `task.update` также требуется для переноса, таймера и добавления комментария |
+| `members.manage` | Управление участниками соответствующего workspace или проекта |
+| `roles.manage` | Управление определениями ролей через роль workspace |
+| `analytics.view` | Просмотр аналитики проекта |
+
+Колонки проверяются отдельно: создание/инициализация — владельцем workspace или проекта; изменение/удаление — владельцем workspace или создателем колонки (`columns.userId`), при действующем доступе к workspace. Одного `project.update` недостаточно.
+
+Удаление участника из workspace удаляет и его `boardMembers` во всех проектах этого workspace. Дополнительная проверка родительского доступа блокирует доступ даже при оставшейся старой записи проектного членства. Владельца workspace удалить нельзя; удаление участника, владеющего проектом в нём, блокируется. Владельцев workspace/проекта нельзя удалить или переназначить им роль через управление участниками проекта.
+
+## Ручная проверка двумя аккаунтами
+
+Используйте отдельные профили браузера или обычное и приватное окно. Ниже — сценарий для выполнения вручную, а не уже пройденный автоматизированный тест.
+
+1. **Аккаунт A:** зарегистрируйтесь, подтвердите email и войдите. Создайте workspace, проект в нём, колонки и несколько задач. A должен оставаться владельцем проекта.
+2. **Аккаунт B:** зарегистрируйте другого пользователя, подтвердите его email и хотя бы один раз войдите в Mini Jira, чтобы появилась запись в `users`. Добавление по email ищет уже существующего пользователя; отправка приглашения незарегистрированному пользователю не реализована.
+3. **Аккаунт A:** в управлении ролями workspace создайте роль `Viewer`, например уровня `10`, с разрешениями только `project.view` и `task.view`. При необходимости проверки аналитики отдельно добавьте `analytics.view`.
+4. Добавьте B по его подтверждённому email в участники workspace, затем назначьте `Viewer`. Отдельно добавьте B в участники проекта и назначьте ту же роль там. Членство в workspace не добавляет пользователя во все проекты автоматически.
+5. **Аккаунт B:** обновите страницу; убедитесь, что проект и задачи видны. Проверьте отсутствие возможности создать, изменить, удалить или перетащить задачу, добавить комментарий, запустить таймер, менять проект, колонки, участников и роли. Элементы управления должны быть скрыты/недоступны; попытка запрещённой мутации от сессии B должна отклоняться сервером. Проверять только скрытие кнопок недостаточно. Личное избранное и история просмотров не считаются изменением общих задач.
+6. Оставьте у B открытый проект. **Аккаунт A:** удалите B **только из workspace**, не удаляя его отдельно из проекта.
+7. **Аккаунт B:** проверьте отзыв доступа в открытом окне и после обновления страницы: workspace и проект больше не доступны, чтение/изменение прежних задач не должно возвращать защищённые данные или проходить успешно. Старый экран может сохранять уже загруженные данные до обновления; критерий — отсутствие нового серверного доступа.
+8. **Аккаунт A:** убедитесь, что B исчез и из участников проекта, а сам проект и задачи сохранились.
+
+## Известные ограничения
+
+- Текущий результат `npm run lint`: **0 ошибок, 98 предупреждений**. Предупреждения не означают чистую проверку без замечаний.
+- Известны предупреждения сборки о крупных чанках и `vite-tsconfig-paths`; оптимизация сборки остаётся отдельной задачей.
+- В репозитории не обнаружены автоматизированные тесты и test-script. Build и lint не заменяют ручную проверку авторизации и RBAC.
+- Доска получает полный список задач выбранного проекта через существующий запрос `tasks.list`, затем применяет поиск, фильтры и сортировку и показывает результаты порциями по 12. Это клиентская пагинация отображения, а не ограничение сетевой загрузки. Для больших проектов потребуется отдельная серверная стратегия поиска/сортировки и курсорной пагинации.
+- Фильтры задач: колонка, исполнитель (включая отсутствие исполнителя), приоритет, SP и срок. Сортировки: ручной порядок, название (по языку интерфейса), срок по возрастанию, дата создания и SP по убыванию, приоритет. Фильтры сроков используют границы локального календарного дня; аналитика считает просрочку по текущему моменту и исключает завершённые задачи.
+- У проектов реализованы ручной порядок, избранное и изменение статуса. Отдельного поиска, фильтра статусов и выбора сортировки проектов в интерфейсе нет. Оригинал ТЗ в доступных файлах отсутствует; соответствие неизвестным требованиям не подтверждено.
+- Локализация неполная: оболочка авторизации переведена, но локализация встроенной формы Clerk не подключена. У истории переведены названия событий по `action`; исходные текстовые подробности сохранены, в том числе английские. Часть серверных ошибок показывается исходным текстом; даты следуют локали браузера.
+- Браузерная проверка текущих исправлений, вход с чистого клона и проверка двух реальных аккаунтов остаются ручными этапами приёмки.
+- Аналитика считает завершёнными задачи в колонках с именем `done` или `готово` после приведения регистра и удаления пробелов; произвольное название финальной колонки не распознаётся автоматически.
+- Удаление владельца проекта из workspace блокируется сообщением о необходимости передачи владения, но отдельный сценарий передачи владения в интерфейсе/API не реализован.
+- В `auth.config.ts` домен Clerk зафиксирован в коде; автоматического переключения issuer между dev и production сейчас нет.
+
+## Что настроить отдельно для production
+
+Создайте production instance Clerk с собственным доменом, DNS и настройками способов входа/подтверждения email. Перенесите настройку токенов с audience `convex` и обязательными claims, используйте production Publishable Key. Настройте production deployment Convex и его issuer для production Clerk; development domain из репозитория для этого не подходит.
+
+Разделение issuer по окружениям потребует отдельной настройки: например, чтения переменной в `auth.config.ts` и задания её в соответствующих deployments Convex. Одно добавление переменной в `.env.local` не изменит текущий фиксированный `domain`. Развёртывание backend выполняется через `npx convex deploy`; подробнее — [dev/prod-настройка Convex и Clerk](https://docs.convex.dev/auth/clerk#configuring-dev-and-prod-instances).
+
+Для frontend настройте хостинг с HTTPS, Node.js совместимой версии, `npm ci`, `npm run build` и публикацию `dist/`. До сборки задайте production `VITE_CONVEX_URL` и `VITE_CLERK_PUBLISHABLE_KEY` в окружении хостинга. Backend развёртывается отдельно; `npm run build` его не публикует. См. [развёртывание Convex](https://docs.convex.dev/production/overview).
+
+Отдельно настройте CI/CD, хранение deploy-ключей в секретах платформы, мониторинг ошибок, резервное копирование/восстановление данных и повторите ручную проверку двумя аккаунтами на production-конфигурации. Готовый production-процесс этим репозиторием не предоставляется.

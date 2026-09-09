@@ -52,6 +52,7 @@ export default function Sidebar({
   onProjectMembers,
   currentView,
   onViewChange,
+  canViewAnalytics,
   can,
   theme,
   onThemeToggle,
@@ -125,12 +126,18 @@ export default function Sidebar({
     const changes = reorderedBoards
       .map((board, index) => ({ boardId: board._id, newOrder: index }))
       .filter((change, index) => boards[index]._id !== change.boardId);
-    const accessResults = await Promise.all(changes.map((change) =>
-      convex.query(api.boards.getCurrentAccess, { boardId: change.boardId }),
-    ));
-    if (accessResults.some((access: { isOwner: boolean; permissions: string[] } | null) =>
-      !access?.isOwner && !access?.permissions.includes("project.update"),
-    )) return;
+    const accessResults = await Promise.all(
+      changes.map((change) =>
+        convex.query(api.boards.getCurrentAccess, { boardId: change.boardId }),
+      ),
+    );
+    if (
+      accessResults.some(
+        (access: { isOwner: boolean; permissions: string[] } | null) =>
+          !access?.isOwner && !access?.permissions.includes("project.update"),
+      )
+    )
+      return;
 
     for (const change of changes) {
       await updateBoardOrder(change);
@@ -142,7 +149,7 @@ export default function Sidebar({
         className={`w-16 flex flex-col items-center py-4 border-r transition-colors ${
           theme === "dark"
             ? "bg-slate-950 border-slate-800"
-            : "bg-white border-slate-200"
+            : "bg-sidebar border-slate-200"
         }`}
       >
         <div className="flex flex-col items-center space-y-4 flex-1">
@@ -181,7 +188,7 @@ export default function Sidebar({
             </DndContext>
           </div>
 
-          {currentBoard && can("analytics.view") && (
+          {currentBoard && canViewAnalytics && (
             <button
               type="button"
               onClick={() => onViewChange("analytics")}
@@ -215,6 +222,7 @@ export default function Sidebar({
 
         <button
           onClick={onToggleCollapsed}
+          aria-label={t(isCollapsed ? "sidebar.expand" : "hideSidebar")}
           className={`p-2 transition-colors ${
             theme === "dark"
               ? "text-slate-400 hover:text-slate-100"
@@ -232,7 +240,7 @@ export default function Sidebar({
       className={`w-72 flex flex-col h-screen fixed left-0 top-0 z-40 border-r transition-colors ${
         theme === "dark"
           ? "bg-slate-950 border-slate-800"
-          : "bg-white border-slate-200"
+          : "bg-sidebar border-slate-200"
       }`}
     >
       <div
@@ -303,7 +311,7 @@ export default function Sidebar({
                     onWorkspaceMembers(workspace);
                   }}
                   className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
-                  title="Workspace Members"
+                  title={t("members.workspaceTitle")}
                 >
                   <Users className="size-3.5" />
                 </button>
@@ -315,7 +323,7 @@ export default function Sidebar({
                     onWorkspaceRoles(workspace);
                   }}
                   className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
-                  title="Workspace Roles"
+                  title={t("roles.title")}
                 >
                   <Shield className="size-3.5" />
                 </button>
@@ -328,7 +336,7 @@ export default function Sidebar({
                     onEditWorkspace(workspace);
                   }}
                   className="relative z-10 mr-3 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
-                  title="Edit Workspace"
+                  title={t("sidebar.editWorkspace")}
                 >
                   <Pencil className="size-3.5" />
                 </button>
@@ -341,7 +349,9 @@ export default function Sidebar({
                         event.stopPropagation();
 
                         const confirmation = window.prompt(
-                          `To delete the workspace and all its projects, enter its exact name: ${workspace.name}`,
+                          t("sidebar.deleteWorkspacePrompt", {
+                            name: workspace.name,
+                          }),
                         );
 
                         if (confirmation === null) {
@@ -349,9 +359,7 @@ export default function Sidebar({
                         }
 
                         if (confirmation.trim() !== workspace.name.trim()) {
-                          window.alert(
-                            "The workspace name does not match. Deletion cancelled.",
-                          );
+                          window.alert(t("sidebar.workspaceMismatch"));
                           return;
                         }
 
@@ -360,7 +368,7 @@ export default function Sidebar({
                       }}
                       className="text-xs text-red-400 hover:text-red-500"
                     >
-                      Yes
+                      {t("common.yes")}
                     </button>
 
                     <button
@@ -371,7 +379,7 @@ export default function Sidebar({
                       }}
                       className="text-xs"
                     >
-                      No
+                      {t("common.no")}
                     </button>
                   </div>
                 ) : (
@@ -382,7 +390,7 @@ export default function Sidebar({
                       setShowDeleteWorkspaceConfirm(workspace._id);
                     }}
                     className="relative z-10 mr-3 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400"
-                    title="Delete Workspace"
+                    title={t("sidebar.deleteWorkspace")}
                   >
                     <Trash2 className="size-3.5" />
                   </button>
@@ -442,7 +450,7 @@ export default function Sidebar({
           </div>
         </DndContext>
 
-        {currentBoard && can("analytics.view") && (
+        {currentBoard && canViewAnalytics && (
           <button
             type="button"
             onClick={() => onViewChange("analytics")}
@@ -488,6 +496,8 @@ export default function Sidebar({
 
         <button
           onClick={onThemeToggle}
+          aria-label={t(theme === "dark" ? "sidebar.light" : "sidebar.dark")}
+          title={t(theme === "dark" ? "sidebar.light" : "sidebar.dark")}
           className="relative w-12 h-6 bg-purple-500 rounded-full transition-colors"
         >
           <div
@@ -521,7 +531,7 @@ export default function Sidebar({
                 : "bg-slate-100 hover:bg-slate-200"
           }`}
         >
-          EN
+          English
         </button>
         <button
           onClick={() => i18n.changeLanguage("ru")}
@@ -533,7 +543,7 @@ export default function Sidebar({
                 : "bg-slate-100 hover:bg-slate-200"
           }`}
         >
-          RU
+          Русский
         </button>
       </div>
 
@@ -571,15 +581,19 @@ function SortableBoardItem({
   setShowDeleteConfirm,
   handleDeleteBoard,
   isCollapsed,
-  can,
   onEditProject,
   handleToggleFavorite,
   theme,
 }: any) {
   const { t } = useTranslation();
-  const projectAccess = useQuery(api.boards.getCurrentAccess, { boardId: board._id });
+  const projectAccess = useQuery(api.boards.getCurrentAccess, {
+    boardId: board._id,
+  });
+  const canEditProject = Boolean(projectAccess?.isOwner || projectAccess?.permissions.includes("project.update"));
+  const canDeleteProject = Boolean(projectAccess?.isOwner || projectAccess?.permissions.includes("project.delete"));
   const canReorder: boolean = Boolean(
-    projectAccess?.isOwner || projectAccess?.permissions.includes("project.update"),
+    projectAccess?.isOwner ||
+    projectAccess?.permissions.includes("project.update"),
   );
   const {
     attributes,
@@ -640,14 +654,17 @@ function SortableBoardItem({
         onClick={() => onBoardSelect(board)}
         className="flex items-center space-x-3 flex-1"
       >
-        {canReorder && <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing inline-flex"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <GripVertical className="size-4" />
-        </div>}
+        {canReorder && (
+          <div
+            {...attributes}
+            {...listeners}
+            aria-label={t("sidebar.moveProject")}
+            className="cursor-grab active:cursor-grabbing inline-flex"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="size-4" />
+          </div>
+        )}
         <div className="min-w-0 flex-1 text-left">
           <div className="font-medium truncate">{board.name}</div>
 
@@ -664,7 +681,8 @@ function SortableBoardItem({
           handleToggleFavorite(board);
         }}
         className="relative z-10 shrink-0 rounded p-1"
-        title="Favorite Project"
+        title={t(isFavorite ? "favorites.remove" : "favorites.add")}
+        aria-label={t(isFavorite ? "favorites.remove" : "favorites.add")}
       >
         <Star
           className={`size-3.5 transition-colors ${
@@ -684,12 +702,12 @@ function SortableBoardItem({
           onProjectMembers(board);
         }}
         className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
-        title="Project Members"
+        title={t("members.projectTitle")}
       >
         <Users className="size-3.5" />
       </button>
 
-      {can("project.update") && (
+      {canEditProject && (
         <button
           type="button"
           onClick={(event) => {
@@ -697,12 +715,12 @@ function SortableBoardItem({
             onEditProject(board);
           }}
           className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
-          title="Edit Project"
+          title={t("sidebar.editProject")}
         >
           <Pencil className="size-3.5" />
         </button>
       )}
-      {can("project.delete") &&
+      {canDeleteProject &&
         (showDeleteConfirm === board._id ? (
           <div className="flex items-center space-x-1">
             <button
@@ -711,7 +729,7 @@ function SortableBoardItem({
                 event.stopPropagation();
 
                 const confirmation = window.prompt(
-                  `To delete the project, enter its exact name: ${board.name}`,
+                  t("sidebar.deleteProjectPrompt", { name: board.name }),
                 );
 
                 if (confirmation === null) {
@@ -719,9 +737,7 @@ function SortableBoardItem({
                 }
 
                 if (confirmation.trim() !== board.name.trim()) {
-                  window.alert(
-                    "The project name does not match. Deletion cancelled.",
-                  );
+                  window.alert(t("sidebar.projectMismatch"));
                   return;
                 }
 
@@ -729,7 +745,7 @@ function SortableBoardItem({
               }}
               className="p-1 text-xs text-red-400 hover:text-red-500"
             >
-              Yes
+              {t("common.yes")}
             </button>
             <button
               type="button"
@@ -739,12 +755,14 @@ function SortableBoardItem({
               }}
               className="p-1"
             >
-              No
+              {t("common.no")}
             </button>
           </div>
         ) : (
           <button
             onClick={() => setShowDeleteConfirm(board._id)}
+            aria-label={t("sidebar.deleteProject")}
+            title={t("sidebar.deleteProject")}
             className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-all"
           >
             <Trash2 className="size-3" />

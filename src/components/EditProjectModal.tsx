@@ -50,10 +50,6 @@ export default function EditProjectModal({
     toast.success(t("editProjectModal.updated"));
 
     onClose();
-
-    toast.success(t("editProjectModal.updated"));
-
-    onClose();
   };
 
   return (

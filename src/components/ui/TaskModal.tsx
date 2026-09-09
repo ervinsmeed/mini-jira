@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { getColumnLabel } from "../../lib/columnLabel";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
@@ -42,6 +43,9 @@ export default function TaskModal({
   const startTimer = useMutation(api.tasks.startTimer);
   const pauseTimer = useMutation(api.tasks.pauseTimer);
   const stopTimer = useMutation(api.tasks.stopTimer);
+
+  const [isTimerPending, setIsTimerPending] = useState(false);
+  const timerCommandInFlight = useRef(false);
 
   const [now, setNow] = useState(Date.now());
 
@@ -167,23 +171,26 @@ export default function TaskModal({
       .join(":");
   };
 
-  const handleStartTimer = async () => {
-    await startTimer({
-      id: task._id,
-    });
+  const runTimerCommand = async (command: "start" | "pause" | "stop") => {
+    if (!can("task.update") || timerCommandInFlight.current) return;
+
+    // The ref also blocks a second click before React renders the pending state.
+    timerCommandInFlight.current = true;
+    setIsTimerPending(true);
+    try {
+      const mutations = { start: startTimer, pause: pauseTimer, stop: stopTimer };
+      await mutations[command]({ id: task._id });
+    } catch {
+      toast.error(t(`taskModal.timerErrors.${command}`));
+    } finally {
+      timerCommandInFlight.current = false;
+      setIsTimerPending(false);
+    }
   };
 
-  const handlePauseTimer = async () => {
-    await pauseTimer({
-      id: task._id,
-    });
-  };
-
-  const handleStopTimer = async () => {
-    await stopTimer({
-      id: task._id,
-    });
-  };
+  const handleStartTimer = () => runTimerCommand("start");
+  const handlePauseTimer = () => runTimerCommand("pause");
+  const handleStopTimer = () => runTimerCommand("stop");
 
   if (showEditModal && can("task.update")) {
     return (
@@ -207,16 +214,16 @@ export default function TaskModal({
     >
       <DialogContent
         showCloseButton={false}
-        className={`max-w-lg max-h-[600px] overflow-auto transition-colors border ${
+        className={`w-[calc(100%-2rem)] min-w-0 max-w-lg sm:max-w-lg max-h-[min(600px,calc(100dvh-2rem))] overflow-y-auto wrap-anywhere [&>*]:min-w-0 transition-colors border ${
           theme === "dark"
             ? "bg-slate-950 text-slate-100 border-slate-800"
             : "bg-white text-slate-900 border-slate-200"
         }`}
       >
         <DialogHeader>
-          <div className="relative flex items-start justify-between gap-4 pr-12">
+          <div className="relative flex min-w-0 items-start justify-between gap-4 pr-20">
             <DialogTitle
-              className={`!text-xl font-semibold pr-2 ${
+              className={`min-w-0 flex-1 !text-xl font-semibold pr-2 ${
                 theme === "dark" ? "text-slate-100" : "text-slate-900"
               }`}
             >
@@ -233,14 +240,14 @@ export default function TaskModal({
                       ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
                       : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                   }`}
-                  aria-label="Open task actions"
+                  aria-label={t("taskModal.actions")}
                 >
                   <MoreVertical className="size-4" />
                 </button>
 
                 {showActions && (
                   <div
-                    className={`absolute right-0 top-8 z-20 w-[210px] rounded-lg border shadow-lg ${
+                    className={`absolute right-0 top-8 z-20 w-[210px] max-w-[calc(100vw-7rem)] rounded-lg border shadow-lg ${
                       theme === "dark"
                         ? "border-slate-700 bg-slate-900"
                         : "border-slate-200 bg-white"
@@ -252,7 +259,7 @@ export default function TaskModal({
                         setShowEditModal(true);
                         setShowActions(false);
                       }}
-                      className={`flex w-full items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+                      className={`flex min-w-0 w-full items-center gap-3 whitespace-normal rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
                         theme === "dark"
                           ? "text-slate-100 hover:bg-slate-800"
                           : "text-slate-700 hover:bg-slate-100"
@@ -282,7 +289,7 @@ export default function TaskModal({
                               {t("taskModal.deleteQuestion")}
                             </p>
 
-                            <div className="flex space-x-2">
+                            <div className="flex flex-wrap gap-2">
                               <button
                                 type="button"
                                 onClick={handleDeleteTask}
@@ -308,7 +315,7 @@ export default function TaskModal({
                           <button
                             type="button"
                             onClick={() => setShowDeleteConfirm(true)}
-                            className={`flex w-full items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+                            className={`flex min-w-0 w-full items-center gap-3 whitespace-normal rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
                               theme === "dark"
                                 ? "text-red-400 hover:bg-red-950/50"
                                 : "text-red-500 hover:bg-red-50"
@@ -338,7 +345,7 @@ export default function TaskModal({
                     ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
                     : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                 }`}
-                aria-label="Close task modal"
+                aria-label={t("taskModal.close")}
               >
                 <X className="size-4" />
               </button>
@@ -346,14 +353,14 @@ export default function TaskModal({
           </div>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6 [&>*]:min-w-0">
           <div>
             <h4
               className={`text-sm font-medium mb-2 ${
                 theme === "dark" ? "text-slate-100" : "text-slate-900"
               }`}
             >
-              Timer
+              {t("taskModal.timer")}
             </h4>
 
             <div
@@ -363,19 +370,19 @@ export default function TaskModal({
                   : "border-slate-200 bg-slate-100"
               }`}
             >
-              <div className="mb-4 text-3xl font-mono font-semibold">
+              <div className="mb-4 max-w-full text-2xl sm:text-3xl font-mono font-semibold">
                 {formatTimer(timerElapsedMs)}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2" aria-busy={isTimerPending}>
                 {task.timerStatus !== "running" && (
                   <button
                     type="button"
                     onClick={handleStartTimer}
-                    disabled={!can("task.update")}
-                    className="rounded-md bg-emerald-500 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+                    disabled={!can("task.update") || isTimerPending}
+                    className="min-w-0 max-w-full whitespace-normal rounded-md bg-emerald-500 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
                   >
-                    Start
+                    {t("taskModal.start")}
                   </button>
                 )}
 
@@ -383,28 +390,33 @@ export default function TaskModal({
                   <button
                     type="button"
                     onClick={handlePauseTimer}
-                    disabled={!can("task.update")}
-                    className="rounded-md bg-yellow-500 px-3 py-2 text-sm font-medium text-white hover:bg-yellow-600 disabled:opacity-50"
+                    disabled={!can("task.update") || isTimerPending}
+                    className="min-w-0 max-w-full whitespace-normal rounded-md bg-yellow-500 px-3 py-2 text-sm font-medium text-white hover:bg-yellow-600 disabled:opacity-50"
                   >
-                    Pause
+                    {t("taskModal.pause")}
                   </button>
                 )}
 
                 <button
                   type="button"
                   onClick={handleStopTimer}
-                  disabled={!can("task.update")}
-                  className="rounded-md bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
+                  disabled={!can("task.update") || isTimerPending}
+                  className="min-w-0 max-w-full whitespace-normal rounded-md bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
                 >
-                  Stop
+                  {t("taskModal.stop")}
                 </button>
               </div>
+              {isTimerPending && (
+                <p role="status" className="mt-2 text-sm opacity-70">
+                  {t("taskModal.timerPending")}
+                </p>
+              )}
             </div>
           </div>
           {task.description && (
             <div>
               <p
-                className={`text-sm leading-relaxed ${
+                className={`whitespace-pre-wrap text-sm leading-relaxed ${
                   theme === "dark" ? "text-slate-400" : "text-slate-500"
                 }`}
               >
@@ -421,6 +433,7 @@ export default function TaskModal({
                 }`}
               >
                 {t("taskModal.storyPoints")}
+                <span className="block text-xs font-normal opacity-70">{t("hints.storyPoints")}</span>
               </h4>
 
               <span
@@ -478,7 +491,7 @@ export default function TaskModal({
                   {(task.subtasks ?? []).map((subtask: any, index: number) => (
                     <div
                       key={index}
-                      className={`flex items-center space-x-3 p-3 rounded-lg transition-colors cursor-pointer ${
+                      className={`flex min-w-0 items-center gap-3 p-3 rounded-lg transition-colors cursor-pointer ${
                         theme === "dark"
                           ? "bg-slate-900 hover:bg-slate-800"
                           : "bg-slate-100 hover:bg-slate-200"
@@ -490,6 +503,9 @@ export default function TaskModal({
                       }}
                     >
                       <Checkbox
+                        className="shrink-0"
+                        disabled={!can("task.update")}
+                        onClick={(event) => event.stopPropagation()}
                         checked={subtask.completed}
                         onCheckedChange={() => {
                           if (!can("task.update")) return;
@@ -498,7 +514,7 @@ export default function TaskModal({
                         }}
                       />{" "}
                       <span
-                        className={`text-sm ${
+                        className={`min-w-0 flex-1 whitespace-pre-wrap text-sm ${
                           subtask.completed
                             ? "text-emerald-500 line-through"
                             : theme === "dark"
@@ -520,7 +536,7 @@ export default function TaskModal({
                 theme === "dark" ? "text-slate-100" : "text-slate-900"
               }`}
             >
-              Comments
+              {t("taskModal.comments")}
             </h4>
 
             <div className="space-y-3">
@@ -530,7 +546,7 @@ export default function TaskModal({
                     theme === "dark" ? "text-slate-500" : "text-slate-500"
                   }`}
                 >
-                  No comments yet
+                  {t("taskModal.noComments")}
                 </p>
               ) : (
                 comments.map((comment: any) => (
@@ -542,8 +558,8 @@ export default function TaskModal({
                         : "border-slate-200 bg-slate-50"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
+                    <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-4">
+                      <div className="min-w-0 w-full sm:flex-1">
                         <p
                           className={`text-sm font-medium ${
                             theme === "dark"
@@ -555,7 +571,7 @@ export default function TaskModal({
                         </p>
 
                         <p
-                          className={`mt-1 text-sm ${
+                          className={`mt-1 whitespace-pre-wrap text-sm ${
                             theme === "dark"
                               ? "text-slate-400"
                               : "text-slate-600"
@@ -566,7 +582,7 @@ export default function TaskModal({
                       </div>
 
                       <span
-                        className={`shrink-0 text-xs ${
+                        className={`max-w-full sm:shrink-0 text-xs ${
                           theme === "dark" ? "text-slate-500" : "text-slate-400"
                         }`}
                       >
@@ -578,14 +594,14 @@ export default function TaskModal({
               )}
             </div>
 
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
               <input
                 type="text"
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Write a comment..."
+                placeholder={t("taskModal.commentPlaceholder")}
                 disabled={!can("task.update")}
-                className={`flex-1 rounded-md border px-3 py-2 text-sm outline-none ${
+                className={`min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none ${
                   theme === "dark"
                     ? "border-slate-700 bg-slate-900 text-slate-100"
                     : "border-slate-300 bg-white text-slate-900"
@@ -596,9 +612,9 @@ export default function TaskModal({
                 type="button"
                 onClick={handleAddComment}
                 disabled={!can("task.update") || !commentText.trim()}
-                className="rounded-md bg-purple-500 px-3 py-2 text-sm font-medium text-white hover:bg-purple-600 disabled:opacity-50"
+                className="min-w-0 max-w-full whitespace-normal rounded-md bg-purple-500 px-3 py-2 text-sm font-medium text-white hover:bg-purple-600 disabled:opacity-50"
               >
-                Add
+                {t("taskModal.addComment")}
               </button>
             </div>
           </div>
@@ -608,7 +624,7 @@ export default function TaskModal({
                 theme === "dark" ? "text-slate-100" : "text-slate-900"
               }`}
             >
-              Activity
+              {t("taskModal.activity")}
             </h4>
 
             <div className="space-y-3">
@@ -618,7 +634,7 @@ export default function TaskModal({
                     theme === "dark" ? "text-slate-500" : "text-slate-500"
                   }`}
                 >
-                  No activity yet
+                  {t("taskModal.noActivity")}
                 </p>
               ) : (
                 activityLogs.map((log: any) => (
@@ -630,8 +646,8 @@ export default function TaskModal({
                         : "border-slate-200 bg-slate-50"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
+                    <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-4">
+                      <div className="min-w-0 w-full sm:flex-1">
                         <p
                           className={`text-sm font-medium ${
                             theme === "dark"
@@ -642,8 +658,12 @@ export default function TaskModal({
                           {log.userName}
                         </p>
 
+                        <p className="mt-1 text-sm font-medium">
+                          {t(`taskModal.activityEvents.${log.action}`, { defaultValue: log.action })}
+                        </p>
+
                         <p
-                          className={`mt-1 text-sm ${
+                          className={`mt-1 whitespace-pre-wrap text-sm ${
                             theme === "dark"
                               ? "text-slate-400"
                               : "text-slate-600"
@@ -654,7 +674,7 @@ export default function TaskModal({
                       </div>
 
                       <span
-                        className={`shrink-0 text-xs ${
+                        className={`max-w-full sm:shrink-0 text-xs ${
                           theme === "dark" ? "text-slate-500" : "text-slate-400"
                         }`}
                       >
@@ -673,7 +693,7 @@ export default function TaskModal({
                 theme === "dark" ? "text-slate-100" : "text-slate-900"
               }`}
             >
-              Assignee
+              {t("createTask.assignee")}
             </label>
 
             <Select
@@ -682,23 +702,24 @@ export default function TaskModal({
               disabled={!can("task.update")}
             >
               <SelectTrigger
-                className={`w-1/2 border transition-colors ${
+                className={`min-w-0 w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere border transition-colors ${
                   theme === "dark"
                     ? "bg-slate-900 text-slate-100 border-slate-700"
                     : "bg-white text-slate-900 border-slate-300"
                 }`}
               >
-                <SelectValue placeholder="Select assignee" />
+                <SelectValue placeholder={t("createTask.selectAssignee")} />
               </SelectTrigger>
 
               <SelectContent
-                className={`transition-colors border ${
+                position="popper"
+                className={`w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors border ${
                   theme === "dark"
                     ? "bg-slate-900 text-slate-100 border-slate-700"
                     : "bg-white text-slate-900 border-slate-200"
                 }`}
               >
-                <SelectItem value="unassigned">Unassigned</SelectItem>
+                <SelectItem value="unassigned">{t("unassigned")}</SelectItem>
 
                 {projectMembers.map((member: any) => (
                   <SelectItem key={member._id} value={member._id}>
@@ -724,7 +745,7 @@ export default function TaskModal({
               disabled={!can("task.update")}
             >
               <SelectTrigger
-                className={`w-1/2 border transition-colors ${
+                className={`min-w-0 w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere border transition-colors ${
                   theme === "dark"
                     ? "bg-slate-900 text-slate-100 border-slate-700"
                     : "bg-white text-slate-900 border-slate-300"
@@ -734,7 +755,8 @@ export default function TaskModal({
               </SelectTrigger>
 
               <SelectContent
-                className={`transition-colors border ${
+                position="popper"
+                className={`w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors border ${
                   theme === "dark"
                     ? "bg-slate-900 text-slate-100 border-slate-700"
                     : "bg-white text-slate-900 border-slate-200"
@@ -750,7 +772,7 @@ export default function TaskModal({
                         : "hover:bg-slate-100 text-slate-900"
                     }`}
                   >
-                    {column.name}
+                    {getColumnLabel(column.name, t)}
                   </SelectItem>
                 ))}
               </SelectContent>

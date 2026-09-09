@@ -90,14 +90,125 @@ select {
 }
 
 /* --- Light Theme Overrides --- */
+[data-theme="light"] {
+  --background: #e8edf3;
+  --foreground: #1e293b;
+  --card: #f7f8fa;
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --primary: #7c3aed;
+  --primary-hover: #6d28d9;
+  --primary-foreground: #ffffff;
+  --secondary: #e2e8f0;
+  --secondary-foreground: var(--foreground);
+  --muted: var(--secondary);
+  --muted-foreground: #475569;
+  --accent: #ede9f5;
+  --accent-foreground: var(--primary-hover);
+  --border: #cbd5e1;
+  --input: var(--secondary);
+  --ring: var(--primary);
+  --danger-text: #b91c1c;
+  --success-text: #065f46;
+  --warning-button: #854d0e;
+  --sidebar: #eff2f6;
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  /* Compatibility with the existing explicit light-theme utility classes. */
+  --color-slate-50: var(--background);
+  --color-slate-100: var(--secondary);
+  --color-slate-200: var(--border);
+  --color-slate-300: var(--border);
+  --color-slate-400: var(--muted-foreground);
+  --color-slate-500: var(--muted-foreground);
+  --color-slate-600: var(--muted-foreground);
+  --color-slate-700: var(--foreground);
+  --color-slate-900: var(--foreground);
+  --color-purple-100: var(--accent);
+  --color-purple-500: var(--primary);
+  --color-purple-600: var(--primary);
+  --color-purple-700: var(--primary-hover);
+}
+
+[data-theme="light"] .bg-white {
+  background-color: var(--card);
+}
+
+[data-theme="light"] .hover\:bg-slate-50:hover {
+  background-color: var(--background);
+}
+
+[data-theme="light"] .hover\:bg-slate-100:hover {
+  background-color: var(--secondary);
+}
+
+[data-theme="light"] .hover\:bg-purple-600:hover,
+[data-theme="light"] .hover\:bg-purple-700:hover {
+  background-color: var(--primary-hover);
+}
+
+[data-theme="light"] :is(.text-purple-500, .text-purple-600) {
+  color: var(--primary-hover);
+}
+
+[data-theme="light"] :is(.text-red-400, .text-red-500, .text-red-600),
+[data-theme="light"] :is(.hover\:text-red-400, .hover\:text-red-500):hover {
+  color: var(--danger-text);
+}
+
+[data-theme="light"] .text-emerald-500 {
+  color: var(--success-text);
+}
+
+[data-theme="light"] .bg-red-500.text-white {
+  background-color: var(--danger-text);
+}
+
+[data-theme="light"] .bg-yellow-500.text-white {
+  background-color: var(--warning-button);
+}
+
+[data-theme="light"] .bg-yellow-500.text-white:hover {
+  background-color: #713f12;
+}
+
+/* Muted copy remains readable without fading its entire content. */
+[data-theme="light"] p:is(.opacity-60, .opacity-70) {
+  color: var(--muted-foreground);
+  opacity: 1;
+}
+
+[data-theme="light"] :is(button, a, input, textarea, select, [role="checkbox"]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 [data-theme="light"] body {
-  @apply bg-slate-50 text-slate-900;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 [data-theme="light"] input,
 [data-theme="light"] textarea,
-[data-theme="light"] select {
-  @apply bg-slate-100 border border-slate-300 text-slate-900 placeholder-slate-500;
+[data-theme="light"] select,
+[data-theme="light"] input[class],
+[data-theme="light"] textarea[class],
+[data-theme="light"] select[class] {
+  background-color: var(--input);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+[data-theme="light"] :is(input, textarea)::placeholder {
+  color: var(--muted-foreground);
+  opacity: 1;
 }
 
 /* Light theme scrollbars */

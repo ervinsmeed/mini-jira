@@ -63,10 +63,10 @@ export default function AnalyticsCharts({
 }: AnalyticsChartsProps) {
   const { t } = useTranslation();
 
-  const textColor = theme === "dark" ? "#cbd5e1" : "#475569";
-  const gridColor = theme === "dark" ? "#334155" : "#e2e8f0";
-  const tooltipBackground = theme === "dark" ? "#0f172a" : "#ffffff";
-  const tooltipBorder = theme === "dark" ? "#334155" : "#cbd5e1";
+  const textColor = theme === "dark" ? "#cbd5e1" : "var(--muted-foreground)";
+  const gridColor = theme === "dark" ? "#334155" : "var(--border)";
+  const tooltipBackground = theme === "dark" ? "#0f172a" : "var(--popover)";
+  const tooltipBorder = theme === "dark" ? "#334155" : "var(--border)";
 
   const chartCardClass =
     theme === "dark"
@@ -127,12 +127,12 @@ export default function AnalyticsCharts({
                 tick={{ fill: textColor, fontSize: 12 }}
               />
 
-              <Tooltip contentStyle={tooltipStyle} />
+              <Tooltip itemStyle={theme === "light" ? { color: textColor } : undefined} contentStyle={tooltipStyle} />
 
               <Bar
                 dataKey="count"
                 name={t("analytics.tasks")}
-                fill="#8b5cf6"
+                fill={theme === "dark" ? "#8b5cf6" : "var(--primary)"}
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
@@ -165,8 +165,8 @@ export default function AnalyticsCharts({
                 ))}
               </Pie>
 
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ color: textColor }} />
+              <Tooltip itemStyle={theme === "light" ? { color: textColor } : undefined} contentStyle={tooltipStyle} />
+              <Legend wrapperStyle={{ color: textColor }} formatter={theme === "light" ? (value) => <span style={{ color: textColor }}>{value}</span> : undefined} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -197,7 +197,7 @@ export default function AnalyticsCharts({
                 tick={{ fill: textColor, fontSize: 12 }}
               />
 
-              <Tooltip contentStyle={tooltipStyle} />
+              <Tooltip itemStyle={theme === "light" ? { color: textColor } : undefined} contentStyle={tooltipStyle} />
 
               <Bar
                 dataKey="count"

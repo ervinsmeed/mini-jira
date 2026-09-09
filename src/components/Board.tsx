@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import RecentTasksMenu from "./ui/RecentTasksMenu";
 import { Plus } from "lucide-react";
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   closestCenter,
   DndContext,
@@ -36,17 +36,23 @@ type BoardProps = {
 
 export default function Board({ board, theme, can }: BoardProps) {
   const [selectedTask, setSelectedTask] = useState<Doc<"tasks"> | null>(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const canUpdateTask = can("task.update");
   const canDeleteTask = can("task.delete");
   const canSelectTasks = canUpdateTask || canDeleteTask;
   const currentUser = useQuery(api.users.getCurrent, board ? {} : "skip");
   const workspaces = useQuery(api.workspaces.list);
-  const parentWorkspace = workspaces?.find((workspace: Doc<"workspaces">) => workspace._id === board?.workspaceId);
-  const canManageColumn = (column: Doc<"columns">): boolean => Boolean(
-    currentUser && (!board?.workspaceId || parentWorkspace) &&
-    (parentWorkspace?.ownerId === currentUser._id || column.userId === currentUser._id),
+  const parentWorkspace = workspaces?.find(
+    (workspace: Doc<"workspaces">) => workspace._id === board?.workspaceId,
   );
+  const canCreateColumn = Boolean(currentUser && (!board?.workspaceId || parentWorkspace) && (parentWorkspace?.ownerId === currentUser._id || board?.userId === currentUser._id));
+  const canManageColumn = (column: Doc<"columns">): boolean =>
+    Boolean(
+      currentUser &&
+      (!board?.workspaceId || parentWorkspace) &&
+      (parentWorkspace?.ownerId === currentUser._id ||
+        column.userId === currentUser._id),
+    );
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
@@ -83,21 +89,13 @@ export default function Board({ board, theme, can }: BoardProps) {
     "manual" | "title" | "deadline" | "created" | "storyPoints" | "priority"
   >("manual");
 
-  const {
-    results: paginatedTasks,
-    status: tasksPaginationStatus,
-    loadMore: loadMoreTasks,
-  } = usePaginatedQuery(
-    api.tasks.listPaginated,
-    board?._id
-      ? {
-          boardId: board._id,
-        }
-      : "skip",
-    {
-      initialNumItems: 12,
-    },
+  const tasksResult = useQuery(
+    api.tasks.list,
+    board?._id ? { boardId: board._id } : "skip",
   );
+  const [taskPage, setTaskPage] = useState({ key: "", limit: 12 });
+  const taskListKey = JSON.stringify([board?._id, searchQuery, statusFilter, assigneeFilter, storyPointsFilter, deadlineFilter, priorityFilter, sortBy, i18n.resolvedLanguage]);
+  const visibleTaskCount = taskPage.key === taskListKey ? taskPage.limit : 12;
 
   const columnsResult = useQuery(
     api.columns.list,
@@ -130,10 +128,10 @@ export default function Board({ board, theme, can }: BoardProps) {
       : "skip",
   ) ?? []) as any[];
 
-  const tasks: any[] = paginatedTasks as any[];
+  const tasks: any[] = (tasksResult ?? []) as any[];
   const columns: any[] = (columnsResult ?? []) as any[];
 
-  const visibleTasks = tasks
+  const matchingTasks = tasks
     .filter((task) => {
       const search = searchQuery.trim().toLowerCase();
 
@@ -161,7 +159,8 @@ export default function Board({ board, theme, can }: BoardProps) {
         task.title.toLowerCase().includes(search) ||
         (task.description ?? "").toLowerCase().includes(search) ||
         assigneeText.includes(search) ||
-        authorText.includes(search)
+        authorText.includes(search) ||
+        (task.searchUserText ?? "").toLowerCase().includes(search)
       );
     })
     .filter((task) => {
@@ -169,7 +168,7 @@ export default function Board({ board, theme, can }: BoardProps) {
         return true;
       }
 
-      return task.priority === priorityFilter;
+      return (task.priority || "medium") === priorityFilter;
     })
     .filter((task) => {
       if (statusFilter === "all") {
@@ -239,7 +238,7 @@ export default function Board({ board, theme, can }: BoardProps) {
     })
     .sort((firstTask, secondTask) => {
       if (sortBy === "title") {
-        return firstTask.title.localeCompare(secondTask.title);
+        return firstTask.title.localeCompare(secondTask.title, i18n.resolvedLanguage);
       }
 
       if (sortBy === "deadline") {
@@ -290,6 +289,8 @@ export default function Board({ board, theme, can }: BoardProps) {
       return firstTask.order - secondTask.order;
     });
 
+  const visibleTasks = matchingTasks.slice(0, visibleTaskCount);
+
   const initializeColumns = useMutation(api.columns.initializeDefaultColumns);
 
   const updateTaskOrder = useMutation(api.tasks.updateOrder);
@@ -305,6 +306,7 @@ export default function Board({ board, theme, can }: BoardProps) {
 
   useEffect(() => {
     if (
+      canCreateColumn &&
       board?._id &&
       columnsResult !== undefined &&
       columnsResult.length === 0
@@ -313,7 +315,7 @@ export default function Board({ board, theme, can }: BoardProps) {
         boardId: board._id,
       });
     }
-  }, [board?._id, columnsResult, initializeColumns]);
+  }, [board?._id, columnsResult, initializeColumns, canCreateColumn]);
 
   useEffect(() => {
     setSearchQuery("");
@@ -387,7 +389,7 @@ export default function Board({ board, theme, can }: BoardProps) {
     if (!canDeleteTask || selectedTaskIds.length === 0) return;
 
     const confirmed = window.confirm(
-      `Delete ${selectedTaskIds.length} selected task(s)?`,
+      t("board.deleteQuestion", { count: selectedTaskIds.length }),
     );
 
     if (!confirmed) return;
@@ -520,7 +522,7 @@ export default function Board({ board, theme, can }: BoardProps) {
     >
       <div
         className={`flex flex-wrap items-center justify-between gap-4 border-b p-6 transition-colors ${
-          theme === "dark" ? "border-slate-800" : "border-slate-200"
+          theme === "dark" ? "border-slate-800" : "border-slate-200 bg-sidebar"
         }`}
       >
         <div className="min-w-0">
@@ -774,7 +776,7 @@ export default function Board({ board, theme, can }: BoardProps) {
               theme === "dark" ? "text-slate-100" : "text-slate-900"
             }`}
           >
-            Selected: {selectedTaskIds.length}
+            {t("board.selected")} {selectedTaskIds.length}
           </span>
 
           {canUpdateTask && (
@@ -794,7 +796,7 @@ export default function Board({ board, theme, can }: BoardProps) {
                 }`}
               >
                 <option value="" disabled>
-                  Status
+                  {t("board.column")}
                 </option>
 
                 {columns.map((column) => (
@@ -819,10 +821,10 @@ export default function Board({ board, theme, can }: BoardProps) {
                 }`}
               >
                 <option value="" disabled>
-                  Assignee
+                  {t("createTask.assignee")}
                 </option>
 
-                <option value="unassigned">Unassigned</option>
+                <option value="unassigned">{t("unassigned")}</option>
 
                 {projectMembers.map((member: any) => (
                   <option key={member._id} value={member._id}>
@@ -846,12 +848,12 @@ export default function Board({ board, theme, can }: BoardProps) {
                 }`}
               >
                 <option value="" disabled>
-                  Priority
+                  {t("board.priority")}
                 </option>
 
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
+                <option value="high">{t("priority.high")}</option>
+                <option value="medium">{t("priority.medium")}</option>
+                <option value="low">{t("priority.low")}</option>
               </select>
             </>
           )}
@@ -862,7 +864,7 @@ export default function Board({ board, theme, can }: BoardProps) {
               onClick={() => void handleBulkDelete()}
               className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
             >
-              Delete
+              {t("board.deleteSelected")}
             </button>
           )}
 
@@ -875,10 +877,13 @@ export default function Board({ board, theme, can }: BoardProps) {
                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             }`}
           >
-            Clear
+            {t("board.clearSelection")}
           </button>
         </div>
       )}
+
+      {tasksResult === undefined && <p role="status" className="px-6">{t("pagination.loading")}</p>}
+      {tasksResult !== undefined && matchingTasks.length === 0 && <p role="status" className="px-6">{t("board.noMatchingTasks")}</p>}
 
       {/* Колонки */}
 
@@ -905,7 +910,9 @@ export default function Board({ board, theme, can }: BoardProps) {
                   canDeleteColumn={canManageColumn(column)}
                   canDragTasks={canUpdateTask}
                   selectedTaskIds={selectedTaskIds}
-                  onToggleTaskSelection={canSelectTasks ? toggleTaskSelection : undefined}
+                  onToggleTaskSelection={
+                    canSelectTasks ? toggleTaskSelection : undefined
+                  }
                   favoriteTaskIdSet={favoriteTaskIdSet}
                   onToggleTaskFavorite={handleToggleTaskFavorite}
                   theme={theme}
@@ -914,7 +921,7 @@ export default function Board({ board, theme, can }: BoardProps) {
             </SortableContext>
 
             {/* Кнопка новой колонки */}
-            <div className="flex w-72 shrink-0 items-start justify-center pt-12">
+            {canCreateColumn && <div className="flex w-72 shrink-0 items-start justify-center pt-12">
               <button
                 type="button"
                 onClick={() => setIsCreateColumnModalOpen(true)}
@@ -928,7 +935,7 @@ export default function Board({ board, theme, can }: BoardProps) {
 
                 {t("board.newColumn")}
               </button>
-            </div>
+            </div>}
 
             <DragOverlay>
               {activeTask ? (
@@ -943,22 +950,18 @@ export default function Board({ board, theme, can }: BoardProps) {
           </DndContext>
         </div>
 
-        {(tasksPaginationStatus === "CanLoadMore" ||
-          tasksPaginationStatus === "LoadingMore") && (
+        {(matchingTasks.length > visibleTaskCount) && (
           <div className="sticky left-0 mt-4 flex w-full justify-center">
             <button
               type="button"
-              disabled={tasksPaginationStatus === "LoadingMore"}
-              onClick={() => loadMoreTasks(12)}
+              onClick={() => setTaskPage({ key: taskListKey, limit: visibleTaskCount + 12 })}
               className={`rounded-md border px-5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                 theme === "dark"
                   ? "border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
                   : "border-slate-300 bg-white text-slate-900 hover:bg-slate-100"
               }`}
             >
-              {tasksPaginationStatus === "LoadingMore"
-                ? t("pagination.loading")
-                : t("pagination.loadMore")}
+              {t("pagination.loadMore")}
             </button>
           </div>
         )}
