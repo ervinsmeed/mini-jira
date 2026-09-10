@@ -1,3 +1,4 @@
+import { ru, en } from "./lib/additionalTranslations";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
@@ -11,7 +12,10 @@ i18n
     resources: {
       en: {
         translation: {
-          auth: { welcome: "Welcome to your task management workspace", description: "Organize your projects with Kanban boards" },
+          auth: {
+            welcome: "Welcome to your task management workspace",
+            description: "Organize your projects with Kanban boards",
+          },
           kanban: "Kanban",
           allBoards: "PROJECTS",
           createBoard: "Create Project",
@@ -173,18 +177,18 @@ i18n
             addComment: "Add comment",
             activity: "Activity history",
             activityEvents: {
-              "task": {
-                "created": "Task created",
-                "assignee_changed": "Assignee changed",
-                "story_points_changed": "Effort estimate changed",
-                "deadline_changed": "Deadline changed",
-                "status_changed": "Task column changed",
-                "timer_started": "Timer started",
-                "timer_paused": "Timer paused",
-                "timer_stopped": "Timer stopped",
-                "comment_added": "Comment added",
-                "bulk_updated": "Task updated in bulk"
-              }
+              task: {
+                created: "Task created",
+                assignee_changed: "Assignee changed",
+                story_points_changed: "Effort estimate changed",
+                deadline_changed: "Deadline changed",
+                status_changed: "Task column changed",
+                timer_started: "Timer started",
+                timer_paused: "Timer paused",
+                timer_stopped: "Timer stopped",
+                comment_added: "Comment added",
+                bulk_updated: "Task updated in bulk",
+              },
             },
             noActivity: "No activity yet",
             actions: "Task actions",
@@ -397,7 +401,10 @@ i18n
       },
       ru: {
         translation: {
-          auth: { welcome: "Управляйте проектами и задачами", description: "Планируйте работу на канбан-досках" },
+          auth: {
+            welcome: "Управляйте проектами и задачами",
+            description: "Планируйте работу на канбан-досках",
+          },
           kanban: "Канбан",
           allBoards: "ПРОЕКТЫ",
           createBoard: "Создать проект",
@@ -575,18 +582,18 @@ i18n
             addComment: "Добавить комментарий",
             activity: "История действий",
             activityEvents: {
-              "task": {
-                "created": "Задача создана",
-                "assignee_changed": "Исполнитель изменён",
-                "story_points_changed": "Оценка сложности изменена",
-                "deadline_changed": "Срок изменён",
-                "status_changed": "Колонка задачи изменена",
-                "timer_started": "Таймер запущен",
-                "timer_paused": "Таймер приостановлен",
-                "timer_stopped": "Таймер остановлен",
-                "comment_added": "Добавлен комментарий",
-                "bulk_updated": "Задача изменена массовым действием"
-              }
+              task: {
+                created: "Задача создана",
+                assignee_changed: "Исполнитель изменён",
+                story_points_changed: "Оценка сложности изменена",
+                deadline_changed: "Срок изменён",
+                status_changed: "Колонка задачи изменена",
+                timer_started: "Таймер запущен",
+                timer_paused: "Таймер приостановлен",
+                timer_stopped: "Таймер остановлен",
+                comment_added: "Добавлен комментарий",
+                bulk_updated: "Задача изменена массовым действием",
+              },
             },
             noActivity: "Действий пока нет",
             actions: "Действия с задачей",
@@ -796,4 +803,6 @@ i18n
     },
   });
 
+i18n.addResourceBundle("ru", "translation", ru, true, true);
+i18n.addResourceBundle("en", "translation", en, true, true);
 export default i18n;

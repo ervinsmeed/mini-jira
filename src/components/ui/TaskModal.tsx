@@ -1,6 +1,9 @@
+import HistoryValue from "./HistoryValue";
+import { actionError } from "../../lib/actionError";
+import type { Doc } from "../../../convex/_generated/dataModel";
 import { getColumnLabel } from "../../lib/columnLabel";
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -23,20 +26,45 @@ export default function TaskModal({
   task: initialTask,
   onClose,
   theme,
-  can,
-}: any) {
-  const { t } = useTranslation();
+}: {
+  task: Doc<"tasks">;
+  onClose: () => void;
+  theme: "light" | "dark";
+  can?: (permission: string) => boolean;
+}) {
+  const { t, i18n } = useTranslation();
+  const access = useQuery(api.boards.getCurrentAccess, {
+    boardId: initialTask.boardId,
+  });
+  const can = (permission: string) =>
+    Boolean(
+      access?.isOwner ||
+      access?.permissions.some((value: string) => value === permission),
+    );
 
-  const [columnId, setColumnId] = useState(initialTask.columnId);
-  const [assigneeId, setAssigneeId] = useState(initialTask.assigneeId ?? "");
   const [showActions, setShowActions] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const task =
-    useQuery(api.tasks.list, {
-      boardId: initialTask.boardId,
-    })?.find((t: any) => t._id === initialTask._id) || initialTask;
+  const liveTask = useQuery(api.tasks.get, { id: initialTask._id });
+  const task = liveTask ?? initialTask;
+  const columnId = task.columnId;
+  const assigneeId = task.assigneeId ?? "";
+  const [actionPending, setActionPending] = useState(false);
+  const actionLock = useRef(false);
+  const runAction = async (action: () => Promise<unknown>) => {
+    if (actionLock.current) return;
+    actionLock.current = true;
+    setActionPending(true);
+    try {
+      await action();
+    } catch (error) {
+      toast.error(actionError(error, t));
+    } finally {
+      actionLock.current = false;
+      setActionPending(false);
+    }
+  };
 
   const updateTask = useMutation(api.tasks.update);
   const deleteTask = useMutation(api.tasks.remove);
@@ -49,22 +77,38 @@ export default function TaskModal({
 
   const [now, setNow] = useState(Date.now());
 
-  const columns: any[] = (useQuery(api.columns.list, {
-    boardId: task.boardId,
-  }) ?? []) as any[];
-
-  const projectMembers: any[] = (useQuery(api.boardMembers.list, {
-    boardId: task.boardId,
-  }) ?? []) as any[];
-  const activityLogs =
-    useQuery(api.tasks.listActivity, {
-      taskId: task._id,
+  const columns: Doc<"columns">[] =
+    useQuery(api.columns.list, {
+      boardId: task.boardId,
     }) ?? [];
 
-  const comments =
-    useQuery(api.tasks.listComments, {
-      taskId: task._id,
-    }) ?? [];
+  const {
+    results: projectMembers,
+    status: memberStatus,
+    loadMore: loadMembers,
+  } = usePaginatedQuery(
+    api.boardMembers.projectMembersPage,
+    { boardId: task.boardId },
+    { initialNumItems: 30 },
+  );
+  const {
+    results: activityLogs,
+    status: activityStatus,
+    loadMore: loadActivity,
+  } = usePaginatedQuery(
+    api.tasks.activityPage,
+    { taskId: task._id },
+    { initialNumItems: 20 },
+  );
+  const {
+    results: comments,
+    status: commentStatus,
+    loadMore: loadComments,
+  } = usePaginatedQuery(
+    api.tasks.commentsPage,
+    { taskId: task._id },
+    { initialNumItems: 20 },
+  );
 
   const addComment = useMutation(api.tasks.addComment);
   const [commentText, setCommentText] = useState("");
@@ -81,8 +125,9 @@ export default function TaskModal({
     return () => window.clearInterval(interval);
   }, [task.timerStatus, task.timerStartedAt]);
 
-  const handleColumnChange = async (newColumnId: any) => {
-    setColumnId(newColumnId);
+  const handleColumnChange = async (value: string) => {
+    const newColumnId = columns.find((column) => column._id === value)?._id;
+    if (!newColumnId) return;
 
     await updateTask({
       id: task._id,
@@ -90,20 +135,22 @@ export default function TaskModal({
     });
   };
 
-  const handleAssigneeChange = async (value: any) => {
-    const newAssigneeId = value === "unassigned" ? "" : value;
-
-    setAssigneeId(newAssigneeId);
+  const handleAssigneeChange = async (value: string) => {
+    const newAssigneeId =
+      value === "unassigned"
+        ? null
+        : projectMembers.find((member) => member._id === value)?._id;
+    if (newAssigneeId === undefined) return;
 
     await updateTask({
       id: task._id,
-      assigneeId: value === "unassigned" ? null : value,
+      assigneeId: newAssigneeId,
     });
   };
 
   const handleSubtaskToggle = async (subtaskIndex: number) => {
     const updatedSubtasks = (task.subtasks ?? []).map(
-      (subtask: any, index: number) =>
+      (subtask, index: number) =>
         index === subtaskIndex
           ? {
               ...subtask,
@@ -143,7 +190,7 @@ export default function TaskModal({
   };
 
   const completedSubtasks = task.subtasks
-    ? task.subtasks.filter((st: any) => st.completed).length
+    ? task.subtasks.filter((st) => st.completed).length
     : 0;
 
   const totalSubtasks = task.subtasks ? task.subtasks.length : 0;
@@ -151,7 +198,7 @@ export default function TaskModal({
   const isOverdue = task.deadline !== undefined && task.deadline < Date.now();
 
   const formattedDeadline = task.deadline
-    ? new Date(task.deadline).toLocaleDateString()
+    ? new Date(task.deadline).toLocaleDateString(i18n.resolvedLanguage)
     : "";
   const timerElapsedMs =
     (task.timerElapsedMs ?? 0) +
@@ -178,7 +225,11 @@ export default function TaskModal({
     timerCommandInFlight.current = true;
     setIsTimerPending(true);
     try {
-      const mutations = { start: startTimer, pause: pauseTimer, stop: stopTimer };
+      const mutations = {
+        start: startTimer,
+        pause: pauseTimer,
+        stop: stopTimer,
+      };
       await mutations[command]({ id: task._id });
     } catch {
       toast.error(t(`taskModal.timerErrors.${command}`));
@@ -191,6 +242,15 @@ export default function TaskModal({
   const handleStartTimer = () => runTimerCommand("start");
   const handlePauseTimer = () => runTimerCommand("pause");
   const handleStopTimer = () => runTimerCommand("stop");
+
+  if (liveTask === null)
+    return (
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent>
+          <p>{t("common.actionError")}</p>
+        </DialogContent>
+      </Dialog>
+    );
 
   if (showEditModal && can("task.update")) {
     return (
@@ -231,111 +291,120 @@ export default function TaskModal({
             </DialogTitle>
 
             <div className="absolute right-0 top-0 z-20 flex items-center gap-[10px]">
-              {(can("task.update") || can("task.delete")) && <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowActions(!showActions)}
-                  className={`flex h-8 w-8 items-center justify-center rounded-md border border-transparent transition-colors outline-none focus-visible:ring-1 focus-visible:ring-slate-500 focus-visible:ring-offset-0 ${
-                    theme === "dark"
-                      ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
-                      : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                  }`}
-                  aria-label={t("taskModal.actions")}
-                >
-                  <MoreVertical className="size-4" />
-                </button>
-
-                {showActions && (
-                  <div
-                    className={`absolute right-0 top-8 z-20 w-[210px] max-w-[calc(100vw-7rem)] rounded-lg border shadow-lg ${
+              {(can("task.update") || can("task.delete")) && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowActions(!showActions)}
+                    className={`flex h-8 w-8 items-center justify-center rounded-md border border-transparent transition-colors outline-none focus-visible:ring-1 focus-visible:ring-slate-500 focus-visible:ring-offset-0 ${
                       theme === "dark"
-                        ? "border-slate-700 bg-slate-900"
-                        : "border-slate-200 bg-white"
+                        ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
+                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                     }`}
+                    aria-label={t("taskModal.actions")}
                   >
-                    {can("task.update") && <button
-                      type="button"
-                      onClick={() => {
-                        setShowEditModal(true);
-                        setShowActions(false);
-                      }}
-                      className={`flex min-w-0 w-full items-center gap-3 whitespace-normal rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+                    <MoreVertical className="size-4" />
+                  </button>
+
+                  {showActions && (
+                    <div
+                      className={`absolute right-0 top-8 z-20 w-[210px] max-w-[calc(100vw-7rem)] rounded-lg border shadow-lg ${
                         theme === "dark"
-                          ? "text-slate-100 hover:bg-slate-800"
-                          : "text-slate-700 hover:bg-slate-100"
+                          ? "border-slate-700 bg-slate-900"
+                          : "border-slate-200 bg-white"
                       }`}
                     >
-                      <Edit
-                        className={`size-3.5 shrink-0 ${
-                          theme === "dark" ? "text-slate-400" : "text-slate-500"
-                        }`}
-                      />
-                      <span>{t("taskModal.editTask")}</span>
-                    </button>}
+                      {can("task.update") && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowEditModal(true);
+                            setShowActions(false);
+                          }}
+                          className={`flex min-w-0 w-full items-center gap-3 whitespace-normal rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+                            theme === "dark"
+                              ? "text-slate-100 hover:bg-slate-800"
+                              : "text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          <Edit
+                            className={`size-3.5 shrink-0 ${
+                              theme === "dark"
+                                ? "text-slate-400"
+                                : "text-slate-500"
+                            }`}
+                          />
+                          <span>{t("taskModal.editTask")}</span>
+                        </button>
+                      )}
 
-                    {can("task.delete") && (
-                      <>
-                        <div className="border-t border-slate-700" />
+                      {can("task.delete") && (
+                        <>
+                          <div className="border-t border-slate-700" />
 
-                        {showDeleteConfirm ? (
-                          <div className="px-3 py-2">
-                            <p
-                              className={`text-xs py-2 ${
-                                theme === "dark"
-                                  ? "text-slate-400"
-                                  : "text-slate-500"
-                              }`}
-                            >
-                              {t("taskModal.deleteQuestion")}
-                            </p>
-
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={handleDeleteTask}
-                                className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                              >
-                                {t("common.yes")}
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => setShowDeleteConfirm(false)}
-                                className={`text-xs px-2 py-1 rounded transition-colors ${
+                          {showDeleteConfirm ? (
+                            <div className="px-3 py-2">
+                              <p
+                                className={`text-xs py-2 ${
                                   theme === "dark"
-                                    ? "bg-slate-950 text-slate-100 hover:bg-slate-800"
-                                    : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+                                    ? "text-slate-400"
+                                    : "text-slate-500"
                                 }`}
                               >
-                                {t("common.no")}
-                              </button>
+                                {t("taskModal.deleteQuestion")}
+                              </p>
+
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  disabled={actionPending}
+                                  onClick={() =>
+                                    void runAction(handleDeleteTask)
+                                  }
+                                  className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                                >
+                                  {t("common.yes")}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setShowDeleteConfirm(false)}
+                                  className={`text-xs px-2 py-1 rounded transition-colors ${
+                                    theme === "dark"
+                                      ? "bg-slate-950 text-slate-100 hover:bg-slate-800"
+                                      : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+                                  }`}
+                                >
+                                  {t("common.no")}
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setShowDeleteConfirm(true)}
-                            className={`flex min-w-0 w-full items-center gap-3 whitespace-normal rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
-                              theme === "dark"
-                                ? "text-red-400 hover:bg-red-950/50"
-                                : "text-red-500 hover:bg-red-50"
-                            }`}
-                          >
-                            <Trash2
-                              className={`size-3.5 shrink-0 ${
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setShowDeleteConfirm(true)}
+                              className={`flex min-w-0 w-full items-center gap-3 whitespace-normal rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
                                 theme === "dark"
-                                  ? "text-red-400"
-                                  : "text-red-500"
+                                  ? "text-red-400 hover:bg-red-950/50"
+                                  : "text-red-500 hover:bg-red-50"
                               }`}
-                            />
-                            <span>{t("taskModal.deleteTask")}</span>
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>}
+                            >
+                              <Trash2
+                                className={`size-3.5 shrink-0 ${
+                                  theme === "dark"
+                                    ? "text-red-400"
+                                    : "text-red-500"
+                                }`}
+                              />
+                              <span>{t("taskModal.deleteTask")}</span>
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <button
                 type="button"
@@ -352,6 +421,20 @@ export default function TaskModal({
             </div>
           </div>
         </DialogHeader>
+        <p>
+          {t("taskModal.createdAt")}:{" "}
+          {new Date(task.createdAt).toLocaleString(i18n.resolvedLanguage)}
+          <br />
+          {t("taskModal.updatedAt")}:{" "}
+          {new Date(task.updatedAt ?? task.createdAt).toLocaleString(
+            i18n.resolvedLanguage,
+          )}
+        </p>
+        {memberStatus === "CanLoadMore" && (
+          <button type="button" onClick={() => loadMembers(30)}>
+            {t("members.loadMore")}
+          </button>
+        )}
 
         <div className="min-w-0 space-y-6 [&>*]:min-w-0">
           <div>
@@ -371,7 +454,21 @@ export default function TaskModal({
               }`}
             >
               <div className="mb-4 max-w-full text-2xl sm:text-3xl font-mono font-semibold">
-                {formatTimer(timerElapsedMs)}
+                <span>
+                  {t("taskModal.totalTime")}: {formatTimer(timerElapsedMs)}
+                </span>
+                <p>
+                  {t("taskModal.sessionTime")}:{" "}
+                  {task.timerSessionElapsedMs === undefined
+                    ? t("taskModal.legacySession")
+                    : formatTimer(
+                        task.timerSessionElapsedMs +
+                          (task.timerStatus === "running" &&
+                          task.timerStartedAt !== undefined
+                            ? Math.max(0, now - task.timerStartedAt)
+                            : 0),
+                      )}
+                </p>
               </div>
 
               <div className="flex flex-wrap gap-2" aria-busy={isTimerPending}>
@@ -433,7 +530,9 @@ export default function TaskModal({
                 }`}
               >
                 {t("taskModal.storyPoints")}
-                <span className="block text-xs font-normal opacity-70">{t("hints.storyPoints")}</span>
+                <span className="block text-xs font-normal opacity-70">
+                  {t("hints.storyPoints")}
+                </span>
               </h4>
 
               <span
@@ -488,7 +587,7 @@ export default function TaskModal({
                 </h4>
 
                 <div className="space-y-3">
-                  {(task.subtasks ?? []).map((subtask: any, index: number) => (
+                  {(task.subtasks ?? []).map((subtask, index: number) => (
                     <div
                       key={index}
                       className={`flex min-w-0 items-center gap-3 p-3 rounded-lg transition-colors cursor-pointer ${
@@ -499,18 +598,18 @@ export default function TaskModal({
                       onClick={() => {
                         if (!can("task.update")) return;
 
-                        handleSubtaskToggle(index);
+                        void runAction(() => handleSubtaskToggle(index));
                       }}
                     >
                       <Checkbox
                         className="shrink-0"
-                        disabled={!can("task.update")}
+                        disabled={actionPending || !can("task.update")}
                         onClick={(event) => event.stopPropagation()}
                         checked={subtask.completed}
                         onCheckedChange={() => {
                           if (!can("task.update")) return;
 
-                          handleSubtaskToggle(index);
+                          void runAction(() => handleSubtaskToggle(index));
                         }}
                       />{" "}
                       <span
@@ -540,7 +639,14 @@ export default function TaskModal({
             </h4>
 
             <div className="space-y-3">
-              {comments.length === 0 ? (
+              {commentStatus === "CanLoadMore" && (
+                <button onClick={() => loadComments(20)}>
+                  {t("pagination.loadMore")}
+                </button>
+              )}
+              {commentStatus === "LoadingFirstPage" ? (
+                <p>{t("common.loading")}</p>
+              ) : comments.length === 0 ? (
                 <p
                   className={`text-sm ${
                     theme === "dark" ? "text-slate-500" : "text-slate-500"
@@ -549,7 +655,7 @@ export default function TaskModal({
                   {t("taskModal.noComments")}
                 </p>
               ) : (
-                comments.map((comment: any) => (
+                comments.map((comment) => (
                   <div
                     key={comment._id}
                     className={`rounded-lg border p-3 ${
@@ -586,7 +692,9 @@ export default function TaskModal({
                           theme === "dark" ? "text-slate-500" : "text-slate-400"
                         }`}
                       >
-                        {new Date(comment.createdAt).toLocaleString()}
+                        {new Date(comment.createdAt).toLocaleString(
+                          i18n.resolvedLanguage,
+                        )}
                       </span>
                     </div>
                   </div>
@@ -600,7 +708,7 @@ export default function TaskModal({
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder={t("taskModal.commentPlaceholder")}
-                disabled={!can("task.update")}
+                disabled={actionPending || !can("task.update")}
                 className={`min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none ${
                   theme === "dark"
                     ? "border-slate-700 bg-slate-900 text-slate-100"
@@ -610,8 +718,10 @@ export default function TaskModal({
 
               <button
                 type="button"
-                onClick={handleAddComment}
-                disabled={!can("task.update") || !commentText.trim()}
+                onClick={() => void runAction(handleAddComment)}
+                disabled={
+                  actionPending || !can("task.update") || !commentText.trim()
+                }
                 className="min-w-0 max-w-full whitespace-normal rounded-md bg-purple-500 px-3 py-2 text-sm font-medium text-white hover:bg-purple-600 disabled:opacity-50"
               >
                 {t("taskModal.addComment")}
@@ -628,7 +738,14 @@ export default function TaskModal({
             </h4>
 
             <div className="space-y-3">
-              {activityLogs.length === 0 ? (
+              {activityStatus === "CanLoadMore" && (
+                <button onClick={() => loadActivity(20)}>
+                  {t("pagination.loadMore")}
+                </button>
+              )}
+              {activityStatus === "LoadingFirstPage" ? (
+                <p>{t("common.loading")}</p>
+              ) : activityLogs.length === 0 ? (
                 <p
                   className={`text-sm ${
                     theme === "dark" ? "text-slate-500" : "text-slate-500"
@@ -637,7 +754,7 @@ export default function TaskModal({
                   {t("taskModal.noActivity")}
                 </p>
               ) : (
-                activityLogs.map((log: any) => (
+                activityLogs.map((log) => (
                   <div
                     key={log._id}
                     className={`rounded-lg border p-3 ${
@@ -659,7 +776,9 @@ export default function TaskModal({
                         </p>
 
                         <p className="mt-1 text-sm font-medium">
-                          {t(`taskModal.activityEvents.${log.action}`, { defaultValue: log.action })}
+                          {t(`taskModal.activityEvents.${log.action}`, {
+                            defaultValue: log.action,
+                          })}
                         </p>
 
                         <p
@@ -670,6 +789,29 @@ export default function TaskModal({
                           }`}
                         >
                           {log.details}
+                          {log.changes?.map(
+                            (
+                              change: {
+                                field: string;
+                                before: string | number | null;
+                                after: string | number | null;
+                              },
+                              index: number,
+                            ) => (
+                              <span className="block" key={index}>
+                                {t(`historyFields.${change.field}`)}:{" "}
+                                <HistoryValue
+                                  field={change.field}
+                                  value={change.before}
+                                />{" "}
+                                ?{" "}
+                                <HistoryValue
+                                  field={change.field}
+                                  value={change.after}
+                                />
+                              </span>
+                            ),
+                          )}
                         </p>
                       </div>
 
@@ -678,7 +820,9 @@ export default function TaskModal({
                           theme === "dark" ? "text-slate-500" : "text-slate-400"
                         }`}
                       >
-                        {new Date(log.createdAt).toLocaleString()}
+                        {new Date(log.createdAt).toLocaleString(
+                          i18n.resolvedLanguage,
+                        )}
                       </span>
                     </div>
                   </div>
@@ -698,8 +842,10 @@ export default function TaskModal({
 
             <Select
               value={assigneeId || "unassigned"}
-              onValueChange={handleAssigneeChange}
-              disabled={!can("task.update")}
+              onValueChange={(value) =>
+                void runAction(() => handleAssigneeChange(value))
+              }
+              disabled={actionPending || !can("task.update")}
             >
               <SelectTrigger
                 className={`min-w-0 w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere border transition-colors ${
@@ -721,7 +867,15 @@ export default function TaskModal({
               >
                 <SelectItem value="unassigned">{t("unassigned")}</SelectItem>
 
-                {projectMembers.map((member: any) => (
+                {task.assigneeId &&
+                  !projectMembers.some(
+                    (member) => member._id === task.assigneeId,
+                  ) && (
+                    <SelectItem value={task.assigneeId}>
+                      {liveTask?.assigneeName ?? t("common.loading")}
+                    </SelectItem>
+                  )}
+                {projectMembers.map((member) => (
                   <SelectItem key={member._id} value={member._id}>
                     {member.name || member.email}
                   </SelectItem>
@@ -741,8 +895,10 @@ export default function TaskModal({
 
             <Select
               value={columnId}
-              onValueChange={handleColumnChange}
-              disabled={!can("task.update")}
+              onValueChange={(value) =>
+                void runAction(() => handleColumnChange(value))
+              }
+              disabled={actionPending || !can("task.update")}
             >
               <SelectTrigger
                 className={`min-w-0 w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere border transition-colors ${
@@ -762,7 +918,7 @@ export default function TaskModal({
                     : "bg-white text-slate-900 border-slate-200"
                 }`}
               >
-                {columns.map((column: any) => (
+                {columns.map((column) => (
                   <SelectItem
                     key={column._id}
                     value={column._id}

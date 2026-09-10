@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 
 type RoleAccess = {
@@ -5,7 +6,10 @@ type RoleAccess = {
   currentRole: Doc<"roles"> | null;
 };
 
-type DelegatedRole = Pick<Doc<"roles">, "workspaceId" | "level" | "permissions">;
+type DelegatedRole = Pick<
+  Doc<"roles">,
+  "workspaceId" | "level" | "permissions"
+>;
 
 // Access must come from a server-side access helper, never mutation arguments.
 export function assertRoleDelegation(
@@ -14,27 +18,29 @@ export function assertRoleDelegation(
   role: DelegatedRole,
 ) {
   if (role.workspaceId !== workspaceId) {
-    throw new Error("Role does not belong to this workspace");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   if (!Number.isFinite(role.level)) {
-    throw new Error("Role level must be finite");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   if (access.isOwner) return;
 
   const currentRole = access.currentRole;
   if (!currentRole || currentRole.workspaceId !== workspaceId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   if (!Number.isFinite(currentRole.level) || role.level >= currentRole.level) {
-    throw new Error("You can only delegate roles below your own level");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   if (
-    !role.permissions.every((permission) => currentRole.permissions.includes(permission))
+    !role.permissions.every((permission) =>
+      currentRole.permissions.includes(permission),
+    )
   ) {
-    throw new Error("You cannot delegate permissions you do not have");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 }

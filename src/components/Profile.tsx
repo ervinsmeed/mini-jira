@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { actionError } from "../lib/actionError";
 import { ArrowLeft, UserRound } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ type ProfileProps = {
 export default function Profile({ theme, onBack }: ProfileProps) {
   const { t } = useTranslation();
 
+  const assignedRoles = useQuery(api.users.myRoles);
   const currentUser = useQuery(api.users.getCurrent);
   const updateProfile = useMutation(api.users.updateProfile);
 
@@ -22,6 +24,7 @@ export default function Profile({ theme, onBack }: ProfileProps) {
   const [position, setPosition] = useState("");
   const [avatar, setAvatar] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const saveLock = useRef(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -36,6 +39,8 @@ export default function Profile({ theme, onBack }: ProfileProps) {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (saveLock.current) return;
+    saveLock.current = true;
     setIsSaving(true);
 
     try {
@@ -48,9 +53,9 @@ export default function Profile({ theme, onBack }: ProfileProps) {
 
       toast.success(t("profile.updated"));
     } catch (error) {
-      console.error("Failed to update profile:", error);
-      toast.error(t("profile.updateError"));
+      toast.error(actionError(error, t));
     } finally {
+      saveLock.current = false;
       setIsSaving(false);
     }
   };
@@ -114,6 +119,24 @@ export default function Profile({ theme, onBack }: ProfileProps) {
       </header>
 
       <main className="mx-auto w-full max-w-3xl p-6">
+        <section className="mb-6 rounded-lg border border-border bg-card p-4">
+          <h2>{t("profile.assignedRoles")}</h2>
+          {assignedRoles === undefined ? (
+            <p>{t("common.loading")}</p>
+          ) : assignedRoles.length === 0 ? (
+            <p>{t("profile.noRoles")}</p>
+          ) : (
+            assignedRoles.map((entry) => (
+              <p key={entry.id}>
+                {entry.workspace}
+                {entry.project ? ` / ${entry.project}` : ""}:{" "}
+                {entry.owner
+                  ? t("members.owner")
+                  : (entry.role ?? t("profile.noRole"))}
+              </p>
+            ))
+          )}
+        </section>
         <form
           onSubmit={handleSubmit}
           className={`rounded-xl border p-6 shadow-sm ${

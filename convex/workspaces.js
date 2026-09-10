@@ -1,3 +1,6 @@
+export { workspacesPage } from "./lib/directoryQueries";
+import { ConvexError } from "convex/values";
+import { deleteBoard } from "./lib/cascade";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -11,7 +14,7 @@ export const create = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
     }
 
     const user = await ctx.db
@@ -20,7 +23,7 @@ export const create = mutation({
       .unique();
 
     if (!user) {
-      throw new Error("User not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const workspaceId = await ctx.db.insert("workspaces", {
@@ -39,7 +42,7 @@ export const list = query({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
     }
 
     const user = await ctx.db
@@ -92,7 +95,7 @@ export const update = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
     }
 
     const user = await ctx.db
@@ -101,13 +104,13 @@ export const update = mutation({
       .unique();
 
     if (!user) {
-      throw new Error("User not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const workspace = await ctx.db.get(args.id);
 
     if (!workspace || workspace.ownerId !== user._id) {
-      throw new Error("Workspace not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const updates = {};
@@ -134,7 +137,7 @@ export const remove = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
     }
 
     const user = await ctx.db
@@ -143,13 +146,13 @@ export const remove = mutation({
       .unique();
 
     if (!user) {
-      throw new Error("User not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const workspace = await ctx.db.get(args.id);
 
     if (!workspace || workspace.ownerId !== user._id) {
-      throw new Error("Workspace not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const boards = await ctx.db
@@ -157,36 +160,7 @@ export const remove = mutation({
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.id))
       .collect();
 
-    for (const board of boards) {
-      const tasks = await ctx.db
-        .query("tasks")
-        .withIndex("by_board", (q) => q.eq("boardId", board._id))
-        .collect();
-
-      for (const task of tasks) {
-        await ctx.db.delete(task._id);
-      }
-
-      const columns = await ctx.db
-        .query("columns")
-        .withIndex("by_board", (q) => q.eq("boardId", board._id))
-        .collect();
-
-      for (const column of columns) {
-        await ctx.db.delete(column._id);
-      }
-
-      const boardMembers = await ctx.db
-        .query("boardMembers")
-        .withIndex("by_board", (q) => q.eq("boardId", board._id))
-        .collect();
-
-      for (const member of boardMembers) {
-        await ctx.db.delete(member._id);
-      }
-
-      await ctx.db.delete(board._id);
-    }
+    for (const board of boards) await deleteBoard(ctx, board._id);
 
     const workspaceMembers = await ctx.db
       .query("workspaceMembers")

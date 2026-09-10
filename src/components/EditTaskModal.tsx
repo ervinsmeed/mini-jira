@@ -1,3 +1,4 @@
+import { useAction } from "../lib/useAction";
 import { getColumnLabel } from "../lib/columnLabel";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 
@@ -138,6 +139,7 @@ export default function EditTaskModal({
   canUpdate,
 }: EditTaskModalProps) {
   const { t } = useTranslation();
+  const { pending, run } = useAction();
 
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || "");
@@ -153,9 +155,10 @@ export default function EditTaskModal({
 
   const updateTask = useMutation(api.tasks.update);
 
-  const columns: any[] = (useQuery(api.columns.list, {
-    boardId: task.boardId,
-  }) ?? []) as any[];
+  const columns: Doc<"columns">[] =
+    useQuery(api.columns.list, {
+      boardId: task.boardId,
+    }) ?? [];
 
   useEffect(() => {
     setTitle(task.title);
@@ -178,7 +181,6 @@ export default function EditTaskModal({
       ]);
     }
   }, [task._id]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -264,23 +266,23 @@ export default function EditTaskModal({
         completed: subtask.completed,
       }));
 
-    await updateTask({
-      id: task._id,
-      title: title.trim(),
-      description: description.trim(),
-      priority,
-      storyPoints: Number(storyPoints) as 1 | 2 | 3 | 5 | 8 | 13 | 21,
+    await run(async () => {
+      await updateTask({
+        id: task._id,
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        storyPoints: Number(storyPoints) as 1 | 2 | 3 | 5 | 8 | 13 | 21,
 
-      deadline: deadline
-        ? new Date(`${deadline}T23:59:59`).getTime()
-        : undefined,
+        deadline: deadline ? new Date(`${deadline}T23:59:59`).getTime() : null,
 
-      subtasks: validSubtasks,
-      columnId,
+        subtasks: validSubtasks,
+        columnId,
+      });
+      onClose();
+
+      toast.success(t("editTask.updated"));
     });
-    onClose();
-
-    toast.success(t("editTask.updated"));
   };
 
   return (
@@ -306,268 +308,277 @@ export default function EditTaskModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="mt-2">
-          <fieldset disabled={!canUpdate} className="min-w-0 space-y-6">
-          <div>
-            <label
-              className={`mb-2 block text-sm font-medium ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("editTask.taskTitle")}
-            </label>
-
-            <input
-              type="text"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder={t("editTask.titlePlaceholder")}
-              className={`w-full rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
-                theme === "dark"
-                  ? "border-slate-800 bg-slate-900 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                  : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-              }`}
-              required
-            />
-          </div>
-
-          <div>
-            <label
-              className={`mb-2 block text-sm font-medium ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("editTask.description")}
-            </label>
-
-            <textarea
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder={t("editTask.descriptionPlaceholder")}
-              rows={4}
-              className={`w-full resize-none rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
-                theme === "dark"
-                  ? "border-slate-800 bg-slate-900 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                  : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-              }`}
-            />
-          </div>
-
-          <div>
-            <label
-              className={`mb-2 block text-sm font-medium ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("editTask.subtasks")}
-            </label>
-
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <div className="space-y-3">
-                <SortableContext
-                  items={subtasks.map((_, index) => `subtask-${index}`)}
-                  strategy={verticalListSortingStrategy}
+          <fieldset disabled={pending} className="contents">
+            <fieldset disabled={!canUpdate} className="min-w-0 space-y-6">
+              <div>
+                <label
+                  className={`mb-2 block text-sm font-medium ${
+                    theme === "dark" ? "text-slate-300" : "text-slate-700"
+                  }`}
                 >
-                  {subtasks.map((subtask, index) => (
-                    <SortableSubTask
-                      key={`subtask-${index}`}
-                      subtask={subtask}
-                      index={index}
-                      onRemove={handleRemoveSubtask}
-                      onChange={handleSubtaskChange}
-                      theme={theme}
-                    />
-                  ))}
-                </SortableContext>
+                  {t("editTask.taskTitle")}
+                </label>
 
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder={t("editTask.titlePlaceholder")}
+                  className={`w-full rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
+                    theme === "dark"
+                      ? "border-slate-800 bg-slate-900 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
+                      : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
+                  }`}
+                  required
+                />
+              </div>
+
+              <div>
+                <label
+                  className={`mb-2 block text-sm font-medium ${
+                    theme === "dark" ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
+                  {t("editTask.description")}
+                </label>
+
+                <textarea
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder={t("editTask.descriptionPlaceholder")}
+                  rows={4}
+                  className={`w-full resize-none rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
+                    theme === "dark"
+                      ? "border-slate-800 bg-slate-900 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
+                      : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label
+                  className={`mb-2 block text-sm font-medium ${
+                    theme === "dark" ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
+                  {t("editTask.subtasks")}
+                </label>
+
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="space-y-3">
+                    <SortableContext
+                      items={subtasks.map((_, index) => `subtask-${index}`)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {subtasks.map((subtask, index) => (
+                        <SortableSubTask
+                          key={`subtask-${index}`}
+                          subtask={subtask}
+                          index={index}
+                          onRemove={handleRemoveSubtask}
+                          onChange={handleSubtaskChange}
+                          theme={theme}
+                        />
+                      ))}
+                    </SortableContext>
+
+                    <button
+                      type="button"
+                      onClick={handleAddSubtask}
+                      className={`w-full rounded-md border-2 border-dashed py-2 font-medium transition ${
+                        theme === "dark"
+                          ? "border-slate-800 text-purple-400 hover:bg-slate-900"
+                          : "border-slate-300 text-purple-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      + {t("editTask.addSubtask")}
+                    </button>
+                  </div>
+                </DndContext>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label
+                    className={`mb-2 block text-sm font-medium ${
+                      theme === "dark" ? "text-slate-300" : "text-slate-700"
+                    }`}
+                  >
+                    {t("editTask.priority")}
+                  </label>
+
+                  <Select value={priority} onValueChange={setPriority}>
+                    <SelectTrigger
+                      className={`w-full transition-colors ${
+                        theme === "dark"
+                          ? "border-slate-800 bg-slate-900 text-slate-100"
+                          : "border-slate-300 bg-white text-slate-900"
+                      }`}
+                    >
+                      <SelectValue placeholder={t("editTask.selectPriority")} />
+                    </SelectTrigger>
+
+                    <SelectContent
+                      className={`transition-colors ${
+                        theme === "dark"
+                          ? "border-slate-800 bg-slate-900 text-slate-100"
+                          : "border-slate-200 bg-white text-slate-900"
+                      }`}
+                    >
+                      <SelectItem value="high">
+                        <div className="flex items-center space-x-2">
+                          <div className="size-2 rounded-full bg-red-500" />
+                          <span>{t("priority.high")}</span>
+                        </div>
+                      </SelectItem>
+
+                      <SelectItem value="medium">
+                        <div className="flex items-center space-x-2">
+                          <div className="size-2 rounded-full bg-yellow-500" />
+                          <span>{t("priority.medium")}</span>
+                        </div>
+                      </SelectItem>
+
+                      <SelectItem value="low">
+                        <div className="flex items-center space-x-2">
+                          <div className="size-2 rounded-full bg-green-500" />
+                          <span>{t("priority.low")}</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label
+                    className={`mb-2 block text-sm font-medium ${
+                      theme === "dark" ? "text-slate-300" : "text-slate-700"
+                    }`}
+                  >
+                    {t("editTask.column")}
+                  </label>
+
+                  <Select
+                    value={columnId}
+                    onValueChange={(value) =>
+                      setColumnId(value as Id<"columns">)
+                    }
+                  >
+                    <SelectTrigger
+                      className={`w-full transition-colors ${
+                        theme === "dark"
+                          ? "border-slate-800 bg-slate-900 text-slate-100"
+                          : "border-slate-300 bg-white text-slate-900"
+                      }`}
+                    >
+                      <SelectValue placeholder={t("editTask.selectColumn")} />
+                    </SelectTrigger>
+
+                    <SelectContent
+                      className={`transition-colors ${
+                        theme === "dark"
+                          ? "border-slate-800 bg-slate-900 text-slate-100"
+                          : "border-slate-200 bg-white text-slate-900"
+                      }`}
+                    >
+                      {columns.map((column) => (
+                        <SelectItem key={column._id} value={column._id}>
+                          {getColumnLabel(column.name, t)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  className={`mb-2 block text-sm font-medium ${
+                    theme === "dark" ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
+                  {t("editTask.storyPoints")}
+                  <span className="block text-xs font-normal opacity-70">
+                    {t("hints.storyPoints")}
+                  </span>
+                </label>
+
+                <Select value={storyPoints} onValueChange={setStoryPoints}>
+                  <SelectTrigger
+                    className={`w-full transition-colors ${
+                      theme === "dark"
+                        ? "border-slate-800 bg-slate-900 text-slate-100"
+                        : "border-slate-300 bg-white text-slate-900"
+                    }`}
+                  >
+                    <SelectValue
+                      placeholder={t("editTask.selectStoryPoints")}
+                    />
+                  </SelectTrigger>
+
+                  <SelectContent
+                    className={`transition-colors ${
+                      theme === "dark"
+                        ? "border-slate-800 bg-slate-900 text-slate-100"
+                        : "border-slate-200 bg-white text-slate-900"
+                    }`}
+                  >
+                    {[1, 2, 3, 5, 8, 13, 21].map((points) => (
+                      <SelectItem key={points} value={points.toString()}>
+                        {points} SP
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* DEADLINE */}
+              <div>
+                <label
+                  className={`mb-2 block text-sm font-medium ${
+                    theme === "dark" ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
+                  {t("editTask.deadline")}
+                </label>
+
+                <input
+                  type="date"
+                  value={deadline}
+                  onChange={(event) => setDeadline(event.target.value)}
+                  className={`w-full rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
+                    theme === "dark"
+                      ? "border-slate-800 bg-slate-900 text-slate-100 focus:ring-purple-400"
+                      : "border-slate-300 bg-white text-slate-900 focus:ring-purple-500"
+                  }`}
+                />
+              </div>
+
+              <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={handleAddSubtask}
-                  className={`w-full rounded-md border-2 border-dashed py-2 font-medium transition ${
+                  onClick={onClose}
+                  className={`flex-1 rounded-lg border py-2 transition-colors ${
                     theme === "dark"
-                      ? "border-slate-800 text-purple-400 hover:bg-slate-900"
-                      : "border-slate-300 text-purple-600 hover:bg-slate-100"
+                      ? "border-slate-700 text-slate-300 hover:bg-slate-900"
+                      : "border-slate-300 text-slate-700 hover:bg-slate-100"
                   }`}
                 >
-                  + {t("editTask.addSubtask")}
+                  {t("editTask.cancel")}
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="flex-1 rounded-lg bg-purple-600 py-2 text-white transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  {t("editTask.updateTask")}
                 </button>
               </div>
-            </DndContext>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label
-                className={`mb-2 block text-sm font-medium ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
-                {t("editTask.priority")}
-              </label>
-
-              <Select value={priority} onValueChange={setPriority}>
-                <SelectTrigger
-                  className={`w-full transition-colors ${
-                    theme === "dark"
-                      ? "border-slate-800 bg-slate-900 text-slate-100"
-                      : "border-slate-300 bg-white text-slate-900"
-                  }`}
-                >
-                  <SelectValue placeholder={t("editTask.selectPriority")} />
-                </SelectTrigger>
-
-                <SelectContent
-                  className={`transition-colors ${
-                    theme === "dark"
-                      ? "border-slate-800 bg-slate-900 text-slate-100"
-                      : "border-slate-200 bg-white text-slate-900"
-                  }`}
-                >
-                  <SelectItem value="high">
-                    <div className="flex items-center space-x-2">
-                      <div className="size-2 rounded-full bg-red-500" />
-                      <span>{t("priority.high")}</span>
-                    </div>
-                  </SelectItem>
-
-                  <SelectItem value="medium">
-                    <div className="flex items-center space-x-2">
-                      <div className="size-2 rounded-full bg-yellow-500" />
-                      <span>{t("priority.medium")}</span>
-                    </div>
-                  </SelectItem>
-
-                  <SelectItem value="low">
-                    <div className="flex items-center space-x-2">
-                      <div className="size-2 rounded-full bg-green-500" />
-                      <span>{t("priority.low")}</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label
-                className={`mb-2 block text-sm font-medium ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
-                {t("editTask.column")}
-              </label>
-
-              <Select
-                value={columnId}
-                onValueChange={(value) => setColumnId(value as Id<"columns">)}
-              >
-                <SelectTrigger
-                  className={`w-full transition-colors ${
-                    theme === "dark"
-                      ? "border-slate-800 bg-slate-900 text-slate-100"
-                      : "border-slate-300 bg-white text-slate-900"
-                  }`}
-                >
-                  <SelectValue placeholder={t("editTask.selectColumn")} />
-                </SelectTrigger>
-
-                <SelectContent
-                  className={`transition-colors ${
-                    theme === "dark"
-                      ? "border-slate-800 bg-slate-900 text-slate-100"
-                      : "border-slate-200 bg-white text-slate-900"
-                  }`}
-                >
-                  {columns.map((column) => (
-                    <SelectItem key={column._id} value={column._id}>
-                      {getColumnLabel(column.name, t)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <label
-              className={`mb-2 block text-sm font-medium ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("editTask.storyPoints")}
-              <span className="block text-xs font-normal opacity-70">{t("hints.storyPoints")}</span>
-            </label>
-
-            <Select value={storyPoints} onValueChange={setStoryPoints}>
-              <SelectTrigger
-                className={`w-full transition-colors ${
-                  theme === "dark"
-                    ? "border-slate-800 bg-slate-900 text-slate-100"
-                    : "border-slate-300 bg-white text-slate-900"
-                }`}
-              >
-                <SelectValue placeholder={t("editTask.selectStoryPoints")} />
-              </SelectTrigger>
-
-              <SelectContent
-                className={`transition-colors ${
-                  theme === "dark"
-                    ? "border-slate-800 bg-slate-900 text-slate-100"
-                    : "border-slate-200 bg-white text-slate-900"
-                }`}
-              >
-                {[1, 2, 3, 5, 8, 13, 21].map((points) => (
-                  <SelectItem key={points} value={points.toString()}>
-                    {points} SP
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {/* DEADLINE */}
-          <div>
-            <label
-              className={`mb-2 block text-sm font-medium ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("editTask.deadline")}
-            </label>
-
-            <input
-              type="date"
-              value={deadline}
-              onChange={(event) => setDeadline(event.target.value)}
-              className={`w-full rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
-                theme === "dark"
-                  ? "border-slate-800 bg-slate-900 text-slate-100 focus:ring-purple-400"
-                  : "border-slate-300 bg-white text-slate-900 focus:ring-purple-500"
-              }`}
-            />
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className={`flex-1 rounded-lg border py-2 transition-colors ${
-                theme === "dark"
-                  ? "border-slate-700 text-slate-300 hover:bg-slate-900"
-                  : "border-slate-300 text-slate-700 hover:bg-slate-100"
-              }`}
-            >
-              {t("editTask.cancel")}
-            </button>
-
-            <button
-              type="submit"
-              className="flex-1 rounded-lg bg-purple-600 py-2 text-white transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              {t("editTask.updateTask")}
-            </button>
-          </div>
+            </fieldset>
           </fieldset>
         </form>
       </DialogContent>

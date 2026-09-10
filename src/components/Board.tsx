@@ -1,7 +1,10 @@
+import QueryBoundary from "./ui/QueryBoundary";
+import { useAction } from "../lib/useAction";
+import { useTaskPages } from "../lib/useTaskPages";
 import { useEffect, useState } from "react";
 import RecentTasksMenu from "./ui/RecentTasksMenu";
 import { Plus } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
 import {
   closestCenter,
   DndContext,
@@ -34,24 +37,28 @@ type BoardProps = {
   can: (permission: string) => boolean;
 };
 
-export default function Board({ board, theme, can }: BoardProps) {
+function BoardContent({ board, theme, can }: BoardProps) {
   const [selectedTask, setSelectedTask] = useState<Doc<"tasks"> | null>(null);
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { pending, run } = useAction();
   const canUpdateTask = can("task.update");
   const canDeleteTask = can("task.delete");
   const canSelectTasks = canUpdateTask || canDeleteTask;
   const currentUser = useQuery(api.users.getCurrent, board ? {} : "skip");
-  const workspaces = useQuery(api.workspaces.list);
-  const parentWorkspace = workspaces?.find(
-    (workspace: Doc<"workspaces">) => workspace._id === board?.workspaceId,
+  const workspaceAccess = useQuery(
+    api.workspaceMembers.getCurrentAccess,
+    board?.workspaceId ? { workspaceId: board.workspaceId } : "skip",
   );
-  const canCreateColumn = Boolean(currentUser && (!board?.workspaceId || parentWorkspace) && (parentWorkspace?.ownerId === currentUser._id || board?.userId === currentUser._id));
+  const canCreateColumn = Boolean(
+    currentUser &&
+    (!board?.workspaceId || workspaceAccess) &&
+    (workspaceAccess?.isOwner || board?.userId === currentUser._id),
+  );
   const canManageColumn = (column: Doc<"columns">): boolean =>
     Boolean(
       currentUser &&
-      (!board?.workspaceId || parentWorkspace) &&
-      (parentWorkspace?.ownerId === currentUser._id ||
-        column.userId === currentUser._id),
+      (!board?.workspaceId || workspaceAccess) &&
+      (workspaceAccess?.isOwner || column.userId === currentUser._id),
     );
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -89,13 +96,43 @@ export default function Board({ board, theme, can }: BoardProps) {
     "manual" | "title" | "deadline" | "created" | "storyPoints" | "priority"
   >("manual");
 
-  const tasksResult = useQuery(
-    api.tasks.list,
-    board?._id ? { boardId: board._id } : "skip",
+  const todayDate = new Date();
+  const today = new Date(
+    todayDate.getFullYear(),
+    todayDate.getMonth(),
+    todayDate.getDate(),
+  ).getTime();
+  const tomorrow = new Date(
+    todayDate.getFullYear(),
+    todayDate.getMonth(),
+    todayDate.getDate() + 1,
+  ).getTime();
+  const {
+    results: tasksResult,
+    status: pageStatus,
+    loadMore,
+  } = useTaskPages(
+    board
+      ? {
+          boardId: board._id,
+          search: searchQuery,
+          sort: sortBy,
+          columnId: statusFilter === "all" ? undefined : statusFilter,
+          assigneeId:
+            assigneeFilter === "all"
+              ? undefined
+              : assigneeFilter === "unassigned"
+                ? null
+                : assigneeFilter,
+          priority: priorityFilter === "all" ? undefined : priorityFilter,
+          storyPoints:
+            storyPointsFilter === "all" ? undefined : Number(storyPointsFilter),
+          deadline: deadlineFilter,
+          today,
+          tomorrow,
+        }
+      : "skip",
   );
-  const [taskPage, setTaskPage] = useState({ key: "", limit: 12 });
-  const taskListKey = JSON.stringify([board?._id, searchQuery, statusFilter, assigneeFilter, storyPointsFilter, deadlineFilter, priorityFilter, sortBy, i18n.resolvedLanguage]);
-  const visibleTaskCount = taskPage.key === taskListKey ? taskPage.limit : 12;
 
   const columnsResult = useQuery(
     api.columns.list,
@@ -105,191 +142,26 @@ export default function Board({ board, theme, can }: BoardProps) {
         }
       : "skip",
   );
-  const favoriteTaskIdsResult = useQuery(
-    api.favorites.listTaskIds,
-    board?._id
-      ? {
-          boardId: board._id,
-        }
-      : "skip",
+  const favoriteTaskIdSet = new Set(
+    tasksResult.filter((task) => task.isFavorite).map((task) => task._id),
   );
-
-  const favoriteTaskIds = favoriteTaskIdsResult ?? [];
-  const favoriteTaskIdSet = new Set<Id<"tasks">>(favoriteTaskIds);
 
   const toggleTaskFavorite = useMutation(api.favorites.toggleTask);
   const recordRecentTaskView = useMutation(api.recentTasks.recordView);
-  const projectMembers: any[] = (useQuery(
-    api.boardMembers.list,
-    board?._id
-      ? {
-          boardId: board._id,
-        }
-      : "skip",
-  ) ?? []) as any[];
+  const {
+    results: projectMembers,
+    status: memberStatus,
+    loadMore: loadMembers,
+  } = usePaginatedQuery(
+    api.boardMembers.projectMembersPage,
+    board ? { boardId: board._id } : "skip",
+    { initialNumItems: 30 },
+  );
 
-  const tasks: any[] = (tasksResult ?? []) as any[];
-  const columns: any[] = (columnsResult ?? []) as any[];
+  const tasks: Doc<"tasks">[] = tasksResult ?? [];
+  const columns: Doc<"columns">[] = columnsResult ?? [];
 
-  const matchingTasks = tasks
-    .filter((task) => {
-      const search = searchQuery.trim().toLowerCase();
-
-      if (!search) {
-        return true;
-      }
-
-      const assignee = projectMembers.find(
-        (member: any) => member._id === task.assigneeId,
-      );
-
-      const author = projectMembers.find(
-        (member: any) => member._id === task.userId,
-      );
-
-      const assigneeText = assignee
-        ? `${assignee.name ?? ""} ${assignee.email ?? ""}`.toLowerCase()
-        : "";
-
-      const authorText = author
-        ? `${author.name ?? ""} ${author.email ?? ""}`.toLowerCase()
-        : "";
-
-      return (
-        task.title.toLowerCase().includes(search) ||
-        (task.description ?? "").toLowerCase().includes(search) ||
-        assigneeText.includes(search) ||
-        authorText.includes(search) ||
-        (task.searchUserText ?? "").toLowerCase().includes(search)
-      );
-    })
-    .filter((task) => {
-      if (priorityFilter === "all") {
-        return true;
-      }
-
-      return (task.priority || "medium") === priorityFilter;
-    })
-    .filter((task) => {
-      if (statusFilter === "all") {
-        return true;
-      }
-
-      return task.columnId === statusFilter;
-    })
-    .filter((task) => {
-      if (assigneeFilter === "all") {
-        return true;
-      }
-
-      if (assigneeFilter === "unassigned") {
-        return !task.assigneeId;
-      }
-
-      return task.assigneeId === assigneeFilter;
-    })
-    .filter((task) => {
-      if (storyPointsFilter === "all") {
-        return true;
-      }
-
-      return task.storyPoints === Number(storyPointsFilter);
-    })
-    .filter((task) => {
-      if (deadlineFilter === "all") {
-        return true;
-      }
-
-      if (deadlineFilter === "none") {
-        return task.deadline === undefined;
-      }
-
-      if (task.deadline === undefined) {
-        return false;
-      }
-
-      const now = new Date();
-
-      const startOfToday = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-      ).getTime();
-
-      const endOfToday = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate() + 1,
-      ).getTime();
-
-      if (deadlineFilter === "overdue") {
-        return task.deadline < startOfToday;
-      }
-
-      if (deadlineFilter === "today") {
-        return task.deadline >= startOfToday && task.deadline < endOfToday;
-      }
-
-      if (deadlineFilter === "upcoming") {
-        return task.deadline >= endOfToday;
-      }
-
-      return true;
-    })
-    .sort((firstTask, secondTask) => {
-      if (sortBy === "title") {
-        return firstTask.title.localeCompare(secondTask.title, i18n.resolvedLanguage);
-      }
-
-      if (sortBy === "deadline") {
-        if (
-          firstTask.deadline === undefined &&
-          secondTask.deadline === undefined
-        ) {
-          return firstTask.order - secondTask.order;
-        }
-
-        if (firstTask.deadline === undefined) {
-          return 1;
-        }
-
-        if (secondTask.deadline === undefined) {
-          return -1;
-        }
-
-        return firstTask.deadline - secondTask.deadline;
-      }
-
-      if (sortBy === "created") {
-        return secondTask.createdAt - firstTask.createdAt;
-      }
-
-      if (sortBy === "storyPoints") {
-        return (secondTask.storyPoints ?? -1) - (firstTask.storyPoints ?? -1);
-      }
-
-      if (sortBy === "priority") {
-        const priorityOrder = {
-          high: 0,
-          medium: 1,
-          low: 2,
-        };
-
-        const firstPriority =
-          priorityOrder[firstTask.priority as keyof typeof priorityOrder] ?? 1;
-
-        const secondPriority =
-          priorityOrder[secondTask.priority as keyof typeof priorityOrder] ?? 1;
-
-        if (firstPriority !== secondPriority) {
-          return firstPriority - secondPriority;
-        }
-      }
-
-      return firstTask.order - secondTask.order;
-    });
-
-  const visibleTasks = matchingTasks.slice(0, visibleTaskCount);
+  const visibleTasks = tasks;
 
   const initializeColumns = useMutation(api.columns.initializeDefaultColumns);
 
@@ -353,56 +225,66 @@ export default function Board({ board, theme, can }: BoardProps) {
     setSelectedTaskIds([]);
   };
   const handleBulkStatusChange = async (value: string) => {
-    if (!canUpdateTask || selectedTaskIds.length === 0) return;
+    await run(async () => {
+      if (!canUpdateTask || selectedTaskIds.length === 0) return;
 
-    await bulkUpdateTasks({
-      taskIds: selectedTaskIds,
-      columnId: value as Id<"columns">,
+      await bulkUpdateTasks({
+        taskIds: selectedTaskIds,
+        columnId: value as Id<"columns">,
+      });
+
+      clearTaskSelection();
     });
-
-    clearTaskSelection();
   };
 
   const handleBulkAssigneeChange = async (value: string) => {
-    if (!canUpdateTask || selectedTaskIds.length === 0) return;
+    await run(async () => {
+      if (!canUpdateTask || selectedTaskIds.length === 0) return;
 
-    await bulkUpdateTasks({
-      taskIds: selectedTaskIds,
-      assigneeId: value === "unassigned" ? null : (value as Id<"users">),
+      await bulkUpdateTasks({
+        taskIds: selectedTaskIds,
+        assigneeId: value === "unassigned" ? null : (value as Id<"users">),
+      });
+
+      clearTaskSelection();
     });
-
-    clearTaskSelection();
   };
   const handleBulkPriorityChange = async (value: string) => {
-    if (!canUpdateTask || selectedTaskIds.length === 0) return;
+    await run(async () => {
+      if (!canUpdateTask || selectedTaskIds.length === 0) return;
 
-    const taskIds = [...selectedTaskIds];
+      const taskIds = [...selectedTaskIds];
 
-    clearTaskSelection();
+      clearTaskSelection();
 
-    await bulkUpdateTasks({
-      taskIds,
-      priority: value,
+      await bulkUpdateTasks({
+        taskIds,
+        priority: value,
+      });
     });
   };
   const handleBulkDelete = async () => {
-    if (!canDeleteTask || selectedTaskIds.length === 0) return;
+    await run(async () => {
+      if (!canDeleteTask || selectedTaskIds.length === 0) return;
 
-    const confirmed = window.confirm(
-      t("board.deleteQuestion", { count: selectedTaskIds.length }),
-    );
+      const confirmed = window.confirm(
+        t("board.deleteQuestion", { count: selectedTaskIds.length }),
+      );
 
-    if (!confirmed) return;
+      if (!confirmed) return;
 
-    await bulkRemoveTasks({
-      taskIds: selectedTaskIds,
+      await bulkRemoveTasks({
+        taskIds: selectedTaskIds,
+      });
+
+      clearTaskSelection();
     });
-
-    clearTaskSelection();
   };
   const handleToggleTaskFavorite = async (taskId: Id<"tasks">) => {
-    await toggleTaskFavorite({
-      taskId,
+    await run(async () => {
+      await toggleTaskFavorite({
+        taskId,
+      });
     });
   };
   const handleTaskClick = (task: Doc<"tasks">) => {
@@ -425,69 +307,73 @@ export default function Board({ board, theme, can }: BoardProps) {
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
+    await run(async () => {
+      const { active, over } = event;
 
-    setActiveTask(null);
+      setActiveTask(null);
 
-    if (!canUpdateTask) {
-      return;
-    }
-
-    if (!over) return;
-
-    const task = tasks.find((item) => item._id === active.id);
-
-    if (!task) return;
-
-    const destinationTask = tasks.find((item) => item._id === over.id);
-
-    let destinationColumnId: Id<"columns">;
-
-    if (destinationTask) {
-      destinationColumnId = destinationTask.columnId;
-    } else {
-      const destinationColumn = columns.find(
-        (column) => column._id === over.id,
-      );
-
-      if (!destinationColumn) return;
-
-      destinationColumnId = destinationColumn._id;
-    }
-
-    if (task.columnId === destinationColumnId && !destinationTask) {
-      return;
-    }
-
-    const destinationTasks = getTasksByColumn(destinationColumnId).filter(
-      (item) => item._id !== task._id,
-    );
-
-    let newOrder: number;
-
-    if (destinationTasks.length === 0) {
-      newOrder = 0;
-    } else if (destinationTask) {
-      const destinationIndex = destinationTasks.findIndex(
-        (item) => item._id === destinationTask._id,
-      );
-
-      if (destinationIndex <= 0) {
-        newOrder = destinationTasks[0].order - 1;
-      } else {
-        const beforeTask = destinationTasks[destinationIndex - 1];
-        const afterTask = destinationTasks[destinationIndex];
-
-        newOrder = (beforeTask.order + afterTask.order) / 2;
+      if (!canUpdateTask) {
+        return;
       }
-    } else {
-      newOrder = destinationTasks[destinationTasks.length - 1].order + 1;
-    }
 
-    await updateTaskOrder({
-      taskId: task._id,
-      newColumnId: destinationColumnId,
-      newOrder,
+      if (!over) return;
+
+      const task = tasks.find((item) => item._id === active.id);
+
+      if (!task) return;
+
+      const destinationTask = tasks.find((item) => item._id === over.id);
+
+      let destinationColumnId: Id<"columns">;
+
+      if (destinationTask) {
+        destinationColumnId = destinationTask.columnId;
+      } else {
+        const destinationColumn = columns.find(
+          (column) => column._id === over.id,
+        );
+
+        if (!destinationColumn) return;
+
+        destinationColumnId = destinationColumn._id;
+      }
+
+      if (task.columnId === destinationColumnId && !destinationTask) {
+        return;
+      }
+
+      const destinationTasks = getTasksByColumn(destinationColumnId).filter(
+        (item) => item._id !== task._id,
+      );
+
+      let newOrder: number;
+
+      if (destinationTasks.length === 0) {
+        newOrder = 0;
+      } else if (destinationTask) {
+        const destinationIndex = destinationTasks.findIndex(
+          (item) => item._id === destinationTask._id,
+        );
+
+        if (destinationIndex <= 0) {
+          newOrder = destinationTasks[0].order - 1;
+        } else {
+          const beforeTask = destinationTasks[destinationIndex - 1];
+          const afterTask = destinationTasks[destinationIndex];
+
+          newOrder = (beforeTask.order + afterTask.order) / 2;
+        }
+      } else {
+        newOrder = destinationTasks[destinationTasks.length - 1].order + 1;
+      }
+
+      await updateTaskOrder({
+        taskId: task._id,
+        newColumnId: destinationColumnId,
+        newOrder,
+        beforeTaskId: destinationTask?._id,
+        append: !destinationTask,
+      });
     });
   };
   if (!board?._id) {
@@ -546,6 +432,11 @@ export default function Board({ board, theme, can }: BoardProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {memberStatus === "CanLoadMore" && (
+            <button type="button" onClick={() => loadMembers(30)}>
+              {t("members.loadMore")}
+            </button>
+          )}
           <RecentTasksMenu theme={theme} onTaskClick={handleTaskClick} />
           <input
             type="text"
@@ -744,6 +635,7 @@ export default function Board({ board, theme, can }: BoardProps) {
                     ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
+                disabled={pending}
               >
                 {t("board.clearFilters", { defaultValue: "Clear filters" })}
               </button>
@@ -754,6 +646,7 @@ export default function Board({ board, theme, can }: BoardProps) {
               type="button"
               onClick={() => setIsCreateModalOpen(true)}
               className="flex shrink-0 items-center gap-2 rounded-full bg-purple-500 px-4 py-2 font-medium text-white transition-colors hover:bg-purple-600"
+              disabled={pending}
             >
               <Plus className="size-4" />
               <span>{t("board.addTask")}</span>
@@ -826,7 +719,7 @@ export default function Board({ board, theme, can }: BoardProps) {
 
                 <option value="unassigned">{t("unassigned")}</option>
 
-                {projectMembers.map((member: any) => (
+                {projectMembers.map((member) => (
                   <option key={member._id} value={member._id}>
                     {member.name || member.email}
                   </option>
@@ -863,6 +756,7 @@ export default function Board({ board, theme, can }: BoardProps) {
               type="button"
               onClick={() => void handleBulkDelete()}
               className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
+              disabled={pending}
             >
               {t("board.deleteSelected")}
             </button>
@@ -876,14 +770,32 @@ export default function Board({ board, theme, can }: BoardProps) {
                 ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             }`}
+            disabled={pending}
           >
             {t("board.clearSelection")}
           </button>
         </div>
       )}
 
-      {tasksResult === undefined && <p role="status" className="px-6">{t("pagination.loading")}</p>}
-      {tasksResult !== undefined && matchingTasks.length === 0 && <p role="status" className="px-6">{t("board.noMatchingTasks")}</p>}
+      {pageStatus === "LoadingFirstPage" && (
+        <p role="status" className="px-6">
+          {t("pagination.loading")}
+        </p>
+      )}
+      {pageStatus === "Exhausted" && tasks.length === 0 && (
+        <p role="status" className="px-6">
+          {t("board.noMatchingTasks")}
+        </p>
+      )}
+      {(pageStatus === "CanLoadMore" || pageStatus === "LoadingMore") && (
+        <p role="status" className="px-6">
+          {t(
+            tasks.length === 0 || pageStatus === "LoadingMore"
+              ? "pagination.searching"
+              : "pagination.scanning",
+          )}
+        </p>
+      )}
 
       {/* Колонки */}
 
@@ -921,21 +833,24 @@ export default function Board({ board, theme, can }: BoardProps) {
             </SortableContext>
 
             {/* Кнопка новой колонки */}
-            {canCreateColumn && <div className="flex w-72 shrink-0 items-start justify-center pt-12">
-              <button
-                type="button"
-                onClick={() => setIsCreateColumnModalOpen(true)}
-                className={`flex min-h-[200px] w-full items-center justify-center space-x-2 rounded-lg border px-6 py-6 text-lg font-medium transition-colors ${
-                  theme === "dark"
-                    ? "border-slate-800 bg-slate-900 text-slate-400 hover:border-purple-500 hover:text-slate-100"
-                    : "border-slate-200 bg-slate-100 text-slate-900 hover:border-purple-500"
-                }`}
-              >
-                <Plus className="size-6" />
+            {canCreateColumn && (
+              <div className="flex w-72 shrink-0 items-start justify-center pt-12">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateColumnModalOpen(true)}
+                  className={`flex min-h-[200px] w-full items-center justify-center space-x-2 rounded-lg border px-6 py-6 text-lg font-medium transition-colors ${
+                    theme === "dark"
+                      ? "border-slate-800 bg-slate-900 text-slate-400 hover:border-purple-500 hover:text-slate-100"
+                      : "border-slate-200 bg-slate-100 text-slate-900 hover:border-purple-500"
+                  }`}
+                  disabled={pending}
+                >
+                  <Plus className="size-6" />
 
-                {t("board.newColumn")}
-              </button>
-            </div>}
+                  {t("board.newColumn")}
+                </button>
+              </div>
+            )}
 
             <DragOverlay>
               {activeTask ? (
@@ -950,18 +865,23 @@ export default function Board({ board, theme, can }: BoardProps) {
           </DndContext>
         </div>
 
-        {(matchingTasks.length > visibleTaskCount) && (
+        {(pageStatus === "CanLoadMore" || pageStatus === "LoadingMore") && (
           <div className="sticky left-0 mt-4 flex w-full justify-center">
             <button
               type="button"
-              onClick={() => setTaskPage({ key: taskListKey, limit: visibleTaskCount + 12 })}
+              disabled={pending || pageStatus === "LoadingMore"}
+              onClick={() => loadMore(12)}
               className={`rounded-md border px-5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                 theme === "dark"
                   ? "border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
                   : "border-slate-300 bg-white text-slate-900 hover:bg-slate-100"
               }`}
             >
-              {t("pagination.loadMore")}
+              {t(
+                pageStatus === "LoadingMore"
+                  ? "pagination.searching"
+                  : "pagination.continueSearch",
+              )}
             </button>
           </div>
         )}
@@ -1000,5 +920,18 @@ export default function Board({ board, theme, can }: BoardProps) {
         />
       )}
     </div>
+  );
+}
+
+export default function Board(props: BoardProps) {
+  const { t } = useTranslation();
+  return (
+    <QueryBoundary
+      key={props.board?._id ?? "none"}
+      message={t("common.actionError")}
+      retry={t("common.retry")}
+    >
+      <BoardContent {...props} />
+    </QueryBoundary>
   );
 }

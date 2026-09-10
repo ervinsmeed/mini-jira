@@ -1,4 +1,5 @@
 import { getColumnLabel } from "../../lib/columnLabel";
+import { useAction } from "../../lib/useAction";
 import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {
@@ -69,6 +70,7 @@ export default function Column({
   canDragTasks,
 }: ColumnProps) {
   const { t } = useTranslation();
+  const { pending, run } = useAction();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const deleteColumn = useMutation(api.columns.remove);
@@ -82,12 +84,14 @@ export default function Column({
 
   const handleDeleteColumn = async () => {
     if (!canDeleteColumn) return;
-    await deleteColumn({
-      id: column._id,
-    });
+    await run(async () => {
+      await deleteColumn({
+        id: column._id,
+      });
 
-    setShowDeleteConfirm(false);
-    toast.success(t("column.deleted"));
+      setShowDeleteConfirm(false);
+      toast.success(t("column.deleted"));
+    });
   };
 
   return (
@@ -114,106 +118,119 @@ export default function Column({
           </h3>
         </div>
 
-        {(canEditColumn || canDeleteColumn) && <div className="relative">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <MoreHorizontal
-                className={`size-4 cursor-pointer ${
+        {(canEditColumn || canDeleteColumn) && (
+          <div className="relative">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <MoreHorizontal
+                  className={`size-4 cursor-pointer ${
+                    theme === "dark"
+                      ? "text-slate-400 hover:text-slate-100"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                />
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent
+                align="end"
+                className={`w-auto rounded-md border shadow-lg ${
                   theme === "dark"
-                    ? "text-slate-400 hover:text-slate-100"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              />
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent
-              align="end"
-              className={`w-auto rounded-md border shadow-lg ${
-                theme === "dark"
-                  ? "border-slate-800 bg-slate-900 text-slate-100"
-                  : "border-slate-200 bg-white text-slate-900"
-              }`}
-            >
-              {canEditColumn && <DropdownMenuItem
-                onClick={() => onEditColumn(column)}
-                className={`cursor-pointer ${
-                  theme === "dark" ? "hover:bg-slate-800" : "hover:bg-slate-100"
+                    ? "border-slate-800 bg-slate-900 text-slate-100"
+                    : "border-slate-200 bg-white text-slate-900"
                 }`}
               >
-                <Edit className="mr-2 size-3" />
-                <span>{t("column.edit")}</span>
-              </DropdownMenuItem>}
-
-              {canEditColumn && canDeleteColumn && <DropdownMenuSeparator
-                className={theme === "dark" ? "bg-slate-800" : "bg-slate-200"}
-              />}
-
-              {canDeleteColumn && <Dialog
-                open={showDeleteConfirm}
-                onOpenChange={setShowDeleteConfirm}
-              >
-                <DialogTrigger
-                  className={`flex cursor-pointer items-center ${
-                    theme === "dark"
-                      ? "text-red-400 hover:bg-red-900"
-                      : "text-red-600 hover:bg-red-100"
-                  }`}
-                >
-                  <Trash2 className="mr-2 size-3" />
-                  <span>{t("column.delete")}</span>
-                </DialogTrigger>
-
-                <DialogContent
-                  className={`max-w-md border ${
-                    theme === "dark"
-                      ? "border-slate-800 bg-slate-950 text-slate-100"
-                      : "border-slate-200 bg-white text-slate-900"
-                  }`}
-                >
-                  <DialogHeader>
-                    <DialogTitle className="text-lg!">
-                      {t("column.deleteTitle")}
-                    </DialogTitle>
-                  </DialogHeader>
-
-                  <DialogDescription
-                    className={
-                      theme === "dark" ? "text-slate-400" : "text-slate-600"
-                    }
+                {canEditColumn && (
+                  <DropdownMenuItem
+                    onClick={() => onEditColumn(column)}
+                    className={`cursor-pointer ${
+                      theme === "dark"
+                        ? "hover:bg-slate-800"
+                        : "hover:bg-slate-100"
+                    }`}
                   >
-                    {t("column.deleteDescription")}
-                  </DialogDescription>
+                    <Edit className="mr-2 size-3" />
+                    <span>{t("column.edit")}</span>
+                  </DropdownMenuItem>
+                )}
 
-                  <DialogFooter>
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        onClick={handleDeleteColumn}
-                        variant="destructive"
+                {canEditColumn && canDeleteColumn && (
+                  <DropdownMenuSeparator
+                    className={
+                      theme === "dark" ? "bg-slate-800" : "bg-slate-200"
+                    }
+                  />
+                )}
+
+                {canDeleteColumn && (
+                  <Dialog
+                    open={showDeleteConfirm}
+                    onOpenChange={setShowDeleteConfirm}
+                  >
+                    <DialogTrigger
+                      className={`flex cursor-pointer items-center ${
+                        theme === "dark"
+                          ? "text-red-400 hover:bg-red-900"
+                          : "text-red-600 hover:bg-red-100"
+                      }`}
+                    >
+                      <Trash2 className="mr-2 size-3" />
+                      <span>{t("column.delete")}</span>
+                    </DialogTrigger>
+
+                    <DialogContent
+                      className={`max-w-md border ${
+                        theme === "dark"
+                          ? "border-slate-800 bg-slate-950 text-slate-100"
+                          : "border-slate-200 bg-white text-slate-900"
+                      }`}
+                    >
+                      <DialogHeader>
+                        <DialogTitle className="text-lg!">
+                          {t("column.deleteTitle")}
+                        </DialogTitle>
+                      </DialogHeader>
+
+                      <DialogDescription
+                        className={
+                          theme === "dark" ? "text-slate-400" : "text-slate-600"
+                        }
                       >
-                        {t("common.yes")}
-                      </Button>
+                        {t("column.deleteDescription")}
+                      </DialogDescription>
 
-                      <DialogClose asChild>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className={
-                            theme === "dark"
-                              ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
-                              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                          }
-                        >
-                          {t("common.no")}
-                        </Button>
-                      </DialogClose>
-                    </div>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>}
+                      <DialogFooter>
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            onClick={handleDeleteColumn}
+                            disabled={pending}
+                            variant="destructive"
+                          >
+                            {t("common.yes")}
+                          </Button>
+
+                          <DialogClose asChild>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className={
+                                theme === "dark"
+                                  ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                              }
+                            >
+                              {t("common.no")}
+                            </Button>
+                          </DialogClose>
+                        </div>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
 
       <div
@@ -236,8 +253,15 @@ export default function Column({
                   : null
               }
               onClick={() => onTaskClick(task)}
-              isSelected={Boolean(onToggleTaskSelection) && selectedTaskIds.includes(task._id)}
-              onToggleSelect={onToggleTaskSelection ? () => onToggleTaskSelection(task._id) : undefined}
+              isSelected={
+                Boolean(onToggleTaskSelection) &&
+                selectedTaskIds.includes(task._id)
+              }
+              onToggleSelect={
+                onToggleTaskSelection
+                  ? () => onToggleTaskSelection(task._id)
+                  : undefined
+              }
               isFavorite={favoriteTaskIdSet.has(task._id)}
               onToggleFavorite={() => onToggleTaskFavorite(task._id)}
               canDrag={canDragTasks}

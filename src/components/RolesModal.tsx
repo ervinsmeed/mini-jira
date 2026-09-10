@@ -1,6 +1,9 @@
+import type { Doc, Id } from "../../convex/_generated/dataModel";
+import { actionError } from "../lib/actionError";
+import { useAction } from "../lib/useAction";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
@@ -37,21 +40,29 @@ const permissionsList: {
   { value: "analytics.view", label: "permissions.analytics.view" },
 ];
 
-export default function RolesModal({ workspace, onClose }: any) {
+export default function RolesModal({
+  workspace,
+  onClose,
+}: {
+  workspace: Doc<"workspaces">;
+  onClose: () => void;
+}) {
   const { t } = useTranslation();
+  const { pending, run } = useAction();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [level, setLevel] = useState(10);
   const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [editingRole, setEditingRole] = useState<any>(null);
+  const [editingRole, setEditingRole] = useState<Doc<"roles"> | null>(null);
 
-  const roles = useQuery(
-    api.roles.list,
-    workspace?._id
-      ? {
-          workspaceId: workspace._id,
-        }
-      : "skip",
+  const {
+    results: roles,
+    status: roleStatus,
+    loadMore: loadRoles,
+  } = usePaginatedQuery(
+    api.roles.rolesPage,
+    { workspaceId: workspace._id },
+    { initialNumItems: 30 },
   );
 
   const createRole = useMutation(api.roles.create);
@@ -77,41 +88,43 @@ export default function RolesModal({ workspace, onClose }: any) {
   };
 
   const handleSubmit = async () => {
-    if (!name.trim()) {
-      toast.error(t("roles.nameRequired"));
-      return;
-    }
-
-    try {
-      if (editingRole) {
-        await updateRole({
-          id: editingRole._id,
-          name: name.trim(),
-          description: description.trim(),
-          level,
-          permissions,
-        });
-
-        toast.success(t("roles.updated"));
-      } else {
-        await createRole({
-          workspaceId: workspace._id,
-          name: name.trim(),
-          description: description.trim() || undefined,
-          level,
-          permissions,
-        });
-
-        toast.success(t("roles.created"));
+    await run(async () => {
+      if (!name.trim()) {
+        toast.error(t("roles.nameRequired"));
+        return;
       }
 
-      resetForm();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("roles.error"));
-    }
+      try {
+        if (editingRole) {
+          await updateRole({
+            id: editingRole._id,
+            name: name.trim(),
+            description: description.trim(),
+            level,
+            permissions,
+          });
+
+          toast.success(t("roles.updated"));
+        } else {
+          await createRole({
+            workspaceId: workspace._id,
+            name: name.trim(),
+            description: description.trim() || undefined,
+            level,
+            permissions,
+          });
+
+          toast.success(t("roles.created"));
+        }
+
+        resetForm();
+      } catch (error) {
+        toast.error(actionError(error, t));
+      }
+    });
   };
 
-  const handleEditRole = (role: any) => {
+  const handleEditRole = (role: Doc<"roles">) => {
     setEditingRole(role);
     setName(role.name);
     setDescription(role.description ?? "");
@@ -119,30 +132,37 @@ export default function RolesModal({ workspace, onClose }: any) {
     setPermissions(role.permissions ?? []);
   };
 
-  const handleDeleteRole = async (roleId: any) => {
-    try {
-      await removeRole({
-        id: roleId,
-      });
+  const handleDeleteRole = async (roleId: Id<"roles">) => {
+    await run(async () => {
+      try {
+        await removeRole({
+          id: roleId,
+        });
 
-      if (editingRole?._id === roleId) {
-        resetForm();
+        if (editingRole?._id === roleId) {
+          resetForm();
+        }
+
+        toast.success(t("roles.deleted"));
+      } catch (error) {
+        toast.error(actionError(error, t));
       }
-
-      toast.success(t("roles.deleted"));
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("roles.deleteError"),
-      );
-    }
+    });
   };
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="pr-6 leading-snug">{t("roles.title")}</DialogTitle>
+          <DialogTitle className="pr-6 leading-snug">
+            {t("roles.title")}
+          </DialogTitle>
         </DialogHeader>
+        {roleStatus === "CanLoadMore" && (
+          <button type="button" onClick={() => loadRoles(30)}>
+            {t("pagination.loadMore")}
+          </button>
+        )}
 
         <div className="space-y-4">
           <p className="text-sm opacity-70">{t("hints.separateRoles")}</p>
@@ -210,6 +230,7 @@ export default function RolesModal({ workspace, onClose }: any) {
               type="button"
               onClick={handleSubmit}
               className="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-purple-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
+              disabled={pending}
             >
               {editingRole ? t("roles.save") : t("roles.create")}
             </button>
@@ -219,6 +240,7 @@ export default function RolesModal({ workspace, onClose }: any) {
                 type="button"
                 onClick={resetForm}
                 className="rounded-md border px-4 py-2 text-sm"
+                disabled={pending}
               >
                 {t("common.cancel")}
               </button>
@@ -239,7 +261,7 @@ export default function RolesModal({ workspace, onClose }: any) {
             )}
 
             <div className="space-y-2">
-              {roles?.map((role: any) => (
+              {roles?.map((role: Doc<"roles">) => (
                 <div key={role._id} className="rounded-md border p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -261,6 +283,7 @@ export default function RolesModal({ workspace, onClose }: any) {
                         type="button"
                         onClick={() => handleEditRole(role)}
                         className="rounded-md border px-2 py-1 text-xs"
+                        disabled={pending}
                       >
                         {t("common.edit")}
                       </button>
@@ -269,6 +292,7 @@ export default function RolesModal({ workspace, onClose }: any) {
                         type="button"
                         onClick={() => handleDeleteRole(role._id)}
                         className="rounded-md border px-2 py-1 text-xs"
+                        disabled={pending}
                       >
                         {t("common.delete")}
                       </button>
@@ -294,6 +318,7 @@ export default function RolesModal({ workspace, onClose }: any) {
             type="button"
             onClick={onClose}
             className="w-full rounded-md border px-4 py-2 text-sm"
+            disabled={pending}
           >
             {t("common.close")}
           </button>

@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx, MutationCtx } from "../_generated/server";
 
@@ -29,6 +30,6 @@ export async function requireParentWorkspaceAccess(
   board: Doc<"boards">,
 ) {
   const access = await getParentWorkspaceAccess(ctx, userId, board);
-  if (!access) throw new Error("Active workspace access required");
+  if (!access) throw new ConvexError({ code: "ACCESS_DENIED" });
   return access;
 }

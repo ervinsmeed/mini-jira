@@ -1,80 +1,25 @@
-import { requireParentWorkspaceAccess } from "./lib/workspaceAccess";
+import { ConvexError } from "convex/values";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import { applyTaskChanges } from "./lib/taskChanges";
+import { deleteTask, detachEpic } from "./lib/cascade";
+import { getTaskPermissionAccess } from "./lib/taskAccess";
+export {
+  page,
+  get,
+  epics,
+  commentsPage,
+  activityPage,
+  templatesPage,
+} from "./lib/taskQueries";
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
-async function getTaskPermissionAccess(ctx, boardId, permission) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw new Error("Not authenticated");
-  }
-
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-    .unique();
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  const board = await ctx.db.get("boards", boardId);
-
-  if (!board) {
-    throw new Error("Project not found");
-  }
-
-  const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
-
-  if (parentAccess.isWorkspaceOwner || board.userId === user._id) {
-    return {
-      user,
-      board,
-      isOwner: true,
-      currentRole: null,
-    };
-  }
-
-  if (!board.workspaceId) {
-    throw new Error("Access denied");
-  }
-
-  const membership = await ctx.db
-    .query("boardMembers")
-    .withIndex("by_board_user", (q) =>
-      q.eq("boardId", boardId).eq("userId", user._id),
-    )
-    .unique();
-
-  if (!membership || !membership.roleId) {
-    throw new Error("Access denied");
-  }
-
-  const currentRole = await ctx.db.get("roles", membership.roleId);
-
-  if (!currentRole || currentRole.workspaceId !== board.workspaceId) {
-    throw new Error("Access denied");
-  }
-
-  if (!currentRole.permissions.includes(permission)) {
-    throw new Error(`Missing permission: ${permission}`);
-  }
-
-  const workspace = await ctx.db.get("workspaces", board.workspaceId);
-
-  if (!workspace) {
-    throw new Error("Workspace not found");
-  }
-
-  return {
-    user,
-    board,
-    workspace,
-    isOwner: false,
-    currentRole,
-  };
-}
-async function validateAssignee(ctx, board, assigneeId) {
+async function validateAssignee(
+  ctx: QueryCtx | MutationCtx,
+  board: Doc<"boards">,
+  assigneeId?: Id<"users"> | null,
+) {
   if (!assigneeId) {
     return;
   }
@@ -91,11 +36,15 @@ async function validateAssignee(ctx, board, assigneeId) {
     .unique();
 
   if (!membership) {
-    throw new Error("Assignee must be a project member");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 }
 
-async function validateEpic(ctx, boardId, epicId) {
+async function validateEpic(
+  ctx: QueryCtx | MutationCtx,
+  boardId: Id<"boards">,
+  epicId?: Id<"tasks"> | null,
+) {
   if (!epicId) {
     return;
   }
@@ -103,13 +52,19 @@ async function validateEpic(ctx, boardId, epicId) {
   const epic = await ctx.db.get("tasks", epicId);
 
   if (!epic || epic.boardId !== boardId || epic.taskType !== "epic") {
-    throw new Error("Epic not found");
+    throw new ConvexError({ code: "NOT_FOUND" });
   }
 }
 
 async function addActivityLog(
-  ctx,
-  { boardId, taskId, userId, action, details },
+  ctx: MutationCtx,
+  {
+    boardId,
+    taskId,
+    userId,
+    action,
+    details,
+  }: Omit<Doc<"activityLogs">, "_id" | "_creationTime" | "createdAt">,
 ) {
   await ctx.db.insert("activityLogs", {
     boardId,
@@ -167,7 +122,7 @@ export const create = mutation({
     );
     await validateAssignee(ctx, board, args.assigneeId);
     if (args.taskType === "epic" && args.epicId) {
-      throw new Error("Epic cannot belong to another epic");
+      throw new ConvexError({ code: "VALIDATION_FAILED" });
     }
 
     await validateEpic(ctx, args.boardId, args.epicId);
@@ -175,7 +130,7 @@ export const create = mutation({
     const column = await ctx.db.get("columns", args.columnId);
 
     if (!column || column.boardId !== args.boardId) {
-      throw new Error("Column not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const tasks = await ctx.db
@@ -189,8 +144,11 @@ export const create = mutation({
       title: args.title,
       description: args.description,
       priority: args.priority || "medium",
-      assigneeId: args.assigneeId,
+      assigneeId: args.assigneeId ?? undefined,
       taskType: args.taskType ?? "task",
+      timerStatus: "stopped",
+      timerElapsedMs: 0,
+      timerSessionElapsedMs: 0,
       epicId: args.taskType === "epic" ? undefined : args.epicId,
       storyPoints: args.storyPoints,
       deadline: args.deadline,
@@ -207,7 +165,6 @@ export const create = mutation({
       taskId,
       userId: user._id,
       action: "task.created",
-      details: `Created task "${args.title}"`,
     });
 
     return await ctx.db.get("tasks", taskId);
@@ -221,7 +178,7 @@ export const list = query({
   },
 
   handler: async (ctx, args) => {
-    const priorityOrder = {
+    const priorityOrder: Record<string, number> = {
       high: 0,
       medium: 1,
       low: 2,
@@ -232,7 +189,7 @@ export const list = query({
 
       const tasks = await ctx.db
         .query("tasks")
-        .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
+        .withIndex("by_board", (q) => q.eq("boardId", args.boardId!))
         .collect();
 
       const sortedTasks = tasks.sort((a, b) => {
@@ -245,12 +202,29 @@ export const list = query({
 
         return a.order - b.order;
       });
-      const userIds = [...new Set(tasks.flatMap((task) => [task.userId, task.assigneeId]).filter(Boolean))];
-      const users = await Promise.all(userIds.map((id) => ctx.db.get("users", id)));
-      const searchUsers = new Map(users.filter(Boolean).map((user) => [user._id, `${user.name} ${user.email}`]));
+      const userIds = [
+        ...new Set(
+          tasks
+            .flatMap((task) => [task.userId, task.assigneeId])
+            .filter((value) => value !== undefined && value !== null),
+        ),
+      ];
+      const users = await Promise.all(
+        userIds.map((id) => ctx.db.get("users", id)),
+      );
+      const searchUsers = new Map(
+        users
+          .filter((value) => value !== undefined && value !== null)
+          .map((user) => [user._id, `${user.name} ${user.email}`]),
+      );
       return sortedTasks.map((task) => ({
         ...task,
-        searchUserText: [searchUsers.get(task.userId), searchUsers.get(task.assigneeId)].filter(Boolean).join(" "),
+        searchUserText: [
+          searchUsers.get(task.userId),
+          task.assigneeId ? searchUsers.get(task.assigneeId) : undefined,
+        ]
+          .filter((value) => value !== undefined && value !== null)
+          .join(" "),
       }));
     }
 
@@ -329,7 +303,7 @@ export const update = mutation({
       ),
     ),
 
-    deadline: v.optional(v.number()),
+    deadline: v.optional(v.union(v.number(), v.null())),
 
     columnId: v.optional(v.id("columns")),
     order: v.optional(v.number()),
@@ -348,7 +322,7 @@ export const update = mutation({
     const task = await ctx.db.get("tasks", args.id);
 
     if (!task) {
-      throw new Error("Task not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const { user, board } = await getTaskPermissionAccess(
@@ -362,7 +336,7 @@ export const update = mutation({
     const nextTaskType = args.taskType ?? task.taskType ?? "task";
 
     if (args.epicId === args.id) {
-      throw new Error("Task cannot use itself as an epic");
+      throw new ConvexError({ code: "VALIDATION_FAILED" });
     }
 
     if (
@@ -370,7 +344,7 @@ export const update = mutation({
       args.epicId !== undefined &&
       args.epicId !== null
     ) {
-      throw new Error("Epic cannot belong to another epic");
+      throw new ConvexError({ code: "VALIDATION_FAILED" });
     }
 
     if (
@@ -381,7 +355,10 @@ export const update = mutation({
       await validateEpic(ctx, task.boardId, args.epicId);
     }
 
-    const updates = {};
+    if (task.taskType === "epic" && args.taskType === "task")
+      await detachEpic(ctx, task);
+
+    const updates: Partial<Doc<"tasks">> = {};
 
     if (args.title !== undefined) {
       updates.title = args.title;
@@ -416,18 +393,18 @@ export const update = mutation({
     }
 
     if (args.deadline !== undefined) {
-      updates.deadline = args.deadline;
+      updates.deadline = args.deadline ?? undefined;
     }
 
     if (args.columnId !== undefined) {
       const column = await ctx.db.get("columns", args.columnId);
 
       if (!column) {
-        throw new Error("Column not found");
+        throw new ConvexError({ code: "NOT_FOUND" });
       }
 
       if (column.boardId !== task.boardId) {
-        throw new Error("Column does not belong to this project");
+        throw new ConvexError({ code: "VALIDATION_FAILED" });
       }
 
       updates.columnId = args.columnId;
@@ -441,57 +418,7 @@ export const update = mutation({
       updates.subtasks = args.subtasks;
     }
 
-    updates.updatedAt = Date.now();
-
-    await ctx.db.patch("tasks", args.id, updates);
-    if (
-      args.assigneeId !== undefined &&
-      (args.assigneeId ?? undefined) !== task.assigneeId
-    ) {
-      await addActivityLog(ctx, {
-        boardId: task.boardId,
-        taskId: task._id,
-        userId: user._id,
-        action: "task.assignee_changed",
-        details: "Assignee changed",
-      });
-    }
-
-    if (
-      args.storyPoints !== undefined &&
-      args.storyPoints !== task.storyPoints
-    ) {
-      await addActivityLog(ctx, {
-        boardId: task.boardId,
-        taskId: task._id,
-        userId: user._id,
-        action: "task.story_points_changed",
-        details: `Story Points changed from ${task.storyPoints ?? "none"} to ${args.storyPoints}`,
-      });
-    }
-
-    if (args.deadline !== undefined && args.deadline !== task.deadline) {
-      await addActivityLog(ctx, {
-        boardId: task.boardId,
-        taskId: task._id,
-        userId: user._id,
-        action: "task.deadline_changed",
-        details: "Deadline changed",
-      });
-    }
-
-    if (args.columnId !== undefined && args.columnId !== task.columnId) {
-      const oldColumn = await ctx.db.get("columns", task.columnId);
-      const newColumn = await ctx.db.get("columns", args.columnId);
-
-      await addActivityLog(ctx, {
-        boardId: task.boardId,
-        taskId: task._id,
-        userId: user._id,
-        action: "task.status_changed",
-        details: `Status changed from "${oldColumn?.name ?? "Unknown"}" to "${newColumn?.name ?? "Unknown"}"`,
-      });
-    }
+    await applyTaskChanges(ctx, task, updates, user._id);
 
     return await ctx.db.get("tasks", args.id);
   },
@@ -502,13 +429,15 @@ export const updateOrder = mutation({
     taskId: v.id("tasks"),
     newColumnId: v.id("columns"),
     newOrder: v.number(),
+    beforeTaskId: v.optional(v.id("tasks")),
+    append: v.optional(v.boolean()),
   },
 
   handler: async (ctx, args) => {
     const task = await ctx.db.get("tasks", args.taskId);
 
     if (!task) {
-      throw new Error("Task not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const { user } = await getTaskPermissionAccess(
@@ -520,24 +449,45 @@ export const updateOrder = mutation({
     const newColumn = await ctx.db.get("columns", args.newColumnId);
 
     if (!newColumn || newColumn.boardId !== task.boardId) {
-      throw new Error("Column not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
-    await ctx.db.patch("tasks", args.taskId, {
-      columnId: args.newColumnId,
-      order: args.newOrder,
-      updatedAt: Date.now(),
-    });
-    if (args.newColumnId !== task.columnId) {
-      const oldColumn = await ctx.db.get("columns", task.columnId);
-
-      await addActivityLog(ctx, {
-        boardId: task.boardId,
-        taskId: task._id,
-        userId: user._id,
-        action: "task.status_changed",
-        details: `Status changed from "${oldColumn?.name ?? "Unknown"}" to "${newColumn.name}"`,
-      });
+    let order = args.newOrder;
+    if (args.beforeTaskId) {
+      const target = await ctx.db.get("tasks", args.beforeTaskId);
+      if (
+        !target ||
+        target.boardId !== task.boardId ||
+        target.columnId !== args.newColumnId
+      )
+        throw new ConvexError({ code: "NOT_FOUND" });
+      const previous = await ctx.db
+        .query("tasks")
+        .withIndex("by_board_column_order", (q) =>
+          q
+            .eq("boardId", task.boardId)
+            .eq("columnId", args.newColumnId)
+            .lt("order", target.order),
+        )
+        .order("desc")
+        .filter((q) => q.neq(q.field("_id"), task._id))
+        .first();
+      order = previous ? (previous.order + target.order) / 2 : target.order - 1;
+    } else if (args.append) {
+      const last = await ctx.db
+        .query("tasks")
+        .withIndex("by_board_column_order", (q) =>
+          q.eq("boardId", task.boardId).eq("columnId", args.newColumnId),
+        )
+        .order("desc")
+        .first();
+      order = (last?.order ?? -1) + 1;
     }
+    await applyTaskChanges(
+      ctx,
+      task,
+      { columnId: args.newColumnId, order },
+      user._id,
+    );
 
     return await ctx.db.get("tasks", args.taskId);
   },
@@ -551,64 +501,12 @@ export const remove = mutation({
     const task = await ctx.db.get("tasks", args.id);
 
     if (!task) {
-      throw new Error("Task not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     await getTaskPermissionAccess(ctx, task.boardId, "task.delete");
 
-    const comments = await ctx.db
-      .query("comments")
-      .withIndex("by_task", (q) => q.eq("taskId", task._id))
-      .collect();
-
-    for (const comment of comments) {
-      await ctx.db.delete("comments", comment._id);
-    }
-
-    const activityLogs = await ctx.db
-      .query("activityLogs")
-      .withIndex("by_task", (q) => q.eq("taskId", task._id))
-      .collect();
-
-    for (const activityLog of activityLogs) {
-      await ctx.db.delete("activityLogs", activityLog._id);
-    }
-
-    const favorites = await ctx.db
-      .query("favorites")
-      .withIndex("by_task", (q) => q.eq("taskId", task._id))
-      .collect();
-
-    for (const favorite of favorites) {
-      await ctx.db.delete("favorites", favorite._id);
-    }
-
-    const recentTaskEntries = await ctx.db
-      .query("recentTasks")
-      .withIndex("by_task", (q) => q.eq("taskId", task._id))
-      .collect();
-
-    for (const recentTaskEntry of recentTaskEntries) {
-      await ctx.db.delete("recentTasks", recentTaskEntry._id);
-    }
-
-    if (task.taskType === "epic") {
-      const tasks = await ctx.db
-        .query("tasks")
-        .withIndex("by_board", (q) => q.eq("boardId", task.boardId))
-        .collect();
-
-      for (const childTask of tasks) {
-        if (childTask.epicId === task._id) {
-          await ctx.db.patch("tasks", childTask._id, {
-            epicId: undefined,
-            updatedAt: Date.now(),
-          });
-        }
-      }
-    }
-
-    await ctx.db.delete("tasks", args.id);
+    await deleteTask(ctx, task);
 
     return {
       deletedTaskId: args.id,
@@ -624,7 +522,7 @@ export const startTimer = mutation({
     const task = await ctx.db.get("tasks", args.id);
 
     if (!task) {
-      throw new Error("Task not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const { user } = await getTaskPermissionAccess(
@@ -641,6 +539,8 @@ export const startTimer = mutation({
       timerStatus: "running",
       timerStartedAt: Date.now(),
       timerElapsedMs: task.timerElapsedMs ?? 0,
+      timerSessionElapsedMs:
+        task.timerStatus === "paused" ? task.timerSessionElapsedMs : 0,
       updatedAt: Date.now(),
     });
 
@@ -649,7 +549,6 @@ export const startTimer = mutation({
       taskId: task._id,
       userId: user._id,
       action: "task.timer_started",
-      details: "Timer started",
     });
 
     return await ctx.db.get("tasks", args.id);
@@ -665,7 +564,7 @@ export const pauseTimer = mutation({
     const task = await ctx.db.get("tasks", args.id);
 
     if (!task) {
-      throw new Error("Task not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const { user } = await getTaskPermissionAccess(
@@ -685,6 +584,13 @@ export const pauseTimer = mutation({
       timerStatus: "paused",
       timerStartedAt: undefined,
       timerElapsedMs: elapsed,
+      timerSessionElapsedMs:
+        task.timerSessionElapsedMs === undefined
+          ? undefined
+          : task.timerSessionElapsedMs +
+            (task.timerStatus === "running" && task.timerStartedAt !== undefined
+              ? Date.now() - task.timerStartedAt
+              : 0),
       updatedAt: Date.now(),
     });
     await addActivityLog(ctx, {
@@ -692,7 +598,6 @@ export const pauseTimer = mutation({
       taskId: task._id,
       userId: user._id,
       action: "task.timer_paused",
-      details: "Timer paused",
     });
 
     return await ctx.db.get("tasks", args.id);
@@ -708,7 +613,7 @@ export const stopTimer = mutation({
     const task = await ctx.db.get("tasks", args.id);
 
     if (!task) {
-      throw new Error("Task not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const { user } = await getTaskPermissionAccess(
@@ -717,6 +622,7 @@ export const stopTimer = mutation({
       "task.update",
     );
 
+    if (task.timerStatus === "stopped") return task;
     let elapsed = task.timerElapsedMs ?? 0;
 
     if (task.timerStatus === "running" && task.timerStartedAt !== undefined) {
@@ -727,6 +633,13 @@ export const stopTimer = mutation({
       timerStatus: "stopped",
       timerStartedAt: undefined,
       timerElapsedMs: elapsed,
+      timerSessionElapsedMs:
+        task.timerSessionElapsedMs === undefined
+          ? undefined
+          : task.timerSessionElapsedMs +
+            (task.timerStatus === "running" && task.timerStartedAt !== undefined
+              ? Date.now() - task.timerStartedAt
+              : 0),
       updatedAt: Date.now(),
     });
 
@@ -735,7 +648,6 @@ export const stopTimer = mutation({
       taskId: task._id,
       userId: user._id,
       action: "task.timer_stopped",
-      details: "Timer stopped",
     });
 
     return await ctx.db.get("tasks", args.id);
@@ -750,7 +662,7 @@ export const listActivity = query({
     const task = await ctx.db.get("tasks", args.taskId);
 
     if (!task) {
-      throw new Error("Task not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     await getTaskPermissionAccess(ctx, task.boardId, "task.view");
@@ -784,11 +696,11 @@ export const addComment = mutation({
     const task = await ctx.db.get("tasks", args.taskId);
 
     if (!task) {
-      throw new Error("Task not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     if (!args.text.trim()) {
-      throw new Error("Comment cannot be empty");
+      throw new ConvexError({ code: "VALIDATION_FAILED" });
     }
 
     const { user } = await getTaskPermissionAccess(
@@ -797,6 +709,7 @@ export const addComment = mutation({
       "task.update",
     );
 
+    await ctx.db.patch("tasks", task._id, { updatedAt: Date.now() });
     const commentId = await ctx.db.insert("comments", {
       taskId: task._id,
       boardId: task.boardId,
@@ -810,7 +723,6 @@ export const addComment = mutation({
       taskId: task._id,
       userId: user._id,
       action: "task.comment_added",
-      details: "Comment added",
     });
 
     return await ctx.db.get("comments", commentId);
@@ -825,7 +737,7 @@ export const listComments = query({
     const task = await ctx.db.get("tasks", args.taskId);
 
     if (!task) {
-      throw new Error("Task not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     await getTaskPermissionAccess(ctx, task.boardId, "task.view");
@@ -864,7 +776,7 @@ export const bulkUpdate = mutation({
       const task = await ctx.db.get("tasks", taskId);
 
       if (!task) {
-        throw new Error("Task not found");
+        throw new ConvexError({ code: "NOT_FOUND" });
       }
 
       const { user, board } = await getTaskPermissionAccess(
@@ -877,62 +789,20 @@ export const bulkUpdate = mutation({
         await validateAssignee(ctx, board, args.assigneeId);
       }
 
-      let newColumn = null;
-
       if (args.columnId !== undefined) {
-        newColumn = await ctx.db.get("columns", args.columnId);
+        const newColumn = await ctx.db.get("columns", args.columnId);
 
         if (!newColumn || newColumn.boardId !== task.boardId) {
-          throw new Error("Column not found");
+          throw new ConvexError({ code: "NOT_FOUND" });
         }
       }
 
-      const updates = {
-        updatedAt: Date.now(),
-      };
-
-      const changes = [];
-
-      if (args.columnId !== undefined && args.columnId !== task.columnId) {
-        const oldColumn = await ctx.db.get("columns", task.columnId);
-
-        updates.columnId = args.columnId;
-
-        changes.push(
-          `Status changed from "${oldColumn?.name ?? "Unknown"}" to "${
-            newColumn?.name ?? "Unknown"
-          }"`,
-        );
-      }
-
-      if (
-        args.assigneeId !== undefined &&
-        args.assigneeId !== task.assigneeId
-      ) {
+      const updates: Partial<Doc<"tasks">> = {};
+      if (args.columnId !== undefined) updates.columnId = args.columnId;
+      if (args.assigneeId !== undefined)
         updates.assigneeId = args.assigneeId ?? undefined;
-        changes.push("Assignee changed");
-      }
-
-      if (args.priority !== undefined && args.priority !== task.priority) {
-        updates.priority = args.priority;
-        changes.push(
-          `Priority changed from "${task.priority ?? "none"}" to "${
-            args.priority
-          }"`,
-        );
-      }
-
-      await ctx.db.patch("tasks", taskId, updates);
-
-      if (changes.length > 0) {
-        await addActivityLog(ctx, {
-          boardId: task.boardId,
-          taskId: task._id,
-          userId: user._id,
-          action: "task.bulk_updated",
-          details: changes.join("; "),
-        });
-      }
+      if (args.priority !== undefined) updates.priority = args.priority;
+      await applyTaskChanges(ctx, task, updates, user._id);
 
       updatedTasks.push(await ctx.db.get("tasks", taskId));
     }
@@ -954,7 +824,7 @@ export const bulkRemove = mutation({
       const task = await ctx.db.get("tasks", taskId);
 
       if (!task) {
-        throw new Error("Task not found");
+        throw new ConvexError({ code: "NOT_FOUND" });
       }
 
       await getTaskPermissionAccess(ctx, task.boardId, "task.delete");
@@ -962,58 +832,7 @@ export const bulkRemove = mutation({
       tasksToDelete.push(task);
     }
 
-    for (const task of tasksToDelete) {
-      const comments = await ctx.db
-        .query("comments")
-        .withIndex("by_task", (q) => q.eq("taskId", task._id))
-        .collect();
-
-      for (const comment of comments) {
-        await ctx.db.delete("comments", comment._id);
-      }
-
-      const activityLogs = await ctx.db
-        .query("activityLogs")
-        .withIndex("by_task", (q) => q.eq("taskId", task._id))
-        .collect();
-
-      for (const activityLog of activityLogs) {
-        await ctx.db.delete("activityLogs", activityLog._id);
-      }
-
-      const favorites = await ctx.db
-        .query("favorites")
-        .withIndex("by_task", (q) => q.eq("taskId", task._id))
-        .collect();
-
-      for (const favorite of favorites) {
-        await ctx.db.delete("favorites", favorite._id);
-      }
-    }
-
-    for (const task of tasksToDelete) {
-      await ctx.db.delete("tasks", task._id);
-    }
-
-    for (const task of tasksToDelete) {
-      if (task.taskType !== "epic") {
-        continue;
-      }
-
-      const remainingTasks = await ctx.db
-        .query("tasks")
-        .withIndex("by_board", (q) => q.eq("boardId", task.boardId))
-        .collect();
-
-      for (const childTask of remainingTasks) {
-        if (childTask.epicId === task._id) {
-          await ctx.db.patch("tasks", childTask._id, {
-            epicId: undefined,
-            updatedAt: Date.now(),
-          });
-        }
-      }
-    }
+    for (const task of tasksToDelete) await deleteTask(ctx, task);
 
     return {
       deletedCount: tasksToDelete.length,

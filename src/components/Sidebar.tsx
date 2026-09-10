@@ -1,3 +1,6 @@
+import { useAction } from "../lib/useAction";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
+import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 
 import {
@@ -15,7 +18,7 @@ import {
   BarChart3,
   UserRound,
 } from "lucide-react";
-import { useQuery, useMutation, useConvex } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { api } from "../../convex/_generated/api";
 import { useTranslation } from "react-i18next";
@@ -28,7 +31,6 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
@@ -36,12 +38,62 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { SignOutButton } from "@clerk/clerk-react";
+type SidebarProps = {
+  currentBoard: Doc<"boards"> | null;
+  boards: (Doc<"boards"> & { isFavorite: boolean })[];
+  boardListStatus: string;
+  onLoadBoards: () => void;
+  onBoardSelect: (board: Doc<"boards"> | null) => void;
+  onCreateBoard: () => void;
+  currentWorkspace: Doc<"workspaces"> | null;
+  workspaces?: Doc<"workspaces">[];
+  workspaceListStatus: string;
+  onLoadWorkspaces: () => void;
+  onWorkspaceSelect: (workspace: Doc<"workspaces">) => void;
+  onCreateWorkspace: () => void;
+  onEditWorkspace: (workspace: Doc<"workspaces">) => void;
+  onWorkspaceMembers: (workspace: Doc<"workspaces">) => void;
+  onDeleteWorkspace: (id: Id<"workspaces">) => Promise<void>;
+  onWorkspaceRoles: (workspace: Doc<"workspaces">) => void;
+  onEditProject: (board: Doc<"boards">) => void;
+  onProjectMembers: (board: Doc<"boards">) => void;
+  currentView: "board" | "analytics" | "profile";
+  onViewChange: (view: "board" | "analytics" | "profile") => void;
+  canViewAnalytics: boolean;
+  can: (permission: string) => boolean;
+  theme: "light" | "dark";
+  onThemeToggle: () => void;
+  isCollapsed: boolean;
+  onToggleCollapsed: () => void;
+};
+type BoardItemProps = Pick<
+  SidebarProps,
+  | "currentBoard"
+  | "onBoardSelect"
+  | "onProjectMembers"
+  | "onEditProject"
+  | "theme"
+  | "isCollapsed"
+> & {
+  board: Doc<"boards">;
+  isFavorite: boolean;
+  showDeleteConfirm: Id<"boards"> | null;
+  setShowDeleteConfirm: Dispatch<SetStateAction<Id<"boards"> | null>>;
+  handleDeleteBoard: (id: Id<"boards">) => Promise<void>;
+  handleToggleFavorite: (board: Doc<"boards">) => Promise<void>;
+};
+
 export default function Sidebar({
   currentBoard,
+  boards,
+  boardListStatus,
+  onLoadBoards,
   onBoardSelect,
   onCreateBoard,
   currentWorkspace,
   workspaces = [],
+  workspaceListStatus,
+  onLoadWorkspaces,
   onWorkspaceSelect,
   onCreateWorkspace,
   onEditWorkspace,
@@ -58,33 +110,19 @@ export default function Sidebar({
   onThemeToggle,
   isCollapsed,
   onToggleCollapsed,
-}: any) {
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+}: SidebarProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] =
+    useState<Id<"boards"> | null>(null);
   const [showDeleteWorkspaceConfirm, setShowDeleteWorkspaceConfirm] =
-    useState(null);
-  const allBoardsResult = useQuery(api.boards.list);
-
-  const workspaceBoardsResult = useQuery(
-    api.boards.listByWorkspace,
-    currentWorkspace?._id
-      ? {
-          workspaceId: currentWorkspace._id,
-        }
-      : "skip",
-  );
-
-  const boards: any[] = ((currentWorkspace?._id
-    ? workspaceBoardsResult
-    : allBoardsResult) ?? []) as any[];
+    useState<Id<"workspaces"> | null>(null);
   const deleteBoard = useMutation(api.boards.remove);
   const updateBoardOrder = useMutation(api.boards.updateOrder);
-  const convex = useConvex();
 
   const toggleProjectFavorite = useMutation(api.favorites.toggleProject);
 
-  const favoriteProjectIds = useQuery(api.favorites.listProjectIds) ?? [];
-
-  const favoriteProjectIdSet = new Set(favoriteProjectIds);
+  const favoriteProjectIdSet = new Set(
+    boards.filter((board) => board.isFavorite).map((board) => board._id),
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -92,56 +130,49 @@ export default function Sidebar({
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
-  const handleDeleteBoard = async (boardId: any) => {
-    await deleteBoard({ id: boardId });
-    setShowDeleteConfirm(null);
+  const handleDeleteBoard = async (boardId: Id<"boards">) => {
+    await run(async () => {
+      await deleteBoard({ id: boardId });
+      setShowDeleteConfirm(null);
 
-    if (currentBoard?._id === boardId) {
-      const remainingBoards = boards.filter((b) => b._id !== boardId);
+      if (currentBoard?._id === boardId) {
+        const remainingBoards = boards.filter((b) => b._id !== boardId);
 
-      if (remainingBoards.length > 0) {
-        onBoardSelect(remainingBoards[0]);
-      } else {
-        onBoardSelect(null);
+        if (remainingBoards.length > 0) {
+          onBoardSelect(remainingBoards[0]);
+        } else {
+          onBoardSelect(null);
+        }
       }
-    }
+    });
   };
 
-  const handleToggleFavorite = async (board: any) => {
-    await toggleProjectFavorite({
-      boardId: board._id,
+  const handleToggleFavorite = async (board: Doc<"boards">) => {
+    await run(async () => {
+      await toggleProjectFavorite({
+        boardId: board._id,
+      });
     });
   };
   const { t, i18n } = useTranslation();
+  const { pending, run } = useAction();
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    await run(async () => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
 
-    const oldIndex = boards.findIndex((board) => board._id === active.id);
-    const newIndex = boards.findIndex((board) => board._id === over.id);
-    if (oldIndex < 0 || newIndex < 0) return;
+      const oldIndex = boards.findIndex((board) => board._id === active.id);
+      const newIndex = boards.findIndex((board) => board._id === over.id);
+      if (oldIndex < 0 || newIndex < 0) return;
 
-    const reorderedBoards = arrayMove(boards, oldIndex, newIndex);
-    const changes = reorderedBoards
-      .map((board, index) => ({ boardId: board._id, newOrder: index }))
-      .filter((change, index) => boards[index]._id !== change.boardId);
-    const accessResults = await Promise.all(
-      changes.map((change) =>
-        convex.query(api.boards.getCurrentAccess, { boardId: change.boardId }),
-      ),
-    );
-    if (
-      accessResults.some(
-        (access: { isOwner: boolean; permissions: string[] } | null) =>
-          !access?.isOwner && !access?.permissions.includes("project.update"),
-      )
-    )
-      return;
-
-    for (const change of changes) {
-      await updateBoardOrder(change);
-    }
+      await updateBoardOrder({
+        boardId: boards[oldIndex]._id,
+        newOrder: boards[newIndex].order,
+        anchorId: boards[newIndex]._id,
+        after: oldIndex < newIndex,
+      });
+    });
   };
   if (isCollapsed) {
     return (
@@ -160,13 +191,13 @@ export default function Sidebar({
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
+              onDragEnd={pending ? undefined : handleDragEnd}
             >
               <SortableContext
-                items={boards.map((b: any) => b._id)}
+                items={boards.map((b: Doc<"boards">) => b._id)}
                 strategy={verticalListSortingStrategy}
               >
-                {boards.map((board: any) => (
+                {boards.map((board) => (
                   <SortableBoardItem
                     key={board._id}
                     board={board}
@@ -186,6 +217,15 @@ export default function Sidebar({
                 ))}
               </SortableContext>
             </DndContext>
+            {boardListStatus === "CanLoadMore" && (
+              <button
+                type="button"
+                className="max-w-full whitespace-normal p-2"
+                onClick={onLoadBoards}
+              >
+                {t("pagination.loadMore")}
+              </button>
+            )}
           </div>
 
           {currentBoard && canViewAnalytics && (
@@ -285,7 +325,12 @@ export default function Sidebar({
           </button>
 
           <div className="space-y-1">
-            {workspaces.map((workspace: any) => (
+            {workspaceListStatus === "CanLoadMore" && (
+              <button type="button" className="p-2" onClick={onLoadWorkspaces}>
+                {t("pagination.loadMore")}
+              </button>
+            )}
+            {workspaces.map((workspace: Doc<"workspaces">) => (
               <div
                 key={workspace._id}
                 className={`group flex w-full items-center rounded-r-full transition-colors ${
@@ -363,8 +408,10 @@ export default function Sidebar({
                           return;
                         }
 
-                        void onDeleteWorkspace(workspace._id);
-                        setShowDeleteWorkspaceConfirm(null);
+                        void run(async () => {
+                          await onDeleteWorkspace(workspace._id);
+                          setShowDeleteWorkspaceConfirm(null);
+                        });
                       }}
                       className="text-xs text-red-400 hover:text-red-500"
                     >
@@ -419,19 +466,18 @@ export default function Sidebar({
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
+          onDragEnd={pending ? undefined : handleDragEnd}
         >
           <div className="space-y-2">
             <SortableContext
-              items={boards.map((b: any) => b._id)}
+              items={boards.map((b) => b._id)}
               strategy={verticalListSortingStrategy}
             >
-              {boards.map((board: any) => (
+              {boards.map((board) => (
                 <SortableBoardItem
                   key={board._id}
                   board={board}
                   isFavorite={favoriteProjectIdSet.has(board._id)}
-                  can={can}
                   currentBoard={currentBoard}
                   onBoardSelect={onBoardSelect}
                   onProjectMembers={onProjectMembers}
@@ -449,6 +495,15 @@ export default function Sidebar({
             </SortableContext>
           </div>
         </DndContext>
+        {boardListStatus === "CanLoadMore" && (
+          <button
+            type="button"
+            className="max-w-full whitespace-normal p-2"
+            onClick={onLoadBoards}
+          >
+            {t("pagination.loadMore")}
+          </button>
+        )}
 
         {currentBoard && canViewAnalytics && (
           <button
@@ -584,13 +639,19 @@ function SortableBoardItem({
   onEditProject,
   handleToggleFavorite,
   theme,
-}: any) {
+}: BoardItemProps) {
   const { t } = useTranslation();
   const projectAccess = useQuery(api.boards.getCurrentAccess, {
     boardId: board._id,
   });
-  const canEditProject = Boolean(projectAccess?.isOwner || projectAccess?.permissions.includes("project.update"));
-  const canDeleteProject = Boolean(projectAccess?.isOwner || projectAccess?.permissions.includes("project.delete"));
+  const canEditProject = Boolean(
+    projectAccess?.isOwner ||
+    projectAccess?.permissions.includes("project.update"),
+  );
+  const canDeleteProject = Boolean(
+    projectAccess?.isOwner ||
+    projectAccess?.permissions.includes("project.delete"),
+  );
   const canReorder: boolean = Boolean(
     projectAccess?.isOwner ||
     projectAccess?.permissions.includes("project.update"),
@@ -613,11 +674,11 @@ function SortableBoardItem({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const getInitials = (name: any) => {
+  const getInitials = (name: string) => {
     const words = name.trim().split(" ");
     return words.length > 1
       ? words
-          .map((w: any) => w[0])
+          .map((w: string) => w[0])
           .join("")
           .slice(0, 2)
           .toUpperCase()

@@ -1,5 +1,9 @@
+import type { Doc, Id } from "../../convex/_generated/dataModel";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { actionError } from "../lib/actionError";
 import { useUser } from "@clerk/clerk-react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import RolesModal from "./RolesModal";
 import Sidebar from "./Sidebar";
@@ -16,16 +20,25 @@ import { api } from "../../convex/_generated/api";
 const ProjectAnalytics = lazy(() => import("./ProjectAnalytics"));
 const Profile = lazy(() => import("./Profile"));
 export default function AuthenticatedApp() {
-  const [currentBoard, setCurrentBoard] = useState(null);
-  const [currentWorkspace, setCurrentWorkspace] = useState(null);
+  const { t } = useTranslation();
+  const [currentBoard, setCurrentBoard] = useState<Doc<"boards"> | null>(null);
+  const [currentWorkspace, setCurrentWorkspace] =
+    useState<Doc<"workspaces"> | null>(null);
   const [currentView, setCurrentView] = useState<
     "board" | "analytics" | "profile"
   >("board");
-  const [editingWorkspace, setEditingWorkspace] = useState(null);
-  const [editingProject, setEditingProject] = useState(null);
-  const [membersProject, setMembersProject] = useState<any>(null);
-  const [membersWorkspace, setMembersWorkspace] = useState<any>(null);
-  const [rolesWorkspace, setRolesWorkspace] = useState<any>(null);
+  const [editingWorkspace, setEditingWorkspace] =
+    useState<Doc<"workspaces"> | null>(null);
+  const [editingProject, setEditingProject] = useState<Doc<"boards"> | null>(
+    null,
+  );
+  const [membersProject, setMembersProject] = useState<Doc<"boards"> | null>(
+    null,
+  );
+  const [membersWorkspace, setMembersWorkspace] =
+    useState<Doc<"workspaces"> | null>(null);
+  const [rolesWorkspace, setRolesWorkspace] =
+    useState<Doc<"workspaces"> | null>(null);
 
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const saved = localStorage.getItem("kanban-theme");
@@ -43,7 +56,15 @@ export default function AuthenticatedApp() {
 
   const createUser = useMutation(api.users.create);
 
-  const workspaces = useQuery(api.workspaces.list);
+  const {
+    results: workspaces,
+    status: workspaceListStatus,
+    loadMore: loadWorkspaces,
+  } = usePaginatedQuery(
+    api.workspaces.workspacesPage,
+    {},
+    { initialNumItems: 30 },
+  );
 
   const displayWorkspace =
     currentWorkspace ??
@@ -58,19 +79,25 @@ export default function AuthenticatedApp() {
       : "skip",
   );
 
-  const allBoards = useQuery(api.boards.list);
-
-  const workspaceBoards = useQuery(
-    api.boards.listByWorkspace,
-    displayWorkspace?._id
-      ? {
-          workspaceId: displayWorkspace._id,
-        }
-      : "skip",
+  const {
+    results: boards,
+    status: boardListStatus,
+    loadMore: loadBoards,
+  } = usePaginatedQuery(
+    api.boards.projectsPage,
+    { workspaceId: displayWorkspace?._id },
+    { initialNumItems: 30 },
   );
+  useEffect(() => {
+    if (workspaces.length === 0 && workspaceListStatus === "CanLoadMore")
+      loadWorkspaces(30);
+  }, [workspaces.length, workspaceListStatus, loadWorkspaces]);
+  useEffect(() => {
+    if (boards.length === 0 && boardListStatus === "CanLoadMore")
+      loadBoards(30);
+  }, [boards.length, boardListStatus, loadBoards]);
 
-  const boards = displayWorkspace ? workspaceBoards : allBoards;
-  const can = (permission: any) => {
+  const can = (permission: string) => {
     if (!displayWorkspace) {
       return true;
     }
@@ -90,10 +117,10 @@ export default function AuthenticatedApp() {
   useEffect(() => {
     if (user) {
       createUser({}).catch((error) => {
-        console.error("Failed to synchronize user:", error);
+        toast.error(actionError(error, t));
       });
     }
-  }, [user, createUser]);
+  }, [user, createUser, t]);
 
   const displayBoard =
     currentBoard ?? (boards && boards.length > 0 ? boards[0] : null);
@@ -107,7 +134,7 @@ export default function AuthenticatedApp() {
       : "skip",
   );
 
-  const canProject = (permission: any) => {
+  const canProject = (permission: string) => {
     if (!displayBoard) {
       return false;
     }
@@ -160,17 +187,17 @@ export default function AuthenticatedApp() {
     setIsCreateWorkspaceModalOpen(true);
   };
 
-  const handleBoardCreated = (board: any) => {
+  const handleBoardCreated = (board: Doc<"boards">) => {
     setCurrentBoard(board);
 
     if (board && board._id) {
       initializeColumns({
         boardId: board._id,
-      }).catch(() => {});
+      }).catch((error) => toast.error(actionError(error, t)));
     }
   };
 
-  const handleWorkspaceCreated = (workspace: any) => {
+  const handleWorkspaceCreated = (workspace: Doc<"workspaces">) => {
     setCurrentWorkspace(workspace);
     setCurrentBoard(null);
     setCurrentView("board");
@@ -185,43 +212,44 @@ export default function AuthenticatedApp() {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
-  const handleBoardSelect = (board: any) => {
+  const handleBoardSelect = (board: Doc<"boards"> | null) => {
     setCurrentBoard(board);
     setCurrentView("board");
   };
 
-  const handleWorkspaceSelect = (workspace: any) => {
+  const handleWorkspaceSelect = (workspace: Doc<"workspaces">) => {
     setCurrentWorkspace(workspace);
     setCurrentBoard(null);
     setCurrentView("board");
   };
 
-  const handleEditWorkspace = (workspace: any) => {
+  const handleEditWorkspace = (workspace: Doc<"workspaces">) => {
     setEditingWorkspace(workspace);
   };
 
-  const handleEditProject = (project: any) => {
+  const handleEditProject = (project: Doc<"boards">) => {
     setEditingProject(project);
   };
 
-  const handleProjectUpdated = (updatedProject: any) => {
+  const handleProjectUpdated = (updatedProject: Doc<"boards">) => {
     if (!updatedProject) return;
 
     setCurrentBoard(updatedProject);
   };
 
-  const handleProjectMembers = (project: any) => {
+  const handleProjectMembers = (project: Doc<"boards">) => {
     setMembersProject(project);
   };
 
-  const handleWorkspaceMembers = (workspace: any) => {
+  const handleWorkspaceMembers = (workspace: Doc<"workspaces">) => {
     setMembersWorkspace(workspace);
   };
 
-  const handleWorkspaceRoles = (workspace: any) => setRolesWorkspace(workspace);
-  const handleDeleteWorkspace = async (workspaceId: any) => {
+  const handleWorkspaceRoles = (workspace: Doc<"workspaces">) =>
+    setRolesWorkspace(workspace);
+  const handleDeleteWorkspace = async (workspaceId: Id<"workspaces">) => {
     const remainingWorkspaces = (workspaces ?? []).filter(
-      (workspace: any) => workspace._id !== workspaceId,
+      (workspace: Doc<"workspaces">) => workspace._id !== workspaceId,
     );
 
     await deleteWorkspace({
@@ -245,12 +273,17 @@ export default function AuthenticatedApp() {
     <div className="flex h-screen overflow-auto">
       <Sidebar
         currentBoard={displayBoard}
+        boards={boards}
+        boardListStatus={boardListStatus}
+        onLoadBoards={() => loadBoards(30)}
         onBoardSelect={handleBoardSelect}
         onCreateBoard={handleOpenCreateModal}
         currentWorkspace={displayWorkspace}
         can={can}
         canViewAnalytics={canProject("analytics.view")}
         workspaces={workspaces}
+        workspaceListStatus={workspaceListStatus}
+        onLoadWorkspaces={() => loadWorkspaces(30)}
         onWorkspaceSelect={handleWorkspaceSelect}
         onCreateWorkspace={handleOpenCreateWorkspaceModal}
         onEditWorkspace={handleEditWorkspace}

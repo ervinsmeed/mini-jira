@@ -61,7 +61,7 @@ export default function AnalyticsCharts({
   analytics,
   theme,
 }: AnalyticsChartsProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const textColor = theme === "dark" ? "#cbd5e1" : "var(--muted-foreground)";
   const gridColor = theme === "dark" ? "#334155" : "var(--border)";
@@ -122,12 +122,23 @@ export default function AnalyticsCharts({
               />
 
               <YAxis
+                tickFormatter={(value: number) =>
+                  value.toLocaleString(i18n.resolvedLanguage)
+                }
                 allowDecimals={false}
                 stroke={textColor}
                 tick={{ fill: textColor, fontSize: 12 }}
               />
 
-              <Tooltip itemStyle={theme === "light" ? { color: textColor } : undefined} contentStyle={tooltipStyle} />
+              <Tooltip
+                formatter={(value) =>
+                  typeof value === "number"
+                    ? value.toLocaleString(i18n.resolvedLanguage)
+                    : value
+                }
+                itemStyle={theme === "light" ? { color: textColor } : undefined}
+                contentStyle={tooltipStyle}
+              />
 
               <Bar
                 dataKey="count"
@@ -165,8 +176,25 @@ export default function AnalyticsCharts({
                 ))}
               </Pie>
 
-              <Tooltip itemStyle={theme === "light" ? { color: textColor } : undefined} contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ color: textColor }} formatter={theme === "light" ? (value) => <span style={{ color: textColor }}>{value}</span> : undefined} />
+              <Tooltip
+                formatter={(value) =>
+                  typeof value === "number"
+                    ? value.toLocaleString(i18n.resolvedLanguage)
+                    : value
+                }
+                itemStyle={theme === "light" ? { color: textColor } : undefined}
+                contentStyle={tooltipStyle}
+              />
+              <Legend
+                wrapperStyle={{ color: textColor }}
+                formatter={
+                  theme === "light"
+                    ? (value) => (
+                        <span style={{ color: textColor }}>{value}</span>
+                      )
+                    : undefined
+                }
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -190,6 +218,9 @@ export default function AnalyticsCharts({
               />
 
               <YAxis
+                tickFormatter={(value: number) =>
+                  value.toLocaleString(i18n.resolvedLanguage)
+                }
                 type="category"
                 dataKey="name"
                 width={110}
@@ -197,7 +228,15 @@ export default function AnalyticsCharts({
                 tick={{ fill: textColor, fontSize: 12 }}
               />
 
-              <Tooltip itemStyle={theme === "light" ? { color: textColor } : undefined} contentStyle={tooltipStyle} />
+              <Tooltip
+                formatter={(value) =>
+                  typeof value === "number"
+                    ? value.toLocaleString(i18n.resolvedLanguage)
+                    : value
+                }
+                itemStyle={theme === "light" ? { color: textColor } : undefined}
+                contentStyle={tooltipStyle}
+              />
 
               <Bar
                 dataKey="count"

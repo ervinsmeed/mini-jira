@@ -1,54 +1,8 @@
-import { requireParentWorkspaceAccess } from "./lib/workspaceAccess";
+import { ConvexError } from "convex/values";
+import { getTaskPermissionAccess } from "./lib/taskAccess";
+import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import { v } from "convex/values";
-
-async function getAnalyticsAccess(ctx, boardId) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw new Error("Not authenticated");
-  }
-
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-    .unique();
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  const board = await ctx.db.get("boards", boardId);
-
-  if (!board) {
-    throw new Error("Project not found");
-  }
-
-  const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
-
-  if (parentAccess.isWorkspaceOwner || board.userId === user._id) {
-    return { user, board };
-  }
-
-  const membership = await ctx.db
-    .query("boardMembers")
-    .withIndex("by_board_user", (q) =>
-      q.eq("boardId", boardId).eq("userId", user._id),
-    )
-    .unique();
-
-  if (!membership || !membership.roleId) {
-    throw new Error("Access denied");
-  }
-
-  const role = await ctx.db.get("roles", membership.roleId);
-
-  if (!role || role.workspaceId !== board.workspaceId || !role.permissions.includes("analytics.view")) {
-    throw new Error("Missing permission: analytics.view");
-  }
-
-  return { user, board };
-}
 
 export const getProjectAnalytics = query({
   args: {
@@ -56,7 +10,11 @@ export const getProjectAnalytics = query({
   },
 
   handler: async (ctx, args) => {
-    const { board } = await getAnalyticsAccess(ctx, args.boardId);
+    const { board } = await getTaskPermissionAccess(
+      ctx,
+      args.boardId,
+      "analytics.view",
+    );
 
     const tasks = await ctx.db
       .query("tasks")
@@ -99,7 +57,7 @@ export const getProjectAnalytics = query({
       count: tasks.filter((task) => task.columnId === column._id).length,
     }));
 
-    const assigneeCounts = new Map();
+    const assigneeCounts = new Map<Id<"users"> | "unassigned", number>();
 
     for (const task of tasks) {
       const key = task.assigneeId ?? "unassigned";
@@ -164,5 +122,35 @@ export const getProjectAnalytics = query({
       byAssignee,
       byPriority,
     };
+  },
+});
+
+export const getWorkspaceAnalytics = query({
+  args: { workspaceId: v.id("workspaces") },
+  handler: async (ctx, args) => {
+    const boards = await ctx.db
+      .query("boards")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+      .collect();
+    const result = [];
+    for (const board of boards) {
+      try {
+        await getTaskPermissionAccess(ctx, board._id, "project.view");
+        await getTaskPermissionAccess(ctx, board._id, "analytics.view");
+      } catch (error) {
+        if (error instanceof ConvexError) continue;
+        throw error;
+      }
+      const tasks = await ctx.db
+        .query("tasks")
+        .withIndex("by_board", (q) => q.eq("boardId", board._id))
+        .collect();
+      result.push({
+        boardId: board._id,
+        name: board.name,
+        count: tasks.length,
+      });
+    }
+    return result;
   },
 });
