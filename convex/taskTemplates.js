@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import { requireParentWorkspaceAccess } from "./lib/workspaceAccess";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
@@ -22,7 +23,7 @@ async function getTaskPermissionAccess(ctx, boardId, permission) {
   const identity = await ctx.auth.getUserIdentity();
 
   if (!identity) {
-    throw new Error("Not authenticated");
+    throw new ConvexError({ code: "NOT_AUTHENTICATED" });
   }
 
   const user = await ctx.db
@@ -31,13 +32,13 @@ async function getTaskPermissionAccess(ctx, boardId, permission) {
     .unique();
 
   if (!user) {
-    throw new Error("User not found");
+    throw new ConvexError({ code: "NOT_FOUND" });
   }
 
   const board = await ctx.db.get("boards", boardId);
 
   if (!board) {
-    throw new Error("Project not found");
+    throw new ConvexError({ code: "NOT_FOUND" });
   }
 
   const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
@@ -49,7 +50,7 @@ async function getTaskPermissionAccess(ctx, boardId, permission) {
   }
 
   if (!board.workspaceId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   const membership = await ctx.db
@@ -60,17 +61,17 @@ async function getTaskPermissionAccess(ctx, boardId, permission) {
     .unique();
 
   if (!membership || !membership.roleId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   const role = await ctx.db.get("roles", membership.roleId);
 
   if (!role || role.workspaceId !== board.workspaceId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   if (!role.permissions.includes(permission)) {
-    throw new Error(`Missing permission: ${permission}`);
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   return {
@@ -118,7 +119,7 @@ export const create = mutation({
     const name = args.name.trim();
 
     if (!name) {
-      throw new Error("Template name is required");
+      throw new ConvexError({ code: "VALIDATION_FAILED" });
     }
 
     const existingTemplates = await ctx.db
@@ -131,7 +132,7 @@ export const create = mutation({
     );
 
     if (duplicate) {
-      throw new Error("A template with this name already exists");
+      throw new ConvexError({ code: "VALIDATION_FAILED" });
     }
 
     const templateId = await ctx.db.insert("taskTemplates", {
@@ -164,7 +165,7 @@ export const update = mutation({
     const template = await ctx.db.get("taskTemplates", args.id);
 
     if (!template) {
-      throw new Error("Template not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     await getTaskPermissionAccess(ctx, template.boardId, "task.update");
@@ -177,7 +178,7 @@ export const update = mutation({
       const name = args.name.trim();
 
       if (!name) {
-        throw new Error("Template name is required");
+        throw new ConvexError({ code: "VALIDATION_FAILED" });
       }
 
       const existingTemplates = await ctx.db
@@ -192,7 +193,7 @@ export const update = mutation({
       );
 
       if (duplicate) {
-        throw new Error("A template with this name already exists");
+        throw new ConvexError({ code: "VALIDATION_FAILED" });
       }
 
       updates.name = name;
@@ -229,7 +230,7 @@ export const remove = mutation({
     const template = await ctx.db.get("taskTemplates", args.id);
 
     if (!template) {
-      throw new Error("Template not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     await getTaskPermissionAccess(ctx, template.boardId, "task.delete");

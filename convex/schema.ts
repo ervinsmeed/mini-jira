@@ -58,7 +58,9 @@ export default defineSchema({
 
     createdBy: v.id("users"),
     createdAt: v.number(),
-  }).index("by_workspace", ["workspaceId"]),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_workspace_level", ["workspaceId", "level"]),
 
   boards: defineTable({
     name: v.string(),
@@ -81,7 +83,9 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_workspace", ["workspaceId"]),
+    .index("by_workspace", ["workspaceId"])
+    .index("by_workspace_order", ["workspaceId", "order"])
+    .index("by_user_order", ["userId", "order"]),
 
   boardMembers: defineTable({
     boardId: v.id("boards"),
@@ -173,8 +177,19 @@ export default defineSchema({
 
     timerStartedAt: v.optional(v.number()),
     timerElapsedMs: v.optional(v.number()),
+    timerSessionElapsedMs: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
-  }).index("by_board", ["boardId"]),
+  })
+    .index("by_board", ["boardId"])
+    .index("by_board_order", ["boardId", "order"])
+    .index("by_board_column_order", ["boardId", "columnId", "order"])
+    .index("by_board_title", ["boardId", "title"])
+    .index("by_board_created", ["boardId", "createdAt"])
+    .index("by_board_deadline", ["boardId", "deadline"])
+    .index("by_board_sp", ["boardId", "storyPoints"])
+    .index("by_board_priority", ["boardId", "priority", "order"])
+    .index("by_board_type", ["boardId", "taskType"])
+    .index("by_board_epic", ["boardId", "epicId"]),
   taskTemplates: defineTable({
     name: v.string(),
     title: v.optional(v.string()),
@@ -212,6 +227,15 @@ export default defineSchema({
 
     action: v.string(),
     details: v.optional(v.string()),
+    changes: v.optional(
+      v.array(
+        v.object({
+          field: v.string(),
+          before: v.union(v.string(), v.number(), v.null()),
+          after: v.union(v.string(), v.number(), v.null()),
+        }),
+      ),
+    ),
 
     createdAt: v.number(),
   })

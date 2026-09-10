@@ -1,4 +1,9 @@
-import { getParentWorkspaceAccess, requireParentWorkspaceAccess } from "./lib/workspaceAccess";
+import { ConvexError } from "convex/values";
+import { deleteTask } from "./lib/cascade";
+import {
+  getParentWorkspaceAccess,
+  requireParentWorkspaceAccess,
+} from "./lib/workspaceAccess";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
@@ -13,7 +18,7 @@ export const create = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
     }
 
     const user = await ctx.db
@@ -22,15 +27,19 @@ export const create = mutation({
       .unique();
 
     if (!user) {
-      throw new Error("User not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const board = await ctx.db.get(args.boardId);
 
-    if (!board) throw new Error("Board not found");
-    const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
+    if (!board) throw new ConvexError({ code: "NOT_FOUND" });
+    const parentAccess = await requireParentWorkspaceAccess(
+      ctx,
+      user._id,
+      board,
+    );
     if (!parentAccess.isWorkspaceOwner && board.userId !== user._id) {
-      throw new Error("Board not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const columns = await ctx.db
@@ -127,7 +136,7 @@ export const initializeDefaultColumns = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
     }
 
     const user = await ctx.db
@@ -136,15 +145,19 @@ export const initializeDefaultColumns = mutation({
       .unique();
 
     if (!user) {
-      throw new Error("User not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const board = await ctx.db.get(args.boardId);
 
-    if (!board) throw new Error("Board not found");
-    const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
+    if (!board) throw new ConvexError({ code: "NOT_FOUND" });
+    const parentAccess = await requireParentWorkspaceAccess(
+      ctx,
+      user._id,
+      board,
+    );
     if (!parentAccess.isWorkspaceOwner && board.userId !== user._id) {
-      throw new Error("Board not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const existingColumns = await ctx.db
@@ -221,7 +234,7 @@ export const update = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
     }
 
     const user = await ctx.db
@@ -229,15 +242,19 @@ export const update = mutation({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    if (!user) throw new Error("User not found");
+    if (!user) throw new ConvexError({ code: "NOT_FOUND" });
 
     const column = await ctx.db.get(args.id);
-    if (!column) throw new Error("Column not found");
+    if (!column) throw new ConvexError({ code: "NOT_FOUND" });
     const board = await ctx.db.get(column.boardId);
-    if (!board) throw new Error("Board not found");
-    const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
+    if (!board) throw new ConvexError({ code: "NOT_FOUND" });
+    const parentAccess = await requireParentWorkspaceAccess(
+      ctx,
+      user._id,
+      board,
+    );
     if (!parentAccess.isWorkspaceOwner && column.userId !== user._id) {
-      throw new Error("Column not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const updates = {};
@@ -256,7 +273,7 @@ export const remove = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
     }
 
     const user = await ctx.db
@@ -265,17 +282,21 @@ export const remove = mutation({
       .unique();
 
     if (!user) {
-      throw new Error("User not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const column = await ctx.db.get(args.id);
 
-    if (!column) throw new Error("Column not found");
+    if (!column) throw new ConvexError({ code: "NOT_FOUND" });
     const board = await ctx.db.get(column.boardId);
-    if (!board) throw new Error("Board not found");
-    const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
+    if (!board) throw new ConvexError({ code: "NOT_FOUND" });
+    const parentAccess = await requireParentWorkspaceAccess(
+      ctx,
+      user._id,
+      board,
+    );
     if (!parentAccess.isWorkspaceOwner && column.userId !== user._id) {
-      throw new Error("Column not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const tasks = await ctx.db
@@ -289,7 +310,7 @@ export const remove = mutation({
       .collect();
 
     for (const task of tasks) {
-      await ctx.db.delete(task._id);
+      await deleteTask(ctx, task);
     }
 
     await ctx.db.delete(args.id);

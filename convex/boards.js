@@ -1,4 +1,11 @@
-import { getParentWorkspaceAccess, requireParentWorkspaceAccess } from "./lib/workspaceAccess";
+import { projectOrder } from "./lib/projectOrder";
+export { projectsPage } from "./lib/directoryQueries";
+import { ConvexError } from "convex/values";
+import { deleteBoard } from "./lib/cascade";
+import {
+  getParentWorkspaceAccess,
+  requireParentWorkspaceAccess,
+} from "./lib/workspaceAccess";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -6,7 +13,7 @@ async function getProjectPermissionAccess(ctx, workspaceId, permission) {
   const identity = await ctx.auth.getUserIdentity();
 
   if (!identity) {
-    throw new Error("Not authenticated");
+    throw new ConvexError({ code: "NOT_AUTHENTICATED" });
   }
 
   const user = await ctx.db
@@ -15,13 +22,13 @@ async function getProjectPermissionAccess(ctx, workspaceId, permission) {
     .unique();
 
   if (!user) {
-    throw new Error("User not found");
+    throw new ConvexError({ code: "NOT_FOUND" });
   }
 
   const workspace = await ctx.db.get(workspaceId);
 
   if (!workspace) {
-    throw new Error("Workspace not found");
+    throw new ConvexError({ code: "NOT_FOUND" });
   }
 
   const isOwner = workspace.ownerId === user._id;
@@ -43,17 +50,17 @@ async function getProjectPermissionAccess(ctx, workspaceId, permission) {
     .unique();
 
   if (!membership || !membership.roleId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   const currentRole = await ctx.db.get(membership.roleId);
 
   if (!currentRole || currentRole.workspaceId !== workspaceId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   if (!currentRole.permissions.includes(permission)) {
-    throw new Error(`Missing permission: ${permission}`);
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   return {
@@ -68,7 +75,7 @@ async function getBoardPermissionAccess(ctx, boardId, permission) {
   const identity = await ctx.auth.getUserIdentity();
 
   if (!identity) {
-    throw new Error("Not authenticated");
+    throw new ConvexError({ code: "NOT_AUTHENTICATED" });
   }
 
   const user = await ctx.db
@@ -77,13 +84,13 @@ async function getBoardPermissionAccess(ctx, boardId, permission) {
     .unique();
 
   if (!user) {
-    throw new Error("User not found");
+    throw new ConvexError({ code: "NOT_FOUND" });
   }
 
   const board = await ctx.db.get(boardId);
 
   if (!board) {
-    throw new Error("Project not found");
+    throw new ConvexError({ code: "NOT_FOUND" });
   }
 
   const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
@@ -98,7 +105,7 @@ async function getBoardPermissionAccess(ctx, boardId, permission) {
   }
 
   if (!board.workspaceId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   const membership = await ctx.db
@@ -109,17 +116,17 @@ async function getBoardPermissionAccess(ctx, boardId, permission) {
     .unique();
 
   if (!membership || !membership.roleId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   const currentRole = await ctx.db.get(membership.roleId);
 
   if (!currentRole || currentRole.workspaceId !== board.workspaceId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   if (!currentRole.permissions.includes(permission)) {
-    throw new Error(`Missing permission: ${permission}`);
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   return {
@@ -141,7 +148,7 @@ export const create = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
     }
 
     const user = await ctx.db
@@ -150,7 +157,7 @@ export const create = mutation({
       .unique();
 
     if (!user) {
-      throw new Error("User not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     if (args.workspaceId) {
@@ -184,7 +191,7 @@ export const list = query({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
     }
 
     const user = await ctx.db
@@ -200,10 +207,14 @@ export const list = query({
       .query("boards")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
-    const visible = await Promise.all(boards.map(async (board) =>
-      await getParentWorkspaceAccess(ctx, user._id, board) ? board : null,
-    ));
-    return visible.filter(Boolean).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const visible = await Promise.all(
+      boards.map(async (board) =>
+        (await getParentWorkspaceAccess(ctx, user._id, board)) ? board : null,
+      ),
+    );
+    return visible
+      .filter(Boolean)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
   },
 });
 export const listByWorkspace = query({
@@ -215,7 +226,7 @@ export const listByWorkspace = query({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
     }
 
     const user = await ctx.db
@@ -230,7 +241,7 @@ export const listByWorkspace = query({
     const workspace = await ctx.db.get(args.workspaceId);
 
     if (!workspace) {
-      throw new Error("Workspace not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const boards = await ctx.db
@@ -240,7 +251,11 @@ export const listByWorkspace = query({
 
     const visibleBoards = await Promise.all(
       boards.map(async (board) => {
-        const parentAccess = await getParentWorkspaceAccess(ctx, user._id, board);
+        const parentAccess = await getParentWorkspaceAccess(
+          ctx,
+          user._id,
+          board,
+        );
         if (!parentAccess) return null;
         if (parentAccess.isWorkspaceOwner || board.userId === user._id) {
           return board;
@@ -294,7 +309,7 @@ export const update = mutation({
     const board = await ctx.db.get(args.id);
 
     if (!board) {
-      throw new Error("Project not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     await getBoardPermissionAccess(ctx, args.id, "project.update");
@@ -326,13 +341,21 @@ export const updateOrder = mutation({
   args: {
     boardId: v.id("boards"),
     newOrder: v.number(),
+    anchorId: v.optional(v.id("boards")),
+    after: v.optional(v.boolean()),
   },
 
   handler: async (ctx, args) => {
-    await getBoardPermissionAccess(ctx, args.boardId, "project.update");
+    const { board } = await getBoardPermissionAccess(
+      ctx,
+      args.boardId,
+      "project.update",
+    );
 
     await ctx.db.patch(args.boardId, {
-      order: args.newOrder,
+      order: args.anchorId
+        ? await projectOrder(ctx, board, args.anchorId, args.after ?? false)
+        : args.newOrder,
     });
 
     return await ctx.db.get(args.boardId);
@@ -347,86 +370,12 @@ export const remove = mutation({
     const board = await ctx.db.get(args.id);
 
     if (!board) {
-      throw new Error("Project not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     await getBoardPermissionAccess(ctx, args.id, "project.delete");
 
-    const tasks = await ctx.db
-      .query("tasks")
-      .withIndex("by_board", (q) => q.eq("boardId", args.id))
-      .collect();
-
-    for (const task of tasks) {
-      const comments = await ctx.db
-        .query("comments")
-        .withIndex("by_task", (q) => q.eq("taskId", task._id))
-        .collect();
-
-      for (const comment of comments) {
-        await ctx.db.delete(comment._id);
-      }
-    }
-
-    const activityLogs = await ctx.db
-      .query("activityLogs")
-      .withIndex("by_board", (q) => q.eq("boardId", args.id))
-      .collect();
-
-    for (const activityLog of activityLogs) {
-      await ctx.db.delete(activityLog._id);
-    }
-
-    const favorites = await ctx.db
-      .query("favorites")
-      .withIndex("by_board", (q) => q.eq("boardId", args.id))
-      .collect();
-
-    for (const favorite of favorites) {
-      await ctx.db.delete(favorite._id);
-    }
-
-    const recentTaskEntries = await ctx.db
-      .query("recentTasks")
-      .withIndex("by_board", (q) => q.eq("boardId", args.id))
-      .collect();
-
-    for (const recentTaskEntry of recentTaskEntries) {
-      await ctx.db.delete(recentTaskEntry._id);
-    }
-
-    const taskTemplates = await ctx.db
-      .query("taskTemplates")
-      .withIndex("by_board", (q) => q.eq("boardId", args.id))
-      .collect();
-
-    for (const taskTemplate of taskTemplates) {
-      await ctx.db.delete(taskTemplate._id);
-    }
-
-    for (const task of tasks) {
-      await ctx.db.delete(task._id);
-    }
-
-    const columns = await ctx.db
-      .query("columns")
-      .withIndex("by_board", (q) => q.eq("boardId", args.id))
-      .collect();
-
-    for (const column of columns) {
-      await ctx.db.delete(column._id);
-    }
-
-    const members = await ctx.db
-      .query("boardMembers")
-      .withIndex("by_board", (q) => q.eq("boardId", args.id))
-      .collect();
-
-    for (const member of members) {
-      await ctx.db.delete(member._id);
-    }
-
-    await ctx.db.delete(args.id);
+    await deleteBoard(ctx, args.id);
   },
 });
 export const getCurrentAccess = query({
@@ -456,7 +405,11 @@ export const getCurrentAccess = query({
       return null;
     }
 
-    const parentAccess = await getParentWorkspaceAccess(ctx, currentUser._id, board);
+    const parentAccess = await getParentWorkspaceAccess(
+      ctx,
+      currentUser._id,
+      board,
+    );
     if (!parentAccess) return null;
 
     if (parentAccess.isWorkspaceOwner || board.userId === currentUser._id) {

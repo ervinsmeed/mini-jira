@@ -1,6 +1,9 @@
+import type { Doc, Id } from "../../convex/_generated/dataModel";
+import { actionError } from "../lib/actionError";
+import { useAction } from "../lib/useAction";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import {
@@ -13,8 +16,15 @@ import {
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
 
-export default function ProjectMembersModal({ project, onClose }: any) {
+export default function ProjectMembersModal({
+  project,
+  onClose,
+}: {
+  project: Doc<"boards">;
+  onClose: () => void;
+}) {
   const { t } = useTranslation();
+  const { pending, run } = useAction();
   const [email, setEmail] = useState("");
 
   const access = useQuery(
@@ -33,18 +43,26 @@ export default function ProjectMembersModal({ project, onClose }: any) {
       )),
   );
 
-  const members = useQuery(
-    api.boardMembers.list,
+  const {
+    results: members,
+    status: memberStatus,
+    loadMore: loadMembers,
+  } = usePaginatedQuery(
+    api.boardMembers.projectMembersPage,
     canViewMembers ? { boardId: project._id } : "skip",
+    { initialNumItems: 30 },
   );
 
-  const roles = useQuery(
-    api.roles.list,
-    canManageMembers && project?.workspaceId
-      ? {
-          workspaceId: project.workspaceId,
-        }
+  const {
+    results: roles,
+    status: roleStatus,
+    loadMore: loadRoles,
+  } = usePaginatedQuery(
+    api.roles.rolesPage,
+    canManageMembers && project.workspaceId
+      ? { workspaceId: project.workspaceId }
       : "skip",
+    { initialNumItems: 30 },
   );
 
   const addMember = useMutation(api.boardMembers.addByEmail);
@@ -52,56 +70,74 @@ export default function ProjectMembersModal({ project, onClose }: any) {
   const changeRole = useMutation(api.boardMembers.changeRole);
 
   const handleAddMember = async () => {
-    if (!canManageMembers || !email.trim()) return;
+    await run(async () => {
+      if (!canManageMembers || !email.trim()) return;
 
-    try {
-      await addMember({
-        boardId: project._id,
-        email: email.trim(),
-      });
+      try {
+        await addMember({
+          boardId: project._id,
+          email: email.trim(),
+        });
 
-      setEmail("");
-      toast.success(t("members.added"));
-    } catch (error: any) {
-      toast.error(error.message || t("members.addError"));
-    }
+        setEmail("");
+        toast.success(t("members.added"));
+      } catch (error) {
+        toast.error(actionError(error, t));
+      }
+    });
   };
 
-  const handleRemoveMember = async (userId: any) => {
-    if (!canManageMembers) return;
-    try {
-      await removeMember({
-        boardId: project._id,
-        userId,
-      });
+  const handleRemoveMember = async (userId: Id<"users">) => {
+    await run(async () => {
+      if (!canManageMembers) return;
+      try {
+        await removeMember({
+          boardId: project._id,
+          userId,
+        });
 
-      toast.success(t("members.removed"));
-    } catch (error: any) {
-      toast.error(error.message || t("members.removeError"));
-    }
+        toast.success(t("members.removed"));
+      } catch (error) {
+        toast.error(actionError(error, t));
+      }
+    });
   };
 
-  const handleChangeRole = async (userId: any, roleId: any) => {
-    if (!canManageMembers) return;
-    try {
-      await changeRole({
-        boardId: project._id,
-        userId,
-        roleId,
-      });
+  const handleChangeRole = async (userId: Id<"users">, roleId: string) => {
+    await run(async () => {
+      if (!canManageMembers) return;
+      try {
+        await changeRole({
+          boardId: project._id,
+          userId,
+          roleId,
+        });
 
-      toast.success(t("members.roleChanged"));
-    } catch (error: any) {
-      toast.error(error.message || t("members.roleError"));
-    }
+        toast.success(t("members.roleChanged"));
+      } catch (error) {
+        toast.error(actionError(error, t));
+      }
+    });
   };
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="pr-6 leading-snug">{t("members.projectTitle")}</DialogTitle>
+          <DialogTitle className="pr-6 leading-snug">
+            {t("members.projectTitle")}
+          </DialogTitle>
         </DialogHeader>
+        {roleStatus === "CanLoadMore" && (
+          <button type="button" onClick={() => loadRoles(30)}>
+            {t("members.loadMoreRoles")}
+          </button>
+        )}
+        {memberStatus === "CanLoadMore" && (
+          <button type="button" onClick={() => loadMembers(30)}>
+            {t("members.loadMore")}
+          </button>
+        )}
 
         <div className="space-y-4">
           <p className="text-sm opacity-70">{t("hints.separateRoles")}</p>
@@ -123,6 +159,7 @@ export default function ProjectMembersModal({ project, onClose }: any) {
                 type="button"
                 onClick={handleAddMember}
                 className="rounded-md bg-purple-500 px-4 py-2 text-white"
+                disabled={pending}
               >
                 {t("common.add")}
               </button>
@@ -137,7 +174,7 @@ export default function ProjectMembersModal({ project, onClose }: any) {
             ) : members.length === 0 ? (
               <div className="text-sm opacity-70">{t("members.empty")}</div>
             ) : (
-              members.map((member: any) => (
+              members.map((member) => (
                 <div
                   key={member._id}
                   className="flex min-w-0 flex-col gap-3 rounded-md border p-3"
@@ -172,7 +209,15 @@ export default function ProjectMembersModal({ project, onClose }: any) {
                         </SelectTrigger>
 
                         <SelectContent>
-                          {(roles ?? []).map((role: any) => (
+                          {member.roleId &&
+                            !roles.some(
+                              (role) => role._id === member.roleId,
+                            ) && (
+                              <SelectItem value={member.roleId}>
+                                {member.roleName ?? t("profile.noRole")}
+                              </SelectItem>
+                            )}
+                          {(roles ?? []).map((role: Doc<"roles">) => (
                             <SelectItem key={role._id} value={role._id}>
                               {role.name}
                             </SelectItem>
@@ -184,6 +229,7 @@ export default function ProjectMembersModal({ project, onClose }: any) {
                         type="button"
                         onClick={() => handleRemoveMember(member._id)}
                         className="shrink-0 text-sm text-red-400 hover:text-red-500"
+                        disabled={pending}
                       >
                         {t("common.remove")}
                       </button>
@@ -198,6 +244,7 @@ export default function ProjectMembersModal({ project, onClose }: any) {
             type="button"
             onClick={onClose}
             className="w-full rounded-md border px-4 py-2"
+            disabled={pending}
           >
             {t("common.close")}
           </button>

@@ -1,3 +1,5 @@
+export { rolesPage } from "./lib/directoryQueries";
+import { ConvexError } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { assertRoleDelegation } from "./lib/roleDelegation";
@@ -22,7 +24,7 @@ async function getRoleManagementAccess(ctx, workspaceId) {
   const identity = await ctx.auth.getUserIdentity();
 
   if (!identity) {
-    throw new Error("Not authenticated");
+    throw new ConvexError({ code: "NOT_AUTHENTICATED" });
   }
 
   const user = await ctx.db
@@ -31,13 +33,13 @@ async function getRoleManagementAccess(ctx, workspaceId) {
     .unique();
 
   if (!user) {
-    throw new Error("User not found");
+    throw new ConvexError({ code: "NOT_FOUND" });
   }
 
   const workspace = await ctx.db.get(workspaceId);
 
   if (!workspace) {
-    throw new Error("Workspace not found");
+    throw new ConvexError({ code: "NOT_FOUND" });
   }
 
   const isOwner = workspace.ownerId === user._id;
@@ -59,17 +61,17 @@ async function getRoleManagementAccess(ctx, workspaceId) {
     .unique();
 
   if (!membership || !membership.roleId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   const currentRole = await ctx.db.get(membership.roleId);
 
   if (!currentRole || currentRole.workspaceId !== workspaceId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   if (!currentRole.permissions.includes("roles.manage")) {
-    throw new Error("Missing permission: roles.manage");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   return {
@@ -96,7 +98,7 @@ export const create = mutation({
     );
 
     if (!isOwner && currentRole && args.level >= currentRole.level) {
-      throw new Error("You cannot create a role with equal or higher level");
+      throw new ConvexError({ code: "ACCESS_DENIED" });
     }
     assertRoleDelegation({ isOwner, currentRole }, args.workspaceId, args);
     const existingRoles = await ctx.db
@@ -109,7 +111,7 @@ export const create = mutation({
     );
 
     if (duplicateRole) {
-      throw new Error("Role already exists");
+      throw new ConvexError({ code: "ACCESS_DENIED" });
     }
 
     const roleId = await ctx.db.insert("roles", {
@@ -139,7 +141,7 @@ export const update = mutation({
     const role = await ctx.db.get(args.id);
 
     if (!role) {
-      throw new Error("Role not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const { user, isOwner, currentRole } = await getRoleManagementAccess(
@@ -149,11 +151,11 @@ export const update = mutation({
 
     if (!isOwner && currentRole) {
       if (role.level >= currentRole.level) {
-        throw new Error("You cannot edit a role with equal or higher level");
+        throw new ConvexError({ code: "ACCESS_DENIED" });
       }
 
       if (args.level !== undefined && args.level >= currentRole.level) {
-        throw new Error("You cannot set an equal or higher role level");
+        throw new ConvexError({ code: "ACCESS_DENIED" });
       }
     }
 
@@ -173,17 +175,19 @@ export const update = mutation({
         .query("boardMembers")
         .withIndex("by_user", (q) => q.eq("userId", user._id))
         .collect();
-      const assignedToSelf = [...workspaceMemberships, ...projectMemberships].some(
-        (membership) => membership.roleId === role._id,
-      );
+      const assignedToSelf = [
+        ...workspaceMemberships,
+        ...projectMemberships,
+      ].some((membership) => membership.roleId === role._id);
 
       if (
-        assignedToSelf && (
-          nextRole.level > role.level ||
-          nextRole.permissions.some((permission) => !role.permissions.includes(permission))
-        )
+        assignedToSelf &&
+        (nextRole.level > role.level ||
+          nextRole.permissions.some(
+            (permission) => !role.permissions.includes(permission),
+          ))
       ) {
-        throw new Error("You cannot increase a role assigned to yourself");
+        throw new ConvexError({ code: "ACCESS_DENIED" });
       }
     }
 
@@ -200,7 +204,7 @@ export const update = mutation({
       );
 
       if (duplicateRole) {
-        throw new Error("Role already exists");
+        throw new ConvexError({ code: "ACCESS_DENIED" });
       }
     }
 
@@ -237,7 +241,7 @@ export const list = query({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
     }
 
     const user = await ctx.db
@@ -246,13 +250,13 @@ export const list = query({
       .unique();
 
     if (!user) {
-      throw new Error("User not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const workspace = await ctx.db.get(args.workspaceId);
 
     if (!workspace) {
-      throw new Error("Workspace not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const membership = await ctx.db
@@ -265,7 +269,7 @@ export const list = query({
     const isOwner = workspace.ownerId === user._id;
 
     if (!isOwner && !membership) {
-      throw new Error("Access denied");
+      throw new ConvexError({ code: "ACCESS_DENIED" });
     }
 
     const roles = await ctx.db
@@ -285,7 +289,7 @@ export const remove = mutation({
     const role = await ctx.db.get(args.id);
 
     if (!role) {
-      throw new Error("Role not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const { isOwner, currentRole } = await getRoleManagementAccess(
@@ -294,7 +298,7 @@ export const remove = mutation({
     );
 
     if (!isOwner && currentRole && role.level >= currentRole.level) {
-      throw new Error("You cannot delete a role with equal or higher level");
+      throw new ConvexError({ code: "ACCESS_DENIED" });
     }
     const workspaceMemberships = await ctx.db
       .query("workspaceMembers")
@@ -312,7 +316,7 @@ export const remove = mutation({
     );
 
     if (workspaceRoleIsAssigned || projectRoleIsAssigned) {
-      throw new Error("Role is assigned to one or more members");
+      throw new ConvexError({ code: "ACCESS_DENIED" });
     }
 
     await ctx.db.delete(args.id);

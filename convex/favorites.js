@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import { requireParentWorkspaceAccess } from "./lib/workspaceAccess";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
@@ -6,7 +7,7 @@ async function getCurrentUser(ctx) {
   const identity = await ctx.auth.getUserIdentity();
 
   if (!identity) {
-    throw new Error("Not authenticated");
+    throw new ConvexError({ code: "NOT_AUTHENTICATED" });
   }
 
   const user = await ctx.db
@@ -15,7 +16,7 @@ async function getCurrentUser(ctx) {
     .unique();
 
   if (!user) {
-    throw new Error("User not found");
+    throw new ConvexError({ code: "NOT_FOUND" });
   }
 
   return user;
@@ -25,7 +26,7 @@ async function requireBoardPermission(ctx, user, boardId, permission) {
   const board = await ctx.db.get("boards", boardId);
 
   if (!board) {
-    throw new Error("Project not found");
+    throw new ConvexError({ code: "NOT_FOUND" });
   }
 
   const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
@@ -34,7 +35,7 @@ async function requireBoardPermission(ctx, user, boardId, permission) {
   }
 
   if (!board.workspaceId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   const membership = await ctx.db
@@ -45,17 +46,17 @@ async function requireBoardPermission(ctx, user, boardId, permission) {
     .unique();
 
   if (!membership || !membership.roleId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   const role = await ctx.db.get("roles", membership.roleId);
 
   if (!role || role.workspaceId !== board.workspaceId) {
-    throw new Error("Access denied");
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   if (!role.permissions.includes(permission)) {
-    throw new Error(`Missing permission: ${permission}`);
+    throw new ConvexError({ code: "ACCESS_DENIED" });
   }
 
   return board;
@@ -155,7 +156,7 @@ export const toggleTask = mutation({
     const task = await ctx.db.get("tasks", args.taskId);
 
     if (!task) {
-      throw new Error("Task not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     await requireBoardPermission(ctx, user, task.boardId, "task.view");

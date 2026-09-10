@@ -1,3 +1,5 @@
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CalendarDays, GripVertical, Star } from "lucide-react";
@@ -22,7 +24,7 @@ import { Progress } from "./ui/progress";
 
 export default function TaskCard({
   task,
-  epic,
+  epic: providedEpic,
   onClick,
   isSelected = false,
   onToggleSelect,
@@ -32,7 +34,12 @@ export default function TaskCard({
   theme,
   canDrag = false,
 }: TaskCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const queriedEpic = useQuery(
+    api.tasks.get,
+    task.epicId && !providedEpic ? { id: task.epicId } : "skip",
+  );
+  const epic = providedEpic ?? queriedEpic;
 
   const {
     attributes,
@@ -60,7 +67,7 @@ export default function TaskCard({
   const isOverdue = task.deadline !== undefined && task.deadline < Date.now();
 
   const formattedDeadline = task.deadline
-    ? new Date(task.deadline).toLocaleDateString()
+    ? new Date(task.deadline).toLocaleDateString(i18n.resolvedLanguage)
     : "";
 
   const percentageCompletion =

@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import { getParentWorkspaceAccess } from "./lib/workspaceAccess";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
@@ -6,7 +7,7 @@ async function getCurrentUser(ctx) {
   const identity = await ctx.auth.getUserIdentity();
 
   if (!identity) {
-    throw new Error("Not authenticated");
+    throw new ConvexError({ code: "NOT_AUTHENTICATED" });
   }
 
   const user = await ctx.db
@@ -15,7 +16,7 @@ async function getCurrentUser(ctx) {
     .unique();
 
   if (!user) {
-    throw new Error("User not found");
+    throw new ConvexError({ code: "NOT_FOUND" });
   }
 
   return user;
@@ -63,19 +64,19 @@ export const recordView = mutation({
     const task = await ctx.db.get("tasks", args.taskId);
 
     if (!task) {
-      throw new Error("Task not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const board = await ctx.db.get("boards", task.boardId);
 
     if (!board) {
-      throw new Error("Project not found");
+      throw new ConvexError({ code: "NOT_FOUND" });
     }
 
     const hasAccess = await canViewBoard(ctx, user, board);
 
     if (!hasAccess) {
-      throw new Error("Access denied");
+      throw new ConvexError({ code: "ACCESS_DENIED" });
     }
 
     const existingRecentTask = await ctx.db

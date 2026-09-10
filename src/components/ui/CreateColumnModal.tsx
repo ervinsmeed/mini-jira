@@ -6,6 +6,7 @@ import { api } from "../../../convex/_generated/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./Dialog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { useAction } from "../../lib/useAction";
 
 const PRESET_COLORS = [
   "#22d3ee",
@@ -32,6 +33,7 @@ export default function CreateColumnModal({
   theme,
 }: CreateColumnModalProps) {
   const { t } = useTranslation();
+  const { pending, run } = useAction();
   const [name, setName] = useState("");
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0]);
 
@@ -41,17 +43,18 @@ export default function CreateColumnModal({
     e.preventDefault();
 
     if (!name.trim()) return;
+    await run(async () => {
+      await createColumn({
+        name: name.trim(),
+        color: selectedColor,
+        boardId,
+      });
 
-    await createColumn({
-      name: name.trim(),
-      color: selectedColor,
-      boardId,
+      setName("");
+      setSelectedColor(PRESET_COLORS[0]);
+      onClose();
+      toast.success(t("createColumn.created"));
     });
-
-    setName("");
-    setSelectedColor(PRESET_COLORS[0]);
-    onClose();
-    toast.success(t("createColumn.created"));
   };
 
   return (
@@ -73,62 +76,64 @@ export default function CreateColumnModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label
-              className={`mb-2 block text-sm font-medium ${
-                theme === "dark" ? "text-slate-100" : "text-slate-900"
-              }`}
-            >
-              {t("createColumn.columnName")}
-            </label>
+          <fieldset disabled={pending} className="contents">
+            <div>
+              <label
+                className={`mb-2 block text-sm font-medium ${
+                  theme === "dark" ? "text-slate-100" : "text-slate-900"
+                }`}
+              >
+                {t("createColumn.columnName")}
+              </label>
 
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t("createColumn.placeholder")}
-              className={`w-full rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
-                theme === "dark"
-                  ? "border-slate-800 bg-slate-950 text-slate-100 placeholder-slate-400 focus:ring-purple-500"
-                  : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-              }`}
-              required
-            />
-          </div>
-          <div>
-            <label
-              className={`mb-2 block text-sm font-medium ${
-                theme === "dark" ? "text-slate-100" : "text-slate-900"
-              }`}
-            >
-              {t("createColumn.color")}
-            </label>
-
-            <div className="grid grid-cols-4 gap-4">
-              {PRESET_COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => setSelectedColor(color)}
-                  className={`size-12 rounded-lg border-2 transition-all ${
-                    selectedColor === color
-                      ? "border-purple-500 scale-110"
-                      : theme === "dark"
-                        ? "border-slate-700 hover:scale-105"
-                        : "border-slate-300 hover:scale-105"
-                  }`}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t("createColumn.placeholder")}
+                className={`w-full rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
+                  theme === "dark"
+                    ? "border-slate-800 bg-slate-950 text-slate-100 placeholder-slate-400 focus:ring-purple-500"
+                    : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
+                }`}
+                required
+              />
             </div>
-          </div>
+            <div>
+              <label
+                className={`mb-2 block text-sm font-medium ${
+                  theme === "dark" ? "text-slate-100" : "text-slate-900"
+                }`}
+              >
+                {t("createColumn.color")}
+              </label>
 
-          <button
-            type="submit"
-            className="w-full py-2 bg-purple-500 text-white rounded-md font-medium hover:bg-purple-600 transition-colors"
-          >
-            {t("createColumn.create")}
-          </button>
+              <div className="grid grid-cols-4 gap-4">
+                {PRESET_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setSelectedColor(color)}
+                    className={`size-12 rounded-lg border-2 transition-all ${
+                      selectedColor === color
+                        ? "border-purple-500 scale-110"
+                        : theme === "dark"
+                          ? "border-slate-700 hover:scale-105"
+                          : "border-slate-300 hover:scale-105"
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-2 bg-purple-500 text-white rounded-md font-medium hover:bg-purple-600 transition-colors"
+            >
+              {t("createColumn.create")}
+            </button>
+          </fieldset>
         </form>
       </DialogContent>
     </Dialog>

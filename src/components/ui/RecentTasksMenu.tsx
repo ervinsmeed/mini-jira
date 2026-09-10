@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import { useAction } from "../../lib/useAction";
 
 type RecentTasksMenuProps = {
   theme: "light" | "dark";
@@ -22,15 +23,16 @@ export default function RecentTasksMenu({
   theme,
   onTaskClick,
 }: RecentTasksMenuProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const recentTasks = useQuery(api.recentTasks.list, {
     limit: 8,
   });
 
   const clearRecentTasks = useMutation(api.recentTasks.clear);
+  const { pending, run } = useAction();
 
   const handleClear = () => {
-    void clearRecentTasks({});
+    void run(() => clearRecentTasks({}));
   };
 
   return (
@@ -66,6 +68,7 @@ export default function RecentTasksMenu({
             <button
               type="button"
               onClick={handleClear}
+              disabled={pending}
               className={`rounded p-1 ${
                 theme === "dark"
                   ? "text-slate-400 hover:bg-slate-800 hover:text-red-400"
@@ -123,7 +126,9 @@ export default function RecentTasksMenu({
                   <span className="truncate">{entry.board.name}</span>
 
                   <span className="shrink-0">
-                    {new Date(entry.viewedAt).toLocaleString()}
+                    {new Date(entry.viewedAt).toLocaleString(
+                      i18n.resolvedLanguage,
+                    )}
                   </span>
                 </div>
               </button>

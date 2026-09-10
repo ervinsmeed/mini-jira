@@ -1,3 +1,6 @@
+import type { FormEvent } from "react";
+import type { Doc } from "../../convex/_generated/dataModel";
+import { useAction } from "../lib/useAction";
 import { useEffect, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -5,8 +8,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-export default function EditWorkspaceModal({ workspace, onClose, theme }: any) {
+export default function EditWorkspaceModal({
+  workspace,
+  onClose,
+  theme,
+}: {
+  workspace: Doc<"workspaces">;
+  onClose: () => void;
+  theme: "light" | "dark";
+}) {
   const { t } = useTranslation();
+  const { pending, run } = useAction();
 
   const [name, setName] = useState(workspace.name ?? "");
   const [description, setDescription] = useState(workspace.description ?? "");
@@ -18,20 +30,21 @@ export default function EditWorkspaceModal({ workspace, onClose, theme }: any) {
     setDescription(workspace.description ?? "");
   }, [workspace._id]);
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    await run(async () => {
+      if (!name.trim()) return;
 
-    if (!name.trim()) return;
+      await updateWorkspace({
+        id: workspace._id,
+        name: name.trim(),
+        description: description.trim(),
+      });
 
-    await updateWorkspace({
-      id: workspace._id,
-      name: name.trim(),
-      description: description.trim(),
+      toast.success(t("editWorkspaceModal.updated"));
+
+      onClose();
     });
-
-    toast.success(t("editWorkspaceModal.updated"));
-
-    onClose();
   };
 
   return (
@@ -50,55 +63,58 @@ export default function EditWorkspaceModal({ workspace, onClose, theme }: any) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="mt-2 space-y-5">
-          <div>
-            <label
-              className={`mb-2 block text-sm font-medium ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
+          <fieldset disabled={pending} className="contents">
+            <div>
+              <label
+                className={`mb-2 block text-sm font-medium ${
+                  theme === "dark" ? "text-slate-300" : "text-slate-700"
+                }`}
+              >
+                {t("editWorkspaceModal.workspaceName")}
+              </label>
+
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
+                  theme === "dark"
+                    ? "border-slate-800 bg-slate-900 text-slate-100 focus:ring-purple-400"
+                    : "border-slate-300 bg-white text-slate-900 focus:ring-purple-500"
+                }`}
+                required
+              />
+            </div>
+
+            <div>
+              <label
+                className={`mb-2 block text-sm font-medium ${
+                  theme === "dark" ? "text-slate-300" : "text-slate-700"
+                }`}
+              >
+                {t("editWorkspaceModal.description")}
+              </label>
+
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                className={`w-full resize-none rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
+                  theme === "dark"
+                    ? "border-slate-800 bg-slate-900 text-slate-100 focus:ring-purple-400"
+                    : "border-slate-300 bg-white text-slate-900 focus:ring-purple-500"
+                }`}
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full rounded-lg bg-purple-500 py-2 text-white transition hover:bg-purple-600"
+              disabled={pending}
             >
-              {t("editWorkspaceModal.workspaceName")}
-            </label>
-
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
-                theme === "dark"
-                  ? "border-slate-800 bg-slate-900 text-slate-100 focus:ring-purple-400"
-                  : "border-slate-300 bg-white text-slate-900 focus:ring-purple-500"
-              }`}
-              required
-            />
-          </div>
-
-          <div>
-            <label
-              className={`mb-2 block text-sm font-medium ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("editWorkspaceModal.description")}
-            </label>
-
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              className={`w-full resize-none rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
-                theme === "dark"
-                  ? "border-slate-800 bg-slate-900 text-slate-100 focus:ring-purple-400"
-                  : "border-slate-300 bg-white text-slate-900 focus:ring-purple-500"
-              }`}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-purple-500 py-2 text-white transition hover:bg-purple-600"
-          >
-            {t("editWorkspaceModal.save")}
-          </button>
+              {t("editWorkspaceModal.save")}
+            </button>
+          </fieldset>
         </form>
       </DialogContent>
     </Dialog>

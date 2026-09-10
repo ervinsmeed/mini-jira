@@ -1,3 +1,5 @@
+import WorkspaceAnalytics from "./ui/WorkspaceAnalytics";
+import QueryBoundary from "./ui/QueryBoundary";
 import { ArrowLeft } from "lucide-react";
 import { useQuery } from "convex/react";
 import { useTranslation } from "react-i18next";
@@ -22,13 +24,13 @@ const STATUS_TRANSLATION_KEYS: Record<string, string> = {
   done: "analytics.status.done",
 };
 
-export default function ProjectAnalytics({
+function ProjectAnalyticsContent({
   board,
   theme,
   can,
   onBack,
 }: ProjectAnalyticsProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const analytics = useQuery(
     api.analytics.getProjectAnalytics,
@@ -120,6 +122,15 @@ export default function ProjectAnalytics({
         </button>
       </header>
 
+      {board.workspaceId && (
+        <QueryBoundary
+          key={board.workspaceId}
+          message={t("analytics.error")}
+          retry={t("common.retry")}
+        >
+          <WorkspaceAnalytics workspaceId={board.workspaceId} />
+        </QueryBoundary>
+      )}
       <main className="space-y-6 py-6">
         <section className="grid gap-4 px-6 sm:grid-cols-2 xl:grid-cols-4">
           {[
@@ -146,7 +157,9 @@ export default function ProjectAnalytics({
             >
               <p className={`text-sm ${secondaryText}`}>{item.label}</p>
 
-              <p className="mt-2 text-3xl font-bold">{item.value}</p>
+              <p className="mt-2 text-3xl font-bold">
+                {item.value.toLocaleString(i18n.resolvedLanguage)}
+              </p>
             </div>
           ))}
         </section>
@@ -174,7 +187,9 @@ export default function ProjectAnalytics({
                       {getLocalizedStatusName(status.name)}
                     </span>
 
-                    <span className="font-semibold">{status.count}</span>
+                    <span className="font-semibold">
+                      {status.count.toLocaleString(i18n.resolvedLanguage)}
+                    </span>
                   </div>
                 ),
               )}
@@ -203,7 +218,9 @@ export default function ProjectAnalytics({
                         : assignee.name}
                     </span>
 
-                    <span className="font-semibold">{assignee.count}</span>
+                    <span className="font-semibold">
+                      {assignee.count.toLocaleString(i18n.resolvedLanguage)}
+                    </span>
                   </div>
                 ),
               )}
@@ -212,5 +229,18 @@ export default function ProjectAnalytics({
         </section>
       </main>
     </div>
+  );
+}
+
+export default function ProjectAnalytics(props: ProjectAnalyticsProps) {
+  const { t } = useTranslation();
+  return (
+    <QueryBoundary
+      key={props.board?._id ?? "none"}
+      message={t("common.actionError")}
+      retry={t("common.retry")}
+    >
+      <ProjectAnalyticsContent {...props} />
+    </QueryBoundary>
   );
 }

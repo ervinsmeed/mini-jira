@@ -1,7 +1,9 @@
+import { actionError } from "../../lib/actionError";
+import { useAction } from "../../lib/useAction";
 import { getColumnLabel } from "../../lib/columnLabel";
 import { useState, useEffect, type CSSProperties, type FormEvent } from "react";
 import { X, GripVertical } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "react-i18next";
@@ -133,6 +135,7 @@ export default function CreateTaskModal({
   theme = "dark",
 }: CreateTaskModalProps) {
   const { t } = useTranslation();
+  const { pending, run } = useAction();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -157,13 +160,31 @@ export default function CreateTaskModal({
   const createTemplate = useMutation(api.taskTemplates.create);
   const removeTemplate = useMutation(api.taskTemplates.remove);
 
-  const taskTemplates: Doc<"taskTemplates">[] =
-    useQuery(api.taskTemplates.list, { boardId }) ?? [];
-  const projectMembers = useQuery(api.boardMembers.list, { boardId }) ?? [];
-  const projectTasks: Doc<"tasks">[] =
-    useQuery(api.tasks.list, { boardId }) ?? [];
-
-  const epics = projectTasks.filter((task) => task.taskType === "epic");
+  const {
+    results: taskTemplates,
+    status: templateStatus,
+    loadMore: loadTemplates,
+  } = usePaginatedQuery(
+    api.tasks.templatesPage,
+    isOpen ? { boardId } : "skip",
+    { initialNumItems: 30 },
+  );
+  const {
+    results: projectMembers,
+    status: memberStatus,
+    loadMore: loadMembers,
+  } = usePaginatedQuery(
+    api.boardMembers.projectMembersPage,
+    isOpen ? { boardId } : "skip",
+    { initialNumItems: 30 },
+  );
+  const {
+    results: epics,
+    status: epicStatus,
+    loadMore: loadEpics,
+  } = usePaginatedQuery(api.tasks.epics, isOpen ? { boardId } : "skip", {
+    initialNumItems: 30,
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -201,86 +222,78 @@ export default function CreateTaskModal({
   };
 
   const handleSaveTemplate = async () => {
-    const trimmedTemplateName = templateName.trim();
+    await run(async () => {
+      const trimmedTemplateName = templateName.trim();
 
-    if (!trimmedTemplateName) {
-      toast.error(
-        t("createTask.templateNameRequired", {
-          defaultValue: "Enter a template name",
-        }),
-      );
+      if (!trimmedTemplateName) {
+        toast.error(
+          t("createTask.templateNameRequired", {
+            defaultValue: "Enter a template name",
+          }),
+        );
 
-      return;
-    }
-
-    setIsSavingTemplate(true);
-
-    try {
-      const createdTemplate = await createTemplate({
-        boardId,
-        name: trimmedTemplateName,
-        title: title.trim() || undefined,
-        description: description.trim() || undefined,
-        priority,
-        storyPoints,
-      });
-
-      setTemplateName("");
-
-      if (createdTemplate) {
-        setSelectedTemplateId(createdTemplate._id);
+        return;
       }
 
-      toast.success(
-        t("createTask.templateCreated", {
-          defaultValue: "Template created",
-        }),
-      );
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : t("createTask.templateCreateError", {
-              defaultValue: "Failed to create template",
-            }),
-      );
-    } finally {
-      setIsSavingTemplate(false);
-    }
+      setIsSavingTemplate(true);
+
+      try {
+        const createdTemplate = await createTemplate({
+          boardId,
+          name: trimmedTemplateName,
+          title: title.trim() || undefined,
+          description: description.trim() || undefined,
+          priority,
+          storyPoints,
+        });
+
+        setTemplateName("");
+
+        if (createdTemplate) {
+          setSelectedTemplateId(createdTemplate._id);
+        }
+
+        toast.success(
+          t("createTask.templateCreated", {
+            defaultValue: "Template created",
+          }),
+        );
+      } catch (error) {
+        toast.error(actionError(error, t));
+      } finally {
+        setIsSavingTemplate(false);
+      }
+    });
   };
 
   const handleDeleteTemplate = async () => {
-    if (!selectedTemplateId) return;
+    await run(async () => {
+      if (!selectedTemplateId) return;
 
-    const confirmed = window.confirm(
-      t("createTask.deleteTemplateQuestion", {
-        defaultValue: "Delete selected template?",
-      }),
-    );
-
-    if (!confirmed) return;
-
-    try {
-      await removeTemplate({
-        id: selectedTemplateId,
-      });
-
-      setSelectedTemplateId("");
-
-      toast.success(
-        t("createTask.templateDeleted", {
-          defaultValue: "Template deleted",
+      const confirmed = window.confirm(
+        t("createTask.deleteTemplateQuestion", {
+          defaultValue: "Delete selected template?",
         }),
       );
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : t("createTask.templateDeleteError", {
-              defaultValue: "Failed to delete template",
-            }),
-      );
-    }
+
+      if (!confirmed) return;
+
+      try {
+        await removeTemplate({
+          id: selectedTemplateId,
+        });
+
+        setSelectedTemplateId("");
+
+        toast.success(
+          t("createTask.templateDeleted", {
+            defaultValue: "Template deleted",
+          }),
+        );
+      } catch (error) {
+        toast.error(actionError(error, t));
+      }
+    });
   };
   const handleAddSubtask = () => {
     setSubtasks([...subtasks, ""]);
@@ -330,36 +343,38 @@ export default function CreateTaskModal({
         completed: false,
       }));
 
-    await createTask({
-      title: title.trim(),
-      description: description.trim(),
-      priority,
-      assigneeId: assigneeId || undefined,
-      taskType,
-      epicId: taskType === "task" ? epicId || undefined : undefined,
-      storyPoints,
-      deadline: deadline
-        ? new Date(`${deadline}T23:59:59`).getTime()
-        : undefined,
-      subtasks: validSubtasks,
-      columnId,
-      boardId,
+    await run(async () => {
+      await createTask({
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        assigneeId: assigneeId || undefined,
+        taskType,
+        epicId: taskType === "task" ? epicId || undefined : undefined,
+        storyPoints,
+        deadline: deadline
+          ? new Date(`${deadline}T23:59:59`).getTime()
+          : undefined,
+        subtasks: validSubtasks,
+        columnId,
+        boardId,
+      });
+
+      setTitle("");
+      setDescription("");
+      setPriority("medium");
+      setAssigneeId("");
+      setTaskType("task");
+      setEpicId("");
+      setStoryPoints(1);
+      setDeadline("");
+      setSubtasks(["", ""]);
+      setColumnId(columns[0]?._id ?? "");
+
+      onClose();
+
+      toast.success(t("createTask.created"));
     });
-
-    setTitle("");
-    setDescription("");
-    setPriority("medium");
-    setAssigneeId("");
-    setTaskType("task");
-    setEpicId("");
-    setStoryPoints(1);
-    setDeadline("");
-    setSubtasks(["", ""]);
-    setColumnId(columns[0]?._id ?? "");
-
-    onClose();
-
-    toast.success(t("createTask.created"));
   };
 
   return (
@@ -376,217 +391,188 @@ export default function CreateTaskModal({
             {t("createTask.title")}
           </DialogTitle>
         </DialogHeader>
+        {memberStatus === "CanLoadMore" && (
+          <button type="button" onClick={() => loadMembers(30)}>
+            {t("members.loadMore")}
+          </button>
+        )}
 
         <form
           onSubmit={handleSubmit}
           className="min-w-0 space-y-6 mt-2 [&>*]:min-w-0"
         >
-          <div
-            className={`min-w-0 rounded-lg border p-3 sm:p-4 ${
-              theme === "dark"
-                ? "border-slate-800 bg-slate-900/50"
-                : "border-slate-200 bg-slate-50"
-            }`}
-          >
-            <label
-              className={`mb-2 block text-sm font-medium ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
+          <fieldset disabled={pending} className="contents">
+            <div
+              className={`min-w-0 rounded-lg border p-3 sm:p-4 ${
+                theme === "dark"
+                  ? "border-slate-800 bg-slate-900/50"
+                  : "border-slate-200 bg-slate-50"
               }`}
             >
-              {t("createTask.template", {
-                defaultValue: "Task template",
-              })}
-            </label>
-
-            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <select
-                value={selectedTemplateId || "none"}
-                onChange={(event) => handleTemplateSelect(event.target.value)}
-                className={`min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none ${
-                  theme === "dark"
-                    ? "border-slate-700 bg-slate-950 text-slate-100"
-                    : "border-slate-300 bg-white text-slate-900"
+              <label
+                className={`mb-2 block text-sm font-medium ${
+                  theme === "dark" ? "text-slate-300" : "text-slate-700"
                 }`}
               >
-                <option value="none">
-                  {t("createTask.noTemplate", {
-                    defaultValue: "Without template",
-                  })}
-                </option>
-
-                {taskTemplates.map((template) => (
-                  <option key={template._id} value={template._id}>
-                    {template.name}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                type="button"
-                onClick={handleDeleteTemplate}
-                disabled={!selectedTemplateId}
-                className={`min-w-0 max-w-full whitespace-normal wrap-anywhere rounded-md border px-3 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                  theme === "dark"
-                    ? "border-red-900 text-red-400 hover:bg-red-950"
-                    : "border-red-200 text-red-600 hover:bg-red-50"
-                }`}
-              >
-                {t("createTask.deleteTemplate", {
-                  defaultValue: "Delete",
+                {templateStatus === "CanLoadMore" && (
+                  <button type="button" onClick={() => loadTemplates(30)}>
+                    {t("pagination.loadMore")}
+                  </button>
+                )}
+                {t("createTask.template", {
+                  defaultValue: "Task template",
                 })}
-              </button>
-            </div>
+              </label>
 
-            <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <select
+                  value={selectedTemplateId || "none"}
+                  onChange={(event) => handleTemplateSelect(event.target.value)}
+                  className={`min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none ${
+                    theme === "dark"
+                      ? "border-slate-700 bg-slate-950 text-slate-100"
+                      : "border-slate-300 bg-white text-slate-900"
+                  }`}
+                >
+                  <option value="none">
+                    {t("createTask.noTemplate", {
+                      defaultValue: "Without template",
+                    })}
+                  </option>
+
+                  {taskTemplates.map((template) => (
+                    <option key={template._id} value={template._id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={handleDeleteTemplate}
+                  disabled={!selectedTemplateId}
+                  className={`min-w-0 max-w-full whitespace-normal wrap-anywhere rounded-md border px-3 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                    theme === "dark"
+                      ? "border-red-900 text-red-400 hover:bg-red-950"
+                      : "border-red-200 text-red-600 hover:bg-red-50"
+                  }`}
+                >
+                  {t("createTask.deleteTemplate", {
+                    defaultValue: "Delete",
+                  })}
+                </button>
+              </div>
+
+              <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <input
+                  type="text"
+                  value={templateName}
+                  onChange={(event) => setTemplateName(event.target.value)}
+                  placeholder={t("createTask.templateNamePlaceholder", {
+                    defaultValue: "Template name, e.g. Bug",
+                  })}
+                  className={`min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 ${
+                    theme === "dark"
+                      ? "border-slate-700 bg-slate-950 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
+                      : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
+                  }`}
+                />
+
+                <button
+                  type="button"
+                  onClick={handleSaveTemplate}
+                  disabled={isSavingTemplate}
+                  className="min-w-0 max-w-full whitespace-normal wrap-anywhere rounded-md bg-purple-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSavingTemplate
+                    ? t("createTask.savingTemplate", {
+                        defaultValue: "Saving...",
+                      })
+                    : t("createTask.saveTemplate", {
+                        defaultValue: "Save template",
+                      })}
+                </button>
+              </div>
+
+              <p
+                className={`mt-2 text-xs ${
+                  theme === "dark" ? "text-slate-500" : "text-slate-500"
+                }`}
+              >
+                {t("createTask.templateHint", {
+                  defaultValue:
+                    "The template saves the current title, description, priority and Story Points.",
+                })}
+              </p>
+            </div>
+            <div>
+              <label
+                className={`block text-sm font-medium mb-2 ${
+                  theme === "dark" ? "text-slate-300" : "text-slate-700"
+                }`}
+              >
+                {t("createTask.taskTitle")}
+              </label>
+
               <input
                 type="text"
-                value={templateName}
-                onChange={(event) => setTemplateName(event.target.value)}
-                placeholder={t("createTask.templateNamePlaceholder", {
-                  defaultValue: "Template name, e.g. Bug",
-                })}
-                className={`min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 ${
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={t("createTask.titlePlaceholder")}
+                className={`min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
                   theme === "dark"
-                    ? "border-slate-700 bg-slate-950 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                    : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
+                    ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
+                    : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
+                }`}
+                required
+              />
+            </div>
+
+            <div>
+              <label
+                className={`block text-sm font-medium mb-2 ${
+                  theme === "dark" ? "text-slate-300" : "text-slate-700"
+                }`}
+              >
+                {t("createTask.description")}
+              </label>
+
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={t("createTask.descriptionPlaceholder")}
+                rows={4}
+                className={`min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition resize-none ${
+                  theme === "dark"
+                    ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
+                    : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
                 }`}
               />
-
-              <button
-                type="button"
-                onClick={handleSaveTemplate}
-                disabled={isSavingTemplate}
-                className="min-w-0 max-w-full whitespace-normal wrap-anywhere rounded-md bg-purple-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSavingTemplate
-                  ? t("createTask.savingTemplate", {
-                      defaultValue: "Saving...",
-                    })
-                  : t("createTask.saveTemplate", {
-                      defaultValue: "Save template",
-                    })}
-              </button>
             </div>
 
-            <p
-              className={`mt-2 text-xs ${
-                theme === "dark" ? "text-slate-500" : "text-slate-500"
-              }`}
-            >
-              {t("createTask.templateHint", {
-                defaultValue:
-                  "The template saves the current title, description, priority and Story Points.",
-              })}
-            </p>
-          </div>
-          <div>
-            <label
-              className={`block text-sm font-medium mb-2 ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("createTask.taskTitle")}
-            </label>
-
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t("createTask.titlePlaceholder")}
-              className={`min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
-                theme === "dark"
-                  ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                  : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-              }`}
-              required
-            />
-          </div>
-
-          <div>
-            <label
-              className={`block text-sm font-medium mb-2 ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("createTask.description")}
-            </label>
-
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t("createTask.descriptionPlaceholder")}
-              rows={4}
-              className={`min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition resize-none ${
-                theme === "dark"
-                  ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                  : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-              }`}
-            />
-          </div>
-
-          <div>
-            <label
-              className={`block text-sm font-medium mb-2 ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("createTask.type")}
-              <span className="block text-xs font-normal opacity-70">
-                {t("hints.epic")}
-              </span>
-            </label>
-
-            <Select
-              value={taskType}
-              onValueChange={(value) => {
-                const newType = value as "epic" | "task";
-
-                setTaskType(newType);
-
-                if (newType === "epic") {
-                  setEpicId("");
-                }
-              }}
-            >
-              <SelectTrigger
-                className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
-                  theme === "dark"
-                    ? "bg-slate-900 border-slate-800 text-slate-100"
-                    : "bg-white border-slate-300 text-slate-900"
-                }`}
-              >
-                <SelectValue placeholder={t("createTask.selectType")} />
-              </SelectTrigger>
-
-              <SelectContent
-                position="popper"
-                className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
-                  theme === "dark"
-                    ? "bg-slate-900 border-slate-800 text-slate-100"
-                    : "bg-white border-slate-200 text-slate-900"
-                }`}
-              >
-                <SelectItem value="task">{t("createTask.task")}</SelectItem>
-                <SelectItem value="epic">{t("createTask.epic")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {taskType === "task" && (
             <div>
               <label
                 className={`block text-sm font-medium mb-2 ${
                   theme === "dark" ? "text-slate-300" : "text-slate-700"
                 }`}
               >
-                {t("createTask.epic")}
+                {t("createTask.type")}
+                <span className="block text-xs font-normal opacity-70">
+                  {t("hints.epic")}
+                </span>
               </label>
 
               <Select
-                value={epicId || "none"}
-                onValueChange={(value) =>
-                  setEpicId(value === "none" ? "" : (value as Id<"tasks">))
-                }
+                value={taskType}
+                onValueChange={(value) => {
+                  const newType = value as "epic" | "task";
+
+                  setTaskType(newType);
+
+                  if (newType === "epic") {
+                    setEpicId("");
+                  }
+                }}
               >
                 <SelectTrigger
                   className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
@@ -595,7 +581,7 @@ export default function CreateTaskModal({
                       : "bg-white border-slate-300 text-slate-900"
                   }`}
                 >
-                  <SelectValue placeholder={t("createTask.selectEpic")} />
+                  <SelectValue placeholder={t("createTask.selectType")} />
                 </SelectTrigger>
 
                 <SelectContent
@@ -606,79 +592,230 @@ export default function CreateTaskModal({
                       : "bg-white border-slate-200 text-slate-900"
                   }`}
                 >
-                  <SelectItem value="none">{t("createTask.noEpic")}</SelectItem>
-
-                  {epics.map((epic) => (
-                    <SelectItem key={epic._id} value={epic._id}>
-                      {epic.title}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="task">{t("createTask.task")}</SelectItem>
+                  <SelectItem value="epic">{t("createTask.epic")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          )}
 
-          <div>
-            <label
-              className={`block text-sm font-medium mb-2 ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("createTask.subtasks")}
-            </label>
-
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <div className="space-y-3">
-                <SortableContext
-                  items={subtasks.map((_, i) => `subtask-${i}`)}
-                  strategy={verticalListSortingStrategy}
+            {taskType === "task" && epicStatus === "CanLoadMore" && (
+              <button type="button" onClick={() => loadEpics(30)}>
+                {t("pagination.loadMore")}
+              </button>
+            )}
+            {taskType === "task" && (
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    theme === "dark" ? "text-slate-300" : "text-slate-700"
+                  }`}
                 >
-                  {subtasks.map((subtask, index) => (
-                    <SortableSubTask
-                      key={index}
-                      subtask={subtask}
-                      index={index}
-                      onRemove={handleRemoveSubtask}
-                      onChange={handleSubtaskChange}
-                      theme={theme}
-                    />
-                  ))}
-                </SortableContext>
+                  {t("createTask.epic")}
+                </label>
 
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    onClick={handleAddSubtask}
-                    className={`min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 border-2 border-dashed rounded-md font-medium transition ${
+                <Select
+                  value={epicId || "none"}
+                  onValueChange={(value) =>
+                    setEpicId(value === "none" ? "" : (value as Id<"tasks">))
+                  }
+                >
+                  <SelectTrigger
+                    className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
                       theme === "dark"
-                        ? "border-slate-800 text-purple-400 hover:bg-slate-900"
-                        : "border-slate-300 text-purple-600 hover:bg-slate-100"
+                        ? "bg-slate-900 border-slate-800 text-slate-100"
+                        : "bg-white border-slate-300 text-slate-900"
                     }`}
                   >
-                    + {t("createTask.addSubtask")}
-                  </button>
-                </div>
-              </div>
-            </DndContext>
-          </div>
+                    <SelectValue placeholder={t("createTask.selectEpic")} />
+                  </SelectTrigger>
 
-          <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
+                  <SelectContent
+                    position="popper"
+                    className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
+                      theme === "dark"
+                        ? "bg-slate-900 border-slate-800 text-slate-100"
+                        : "bg-white border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <SelectItem value="none">
+                      {t("createTask.noEpic")}
+                    </SelectItem>
+
+                    {epics.map((epic) => (
+                      <SelectItem key={epic._id} value={epic._id}>
+                        {epic.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div>
               <label
                 className={`block text-sm font-medium mb-2 ${
                   theme === "dark" ? "text-slate-300" : "text-slate-700"
                 }`}
               >
-                {t("createTask.priority")}
+                {t("createTask.subtasks")}
+              </label>
+
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <div className="space-y-3">
+                  <SortableContext
+                    items={subtasks.map((_, i) => `subtask-${i}`)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {subtasks.map((subtask, index) => (
+                      <SortableSubTask
+                        key={index}
+                        subtask={subtask}
+                        index={index}
+                        onRemove={handleRemoveSubtask}
+                        onChange={handleSubtaskChange}
+                        theme={theme}
+                      />
+                    ))}
+                  </SortableContext>
+
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={handleAddSubtask}
+                      className={`min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 border-2 border-dashed rounded-md font-medium transition ${
+                        theme === "dark"
+                          ? "border-slate-800 text-purple-400 hover:bg-slate-900"
+                          : "border-slate-300 text-purple-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      + {t("createTask.addSubtask")}
+                    </button>
+                  </div>
+                </div>
+              </DndContext>
+            </div>
+
+            <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    theme === "dark" ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
+                  {t("createTask.priority")}
+                </label>
+
+                <Select
+                  value={priority}
+                  onValueChange={(value) => setPriority(value as Priority)}
+                >
+                  <SelectTrigger
+                    className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
+                      theme === "dark"
+                        ? "bg-slate-900 border-slate-800 text-slate-100"
+                        : "bg-white border-slate-300 text-slate-900"
+                    }`}
+                  >
+                    <SelectValue
+                      placeholder={t("createTask.selectPriority")}
+                      className="w-full"
+                    />
+                  </SelectTrigger>
+
+                  <SelectContent
+                    position="popper"
+                    className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
+                      theme === "dark"
+                        ? "bg-slate-900 border-slate-800 text-slate-100"
+                        : "bg-white border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <SelectItem value="high">
+                      <div className="flex items-center space-x-2">
+                        <div className="size-2 rounded-full bg-red-500" />
+                        <span>{t("priority.high")}</span>
+                      </div>
+                    </SelectItem>
+
+                    <SelectItem value="medium">
+                      <div className="flex items-center space-x-2">
+                        <div className="size-2 rounded-full bg-yellow-500" />
+                        <span>{t("priority.medium")}</span>
+                      </div>
+                    </SelectItem>
+
+                    <SelectItem value="low">
+                      <div className="flex items-center space-x-2">
+                        <div className="size-2 rounded-full bg-green-500" />
+                        <span>{t("priority.low")}</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    theme === "dark" ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
+                  {t("createTask.column")}
+                </label>
+                <Select
+                  value={columnId}
+                  onValueChange={(value) => setColumnId(value as Id<"columns">)}
+                >
+                  <SelectTrigger
+                    className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
+                      theme === "dark"
+                        ? "bg-slate-900 border-slate-800 text-slate-100"
+                        : "bg-white border-slate-300 text-slate-900"
+                    }`}
+                  >
+                    <SelectValue
+                      placeholder={t("createTask.selectColumn")}
+                      className="w-full"
+                    />
+                  </SelectTrigger>
+
+                  <SelectContent
+                    position="popper"
+                    className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
+                      theme === "dark"
+                        ? "bg-slate-900 border-slate-800 text-slate-100"
+                        : "bg-white border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    {columns.map((column) => (
+                      <SelectItem key={column._id} value={column._id}>
+                        {getColumnLabel(column.name, t)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <label
+                className={`block text-sm font-medium mb-2 ${
+                  theme === "dark" ? "text-slate-300" : "text-slate-700"
+                }`}
+              >
+                {t("createTask.assignee")}
               </label>
 
               <Select
-                value={priority}
-                onValueChange={(value) => setPriority(value as Priority)}
+                value={assigneeId || "unassigned"}
+                onValueChange={(value) =>
+                  setAssigneeId(
+                    value === "unassigned" ? "" : (value as Id<"users">),
+                  )
+                }
               >
                 <SelectTrigger
                   className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
@@ -687,10 +824,7 @@ export default function CreateTaskModal({
                       : "bg-white border-slate-300 text-slate-900"
                   }`}
                 >
-                  <SelectValue
-                    placeholder={t("createTask.selectPriority")}
-                    className="w-full"
-                  />
+                  <SelectValue placeholder={t("createTask.selectAssignee")} />
                 </SelectTrigger>
 
                 <SelectContent
@@ -701,41 +835,43 @@ export default function CreateTaskModal({
                       : "bg-white border-slate-200 text-slate-900"
                   }`}
                 >
-                  <SelectItem value="high">
-                    <div className="flex items-center space-x-2">
-                      <div className="size-2 rounded-full bg-red-500" />
-                      <span>{t("priority.high")}</span>
-                    </div>
-                  </SelectItem>
+                  <SelectItem value="unassigned">{t("unassigned")}</SelectItem>
 
-                  <SelectItem value="medium">
-                    <div className="flex items-center space-x-2">
-                      <div className="size-2 rounded-full bg-yellow-500" />
-                      <span>{t("priority.medium")}</span>
-                    </div>
-                  </SelectItem>
-
-                  <SelectItem value="low">
-                    <div className="flex items-center space-x-2">
-                      <div className="size-2 rounded-full bg-green-500" />
-                      <span>{t("priority.low")}</span>
-                    </div>
-                  </SelectItem>
+                  {projectMembers.map(
+                    (member: {
+                      _id: Id<"users">;
+                      name: string;
+                      email: string;
+                      roleId: Id<"roles"> | null;
+                      isOwner: boolean;
+                    }) => (
+                      <SelectItem key={member._id} value={member._id}>
+                        {member.name || member.email}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
+            {/* STORY POINTS */}
             <div>
               <label
                 className={`block text-sm font-medium mb-2 ${
                   theme === "dark" ? "text-slate-300" : "text-slate-700"
                 }`}
               >
-                {t("createTask.column")}
+                {t("createTask.storyPoints")}
+                <span className="block text-xs font-normal opacity-70">
+                  {t("hints.storyPoints")}
+                </span>
               </label>
+
               <Select
-                value={columnId}
-                onValueChange={(value) => setColumnId(value as Id<"columns">)}
+                value={storyPoints.toString()}
+                onValueChange={(value) =>
+                  setStoryPoints(Number(value) as StoryPoints)
+                }
               >
                 <SelectTrigger
                   className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
@@ -745,8 +881,7 @@ export default function CreateTaskModal({
                   }`}
                 >
                   <SelectValue
-                    placeholder={t("createTask.selectColumn")}
-                    className="w-full"
+                    placeholder={t("createTask.selectStoryPoints")}
                   />
                 </SelectTrigger>
 
@@ -758,147 +893,49 @@ export default function CreateTaskModal({
                       : "bg-white border-slate-200 text-slate-900"
                   }`}
                 >
-                  {columns.map((column) => (
-                    <SelectItem key={column._id} value={column._id}>
-                      {getColumnLabel(column.name, t)}
+                  {[1, 2, 3, 5, 8, 13, 21].map((points) => (
+                    <SelectItem key={points} value={points.toString()}>
+                      {points} SP
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <div>
-            <label
-              className={`block text-sm font-medium mb-2 ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("createTask.assignee")}
-            </label>
 
-            <Select
-              value={assigneeId || "unassigned"}
-              onValueChange={(value) =>
-                setAssigneeId(
-                  value === "unassigned" ? "" : (value as Id<"users">),
-                )
-              }
-            >
-              <SelectTrigger
-                className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
-                  theme === "dark"
-                    ? "bg-slate-900 border-slate-800 text-slate-100"
-                    : "bg-white border-slate-300 text-slate-900"
+            {/* DEADLINE */}
+            <div>
+              <label
+                className={`block text-sm font-medium mb-2 ${
+                  theme === "dark" ? "text-slate-300" : "text-slate-700"
                 }`}
               >
-                <SelectValue placeholder={t("createTask.selectAssignee")} />
-              </SelectTrigger>
+                {t("createTask.deadline")}
+              </label>
 
-              <SelectContent
-                position="popper"
-                className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
+              <input
+                type="date"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+                className={`min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
                   theme === "dark"
-                    ? "bg-slate-900 border-slate-800 text-slate-100"
-                    : "bg-white border-slate-200 text-slate-900"
+                    ? "bg-slate-900 border-slate-800 text-slate-100 focus:ring-purple-400"
+                    : "bg-white border-slate-300 text-slate-900 focus:ring-purple-500"
                 }`}
-              >
-                <SelectItem value="unassigned">{t("unassigned")}</SelectItem>
+              />
+            </div>
 
-                {projectMembers.map(
-                  (member: {
-                    _id: Id<"users">;
-                    name: string;
-                    email: string;
-                    roleId: Id<"roles"> | null;
-                    isOwner: boolean;
-                  }) => (
-                    <SelectItem key={member._id} value={member._id}>
-                      {member.name || member.email}
-                    </SelectItem>
-                  ),
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* STORY POINTS */}
-          <div>
-            <label
-              className={`block text-sm font-medium mb-2 ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("createTask.storyPoints")}
-              <span className="block text-xs font-normal opacity-70">
-                {t("hints.storyPoints")}
-              </span>
-            </label>
-
-            <Select
-              value={storyPoints.toString()}
-              onValueChange={(value) =>
-                setStoryPoints(Number(value) as StoryPoints)
-              }
-            >
-              <SelectTrigger
-                className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
-                  theme === "dark"
-                    ? "bg-slate-900 border-slate-800 text-slate-100"
-                    : "bg-white border-slate-300 text-slate-900"
-                }`}
-              >
-                <SelectValue placeholder={t("createTask.selectStoryPoints")} />
-              </SelectTrigger>
-
-              <SelectContent
-                position="popper"
-                className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
-                  theme === "dark"
-                    ? "bg-slate-900 border-slate-800 text-slate-100"
-                    : "bg-white border-slate-200 text-slate-900"
-                }`}
-              >
-                {[1, 2, 3, 5, 8, 13, 21].map((points) => (
-                  <SelectItem key={points} value={points.toString()}>
-                    {points} SP
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* DEADLINE */}
-          <div>
-            <label
-              className={`block text-sm font-medium mb-2 ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("createTask.deadline")}
-            </label>
-
-            <input
-              type="date"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              className={`min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
+            <button
+              type="submit"
+              disabled={pending}
+              className={`min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 rounded-lg transition focus:outline-none focus:ring-2 ${
                 theme === "dark"
-                  ? "bg-slate-900 border-slate-800 text-slate-100 focus:ring-purple-400"
-                  : "bg-white border-slate-300 text-slate-900 focus:ring-purple-500"
+                  ? "bg-purple-500 text-white hover:bg-purple-600 focus:ring-purple-400"
+                  : "bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500"
               }`}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className={`min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 rounded-lg transition focus:outline-none focus:ring-2 ${
-              theme === "dark"
-                ? "bg-purple-500 text-white hover:bg-purple-600 focus:ring-purple-400"
-                : "bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500"
-            }`}
-          >
-            {t("createTask.create")}
-          </button>
+            >
+              {t("createTask.create")}
+            </button>
+          </fieldset>
         </form>
       </DialogContent>
     </Dialog>

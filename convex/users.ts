@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import {
   mutation,
   query,
@@ -5,6 +6,7 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { v } from "convex/values";
+import { getParentWorkspaceAccess } from "./lib/workspaceAccess";
 
 export const create = mutation({
   args: {},
@@ -12,7 +14,7 @@ export const create = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
     }
 
     const existingUser = await ctx.db
@@ -23,13 +25,11 @@ export const create = mutation({
     const email = identity.email?.trim().toLowerCase();
 
     if (!email) {
-      throw new Error("Email must be present in Clerk JWT claims (email)");
+      throw new ConvexError({ code: "EMAIL_INVALID" });
     }
 
     if (identity.emailVerified !== true) {
-      throw new Error(
-        "Email must be verified in Clerk JWT claims (email_verified: true)",
-      );
+      throw new ConvexError({ code: "EMAIL_INVALID" });
     }
 
     const name =
@@ -50,12 +50,12 @@ export const create = mutation({
     );
 
     if (emailConflict) {
-      throw new Error("Email is already associated with another user");
+      throw new ConvexError({ code: "EMAIL_INVALID" });
     }
 
     if (existingUser) {
-      if (existingUser.email !== email || existingUser.name !== name) {
-        await ctx.db.patch("users", existingUser._id, { email, name });
+      if (existingUser.email !== email) {
+        await ctx.db.patch("users", existingUser._id, { email });
       }
 
       return existingUser._id;
@@ -74,7 +74,7 @@ async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
 
   if (!identity) {
-    throw new Error("Not authenticated");
+    throw new ConvexError({ code: "NOT_AUTHENTICATED" });
   }
 
   const user = await ctx.db
@@ -83,11 +83,90 @@ async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
     .unique();
 
   if (!user) {
-    throw new Error("User not found");
+    throw new ConvexError({ code: "NOT_FOUND" });
   }
 
   return user;
 }
+
+export const myRoles = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    const result: {
+      id: string;
+      workspace: string;
+      project?: string;
+      role?: string;
+      owner: boolean;
+    }[] = [];
+    const owned = await ctx.db
+      .query("workspaces")
+      .withIndex("by_owner", (q) => q.eq("ownerId", user._id))
+      .collect();
+    const memberships = await ctx.db
+      .query("workspaceMembers")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+    for (const workspace of owned)
+      result.push({
+        id: workspace._id,
+        workspace: workspace.name,
+        owner: true,
+      });
+    for (const member of memberships) {
+      const workspace = await ctx.db.get("workspaces", member.workspaceId);
+      if (!workspace || workspace.ownerId === user._id) continue;
+      const role = member.roleId
+        ? await ctx.db.get("roles", member.roleId)
+        : null;
+      result.push({
+        id: workspace._id,
+        workspace: workspace.name,
+        owner: false,
+        role: role?.workspaceId === workspace._id ? role.name : undefined,
+      });
+    }
+    const ownedBoards = await ctx.db
+      .query("boards")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+    const projects = await ctx.db
+      .query("boardMembers")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+    const boardIds = new Set([
+      ...ownedBoards.map((b) => b._id),
+      ...projects.map((m) => m.boardId),
+    ]);
+    for (const id of boardIds) {
+      const board = await ctx.db.get("boards", id);
+      if (!board) continue;
+      const access = await getParentWorkspaceAccess(ctx, user._id, board);
+      if (!access) continue;
+      const owner = access.isWorkspaceOwner || board.userId === user._id;
+      const member = projects.find((m) => m.boardId === id);
+      const role = member?.roleId
+        ? await ctx.db.get("roles", member.roleId)
+        : null;
+      if (
+        !owner &&
+        (!role ||
+          role.workspaceId !== board.workspaceId ||
+          !role.permissions.includes("project.view"))
+      )
+        continue;
+      result.push({
+        id,
+        workspace: access.workspace?.name ?? "",
+        project: board.name,
+        owner,
+        role: owner ? undefined : role?.name,
+      });
+    }
+    return result;
+  },
+});
 
 export const getCurrent = query({
   handler: async (ctx) => {

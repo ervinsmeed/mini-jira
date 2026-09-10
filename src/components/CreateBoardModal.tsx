@@ -1,3 +1,6 @@
+import type { FormEvent } from "react";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
+import { useAction } from "../lib/useAction";
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -11,39 +14,47 @@ export default function CreateBoardModal({
   onBoardCreated,
   workspaceId,
   theme,
-}: any) {
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onBoardCreated: (board: Doc<"boards">) => void;
+  workspaceId?: Id<"workspaces">;
+  theme: "light" | "dark";
+}) {
   const { t } = useTranslation();
+  const { pending, run } = useAction();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
   const createBoard = useMutation(api.boards.create);
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    await run(async () => {
+      const trimmedName = name.trim();
+      const trimmedDescription = description.trim();
 
-    const trimmedName = name.trim();
-    const trimmedDescription = description.trim();
+      if (!trimmedName) return;
 
-    if (!trimmedName) return;
-
-    const board = await createBoard({
-      name: trimmedName,
-      description: trimmedDescription || undefined,
-      workspaceId: workspaceId ?? undefined,
-    });
-
-    setName("");
-    setDescription("");
-
-    onClose();
-    onBoardCreated(board);
-
-    toast.success(
-      t("createBoardModal.created", {
+      const board = await createBoard({
         name: trimmedName,
-      }),
-    );
+        description: trimmedDescription || undefined,
+        workspaceId: workspaceId ?? undefined,
+      });
+
+      setName("");
+      setDescription("");
+
+      onClose();
+      onBoardCreated(board);
+
+      toast.success(
+        t("createBoardModal.created", {
+          name: trimmedName,
+        }),
+      );
+    });
   };
 
   return (
@@ -62,61 +73,64 @@ export default function CreateBoardModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 mt-2">
-          <div>
-            <label
-              className={`block text-sm font-medium mb-2 ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
-            >
-              {t("createBoardModal.boardName")}
-            </label>
+          <fieldset disabled={pending} className="contents">
+            <div>
+              <label
+                className={`block text-sm font-medium mb-2 ${
+                  theme === "dark" ? "text-slate-300" : "text-slate-700"
+                }`}
+              >
+                {t("createBoardModal.boardName")}
+              </label>
 
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t("createBoardModal.placeholder")}
-              className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 transition ${
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t("createBoardModal.placeholder")}
+                className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 transition ${
+                  theme === "dark"
+                    ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
+                    : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
+                }`}
+                required
+              />
+            </div>
+
+            <div>
+              <label
+                className={`block text-sm font-medium mb-2 ${
+                  theme === "dark" ? "text-slate-300" : "text-slate-700"
+                }`}
+              >
+                {t("createBoardModal.description")}
+              </label>
+
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={t("createBoardModal.descriptionPlaceholder")}
+                rows={4}
+                className={`w-full px-3 py-2 rounded-lg border resize-none focus:outline-none focus:ring-2 transition ${
+                  theme === "dark"
+                    ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
+                    : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
+                }`}
+              />
+            </div>
+
+            <button
+              type="submit"
+              className={`w-full py-2 rounded-lg transition focus:outline-none focus:ring-2 ${
                 theme === "dark"
-                  ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                  : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
+                  ? "bg-purple-500 text-white hover:bg-purple-600 focus:ring-purple-400"
+                  : "bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500"
               }`}
-              required
-            />
-          </div>
-
-          <div>
-            <label
-              className={`block text-sm font-medium mb-2 ${
-                theme === "dark" ? "text-slate-300" : "text-slate-700"
-              }`}
+              disabled={pending}
             >
-              {t("createBoardModal.description")}
-            </label>
-
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t("createBoardModal.descriptionPlaceholder")}
-              rows={4}
-              className={`w-full px-3 py-2 rounded-lg border resize-none focus:outline-none focus:ring-2 transition ${
-                theme === "dark"
-                  ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                  : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-              }`}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className={`w-full py-2 rounded-lg transition focus:outline-none focus:ring-2 ${
-              theme === "dark"
-                ? "bg-purple-500 text-white hover:bg-purple-600 focus:ring-purple-400"
-                : "bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500"
-            }`}
-          >
-            {t("createBoardModal.create")}
-          </button>
+              {t("createBoardModal.create")}
+            </button>
+          </fieldset>
         </form>
       </DialogContent>
     </Dialog>
