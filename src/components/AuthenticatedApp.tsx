@@ -307,11 +307,7 @@ export default function AuthenticatedApp() {
       >
         <Suspense
           fallback={
-            <div
-              className={`flex h-screen flex-1 items-center justify-center ${
-                theme === "dark" ? "bg-slate-950" : "bg-slate-50"
-              }`}
-            >
+            <div className="flex h-screen flex-1 items-center justify-center bg-background">
               <div className="size-10 animate-spin rounded-full border-4 border-slate-600 border-t-purple-500" />
             </div>
           }

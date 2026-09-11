@@ -62,6 +62,60 @@
 [data-theme="light"] .task-card__epic-badge {
   background-color: var(--accent);
 }
+
+.task-card {
+  --task-card-background: #020617;
+  --task-card-hover: #0f172a;
+  --task-card-border: #1e293b;
+
+  background-color: var(--task-card-background);
+  border-top-color: var(--task-card-border);
+  border-right-color: var(--task-card-border);
+  border-bottom-color: var(--task-card-border);
+}
+
+.task-card:hover {
+  background-color: var(--task-card-hover);
+}
+
+[data-theme="light"] .task-card {
+  --task-card-background: var(--card);
+  --task-card-hover: var(--background);
+  --task-card-border: #e2e8f0;
+}
+
+.task-card__title {
+  color: var(--card-foreground);
+}
+
+.task-card__description,
+.task-card__subtasks,
+.task-card__drag-handle,
+.task-card__deadline {
+  color: var(--muted-foreground);
+}
+
+.task-card__drag-handle:hover {
+  color: var(--card-foreground);
+}
+
+.task-card__deadline--overdue {
+  color: #ef4444;
+}
+
+[data-theme="light"] .task-card__deadline--overdue {
+  color: var(--danger-text);
+}
+
+.task-card__points {
+  background-color: #1e293b;
+  color: #d8b4fe;
+}
+
+[data-theme="light"] .task-card__points {
+  background-color: var(--secondary);
+  color: var(--primary-hover);
+}
 /* --- Default - Dark Theme --- */
 body {
   @apply bg-slate-950 text-slate-100;

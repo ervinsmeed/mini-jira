@@ -4,6 +4,9 @@ import { useTaskPages } from "../lib/useTaskPages";
 import { useEffect, useState } from "react";
 import RecentTasksMenu from "./ui/RecentTasksMenu";
 import { Plus } from "lucide-react";
+import SelectField from "./ui/SelectField";
+
+import BoardFilters from "./BoardFilters";
 import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
 import {
   closestCenter,
@@ -378,54 +381,27 @@ function BoardContent({ board, theme, can }: BoardProps) {
   };
   if (!board?._id) {
     return (
-      <div
-        className={`flex h-full flex-1 items-center justify-center transition-colors ${
-          theme === "dark" ? "bg-slate-900" : "bg-slate-100"
-        }`}
-      >
+      <div className="flex h-full flex-1 items-center justify-center bg-background transition-colors">
         <div className="text-center">
-          <h2
-            className={`mb-2 text-2xl font-semibold transition-colors ${
-              theme === "dark" ? "text-slate-100" : "text-slate-900"
-            }`}
-          >
+          <h2 className="mb-2 text-2xl font-semibold text-foreground transition-colors">
             {t("board.welcome")}
           </h2>
 
-          <p className={theme === "dark" ? "text-slate-400" : "text-slate-500"}>
-            {t("board.getStarted")}
-          </p>
+          <p className="text-muted-foreground">{t("board.getStarted")}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className={`flex min-w-0 flex-1 flex-col transition-colors ${
-        theme === "dark" ? "bg-slate-950" : "bg-slate-50"
-      }`}
-    >
-      <div
-        className={`flex flex-wrap items-center justify-between gap-4 border-b p-6 transition-colors ${
-          theme === "dark" ? "border-slate-800" : "border-slate-200 bg-sidebar"
-        }`}
-      >
+    <div className="flex min-w-0 flex-1 flex-col bg-background transition-colors">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border bg-sidebar p-6 transition-colors">
         <div className="min-w-0">
-          <h1
-            className={`break-words text-2xl font-bold transition-colors ${
-              theme === "dark" ? "text-slate-100" : "text-slate-900"
-            }`}
-          >
+          <h1 className="break-words text-2xl font-bold text-foreground transition-colors">
             {board.name}
           </h1>
-
           {board.description && (
-            <p
-              className={`mt-1 max-w-2xl whitespace-pre-wrap break-words text-sm transition-colors ${
-                theme === "dark" ? "text-slate-400" : "text-slate-600"
-              }`}
-            >
+            <p className="mt-1 max-w-2xl whitespace-pre-wrap break-words text-sm text-muted-foreground transition-colors">
               {board.description}
             </p>
           )}
@@ -443,13 +419,9 @@ function BoardContent({ board, theme, can }: BoardProps) {
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder={t("board.searchTasks")}
-            className={`w-56 rounded-md border px-3 py-2 text-sm outline-none transition ${
-              theme === "dark"
-                ? "border-slate-700 bg-slate-900 text-slate-100 placeholder-slate-500 focus:border-purple-500"
-                : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-purple-500"
-            }`}
+            className="w-56 rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary"
           />
-          <select
+          <SelectField
             value={sortBy}
             onChange={(event) =>
               setSortBy(
@@ -462,191 +434,32 @@ function BoardContent({ board, theme, can }: BoardProps) {
                   | "priority",
               )
             }
-            className={`rounded-md border px-3 py-2 text-sm outline-none ${
-              theme === "dark"
-                ? "border-slate-700 bg-slate-900 text-slate-100"
-                : "border-slate-300 bg-white text-slate-900"
-            }`}
-          >
-            <option value="manual">{t("board.manualOrder")}</option>
-            <option value="title">{t("board.sortTitle")}</option>
-            <option value="deadline">{t("board.sortDeadline")}</option>
-            <option value="created">{t("board.sortCreated")}</option>
-            <option value="storyPoints">{t("board.sortStoryPoints")}</option>
-            <option value="priority">{t("board.sortPriority")}</option>
-          </select>
+            data={[
+              { label: t("board.manualOrder"), value: "manual" },
+              { label: t("board.sortTitle"), value: "title" },
+              { label: t("board.sortDeadline"), value: "deadline" },
+              { label: t("board.sortCreated"), value: "created" },
+              { label: t("board.sortStoryPoints"), value: "storyPoints" },
+              { label: t("board.sortPriority"), value: "priority" },
+            ]}
+          />
 
-          <details className="relative">
-            <summary
-              className={`cursor-pointer list-none rounded-md border px-4 py-2 text-sm font-medium ${
-                theme === "dark"
-                  ? "border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
-                  : "border-slate-300 bg-white text-slate-900 hover:bg-slate-100"
-              }`}
-            >
-              {t("board.filters", { defaultValue: "Filters" })}
-            </summary>
-
-            <div
-              className={`absolute right-0 top-12 z-50 grid w-72 gap-3 rounded-lg border p-4 shadow-xl ${
-                theme === "dark"
-                  ? "border-slate-700 bg-slate-900"
-                  : "border-slate-300 bg-white"
-              }`}
-              data={[
-                {
-                  label: 'tut kakoto text',
-                  value: 'value1'
-                }
-              ]}
-            >
-              <select
-                value={statusFilter}
-                onChange={(event) =>
-                  setStatusFilter(event.target.value as Id<"columns"> | "all")
-                }
-                className={`w-full rounded-md border px-3 py-2 text-sm outline-none ${
-                  theme === "dark"
-                    ? "border-slate-700 bg-slate-950 text-slate-100"
-                    : "border-slate-300 bg-white text-slate-900"
-                }`}
-              >
-                <option value="all">
-                  {t("board.allStatuses", { defaultValue: "All statuses" })}
-                </option>
-                {columns.map((column) => (
-                  <option key={column._id} value={column._id}>
-                    {column.name}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={assigneeFilter}
-                onChange={(event) =>
-                  setAssigneeFilter(
-                    event.target.value as Id<"users"> | "all" | "unassigned",
-                  )
-                }
-                className={`w-full rounded-md border px-3 py-2 text-sm outline-none ${
-                  theme === "dark"
-                    ? "border-slate-700 bg-slate-950 text-slate-100"
-                    : "border-slate-300 bg-white text-slate-900"
-                }`}
-              >
-                <option value="all">
-                  {t("board.allAssignees", {
-                    defaultValue: "All assignees",
-                  })}
-                </option>
-                <option value="unassigned">
-                  {t("board.unassigned", { defaultValue: "Unassigned" })}
-                </option>
-                {projectMembers.map((member) => (
-                  <option key={member._id} value={member._id}>
-                    {member.name || member.email}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={storyPointsFilter}
-                onChange={(event) =>
-                  setStoryPointsFilter(
-                    event.target.value as
-                      "all" | "1" | "2" | "3" | "5" | "8" | "13" | "21",
-                  )
-                }
-                className={`w-full rounded-md border px-3 py-2 text-sm outline-none ${
-                  theme === "dark"
-                    ? "border-slate-700 bg-slate-950 text-slate-100"
-                    : "border-slate-300 bg-white text-slate-900"
-                }`}
-              >
-                <option value="all">
-                  {t("board.allStoryPoints", {
-                    defaultValue: "All Story Points",
-                  })}
-                </option>
-                {[1, 2, 3, 5, 8, 13, 21].map((points) => (
-                  <option key={points} value={String(points)}>
-                    {points} SP
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={deadlineFilter}
-                onChange={(event) =>
-                  setDeadlineFilter(
-                    event.target.value as
-                      "all" | "overdue" | "today" | "upcoming" | "none",
-                  )
-                }
-                className={`w-full rounded-md border px-3 py-2 text-sm outline-none ${
-                  theme === "dark"
-                    ? "border-slate-700 bg-slate-950 text-slate-100"
-                    : "border-slate-300 bg-white text-slate-900"
-                }`}
-              >
-                <option value="all">
-                  {t("board.allDeadlines", {
-                    defaultValue: "All deadlines",
-                  })}
-                </option>
-                <option value="overdue">
-                  {t("board.overdue", { defaultValue: "Overdue" })}
-                </option>
-                <option value="today">
-                  {t("board.today", { defaultValue: "Today" })}
-                </option>
-                <option value="upcoming">
-                  {t("board.upcoming", { defaultValue: "Upcoming" })}
-                </option>
-                <option value="none">
-                  {t("board.noDeadline", { defaultValue: "No deadline" })}
-                </option>
-              </select>
-
-              <select
-                value={priorityFilter}
-                onChange={(event) =>
-                  setPriorityFilter(
-                    event.target.value as "all" | "high" | "medium" | "low",
-                  )
-                }
-                className={`w-full rounded-md border px-3 py-2 text-sm outline-none ${
-                  theme === "dark"
-                    ? "border-slate-700 bg-slate-950 text-slate-100"
-                    : "border-slate-300 bg-white text-slate-900"
-                }`}
-              >
-                <option value="all">{t("board.allPriorities")}</option>
-                <option value="high">{t("priority.high")}</option>
-                <option value="medium">{t("priority.medium")}</option>
-                <option value="low">{t("priority.low")}</option>
-              </select>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter("all");
-                  setAssigneeFilter("all");
-                  setStoryPointsFilter("all");
-                  setDeadlineFilter("all");
-                  setPriorityFilter("all");
-                }}
-                className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  theme === "dark"
-                    ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
-                disabled={pending}
-              >
-                {t("board.clearFilters", { defaultValue: "Clear filters" })}
-              </button>
-            </div>
-          </details>
+          <BoardFilters
+            theme={theme}
+            pending={pending}
+            columns={columns}
+            projectMembers={projectMembers}
+            statusFilter={statusFilter}
+            assigneeFilter={assigneeFilter}
+            storyPointsFilter={storyPointsFilter}
+            deadlineFilter={deadlineFilter}
+            priorityFilter={priorityFilter}
+            setStatusFilter={setStatusFilter}
+            setAssigneeFilter={setAssigneeFilter}
+            setStoryPointsFilter={setStoryPointsFilter}
+            setDeadlineFilter={setDeadlineFilter}
+            setPriorityFilter={setPriorityFilter}
+          />
           {can("task.create") && (
             <button
               type="button"
