@@ -110,13 +110,9 @@ export default function TaskCard({
       ref={setNodeRef}
       style={style}
       onClick={onClick}
-      className={`cursor-pointer rounded-md border border-l-6 p-6 shadow-sm transition-all ${getPriorityColor(
+      className={`task-card cursor-pointer rounded-md border border-l-6 p-6 shadow-sm transition-all ${getPriorityColor(
         task.priority,
       )} ${
-        theme === "dark"
-          ? "border-slate-800 bg-slate-950 hover:bg-slate-900"
-          : "border-slate-200 bg-white hover:bg-slate-50"
-      } ${
         isDragging || isSortableDragging
           ? "rotate-1 scale-105 opacity-50 shadow-lg"
           : ""
@@ -136,24 +132,14 @@ export default function TaskCard({
 
       {task.taskType === "epic" && (
         <div className="mb-2">
-          <span
-            className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ${
-              theme === "dark"
-                ? "bg-purple-500/20 text-purple-300"
-                : "bg-purple-100 text-purple-700"
-            }`}
-          >
+          <span className="task-card__epic-badge inline-flex rounded-md px-2 py-1 text-xs font-semibold">
             <span title={t("hints.epic")}>{t("createTask.epic")}</span>
           </span>
         </div>
       )}
 
       <div className="mb-2 flex items-start justify-between gap-2">
-        <h4
-          className={`min-w-0 flex-1 break-words font-semibold leading-tight ${
-            theme === "dark" ? "text-slate-100" : "text-slate-900"
-          }`}
-        >
+        <h4 className="task-card__title min-w-0 flex-1 break-words font-semibold leading-tight">
           {task.title}
         </h4>
 
@@ -194,36 +180,21 @@ export default function TaskCard({
       </div>
 
       {task.description && (
-        <p
-          className={`mb-2 line-clamp-2 text-sm! leading-4 ${
-            theme === "dark" ? "text-slate-400" : "text-slate-500"
-          }`}
-        >
+        <p className="task-card__description mb-2 line-clamp-2 text-sm! leading-4">
           {task.description}
         </p>
       )}
 
       {epic && (
         <div className="mb-2">
-          <span
-            className={`text-xs font-medium ${
-              theme === "dark" ? "text-purple-300" : "text-purple-700"
-            }`}
-          >
+          <span className="task-card__epic-reference text-xs font-medium">
             {t("createTask.epic")}: {epic.title}
           </span>
         </div>
       )}
-
       {task.storyPoints !== undefined && (
         <div className="mb-3">
-          <span
-            className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold ${
-              theme === "dark"
-                ? "bg-slate-800 text-purple-300"
-                : "bg-slate-100 text-purple-700"
-            }`}
-          >
+          <span className="task-card__points inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold">
             <span title={t("hints.storyPoints")}>{task.storyPoints} SP</span>
           </span>
         </div>
@@ -231,12 +202,8 @@ export default function TaskCard({
 
       {task.deadline !== undefined && (
         <div
-          className={`mb-3 flex items-center gap-2 text-xs font-medium ${
-            isOverdue
-              ? "text-red-500"
-              : theme === "dark"
-                ? "text-slate-400"
-                : "text-slate-600"
+          className={`task-card__deadline mb-3 flex items-center gap-2 text-xs font-medium ${
+            isOverdue ? "task-card__deadline--overdue" : ""
           }`}
         >
           <CalendarDays className="size-4" />
@@ -246,11 +213,7 @@ export default function TaskCard({
 
       {totalSubtasks > 0 && (
         <>
-          <p
-            className={`mb-2 text-sm! font-medium ${
-              theme === "dark" ? "text-slate-400" : "text-slate-500"
-            }`}
-          >
+          <p className="task-card__subtasks mb-2 text-sm! font-medium">
             {t("taskCard.subtasksProgress", {
               completed: completedSubtasks,
               total: totalSubtasks,
@@ -266,11 +229,7 @@ export default function TaskCard({
           {...attributes}
           {...listeners}
           aria-label={t("taskCard.move")}
-          className={`mt-2 inline-flex cursor-grab p-1 active:cursor-grabbing ${
-            theme === "dark"
-              ? "text-slate-400 hover:text-slate-100"
-              : "text-slate-500 hover:text-slate-900"
-          }`}
+          className="task-card__drag-handle mt-2 inline-flex cursor-grab p-1 active:cursor-grabbing"
           onClick={(event) => event.stopPropagation()}
         >
           <GripVertical className="size-4" />

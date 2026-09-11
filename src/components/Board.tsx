@@ -493,6 +493,12 @@ function BoardContent({ board, theme, can }: BoardProps) {
                   ? "border-slate-700 bg-slate-900"
                   : "border-slate-300 bg-white"
               }`}
+              data={[
+                {
+                  label: 'tut kakoto text',
+                  value: 'value1'
+                }
+              ]}
             >
               <select
                 value={statusFilter}

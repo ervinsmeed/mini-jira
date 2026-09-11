@@ -3,7 +3,7 @@ import QueryBoundary from "./ui/QueryBoundary";
 import { ArrowLeft } from "lucide-react";
 import { useQuery } from "convex/react";
 import { useTranslation } from "react-i18next";
-
+import { getColumnLabel } from "../lib/columnLabel";
 import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import AnalyticsCharts from "./ui/AnalyticsCharts";
@@ -13,15 +13,6 @@ type ProjectAnalyticsProps = {
   theme: "light" | "dark";
   can: (permission: string) => boolean;
   onBack: () => void;
-};
-
-const STATUS_TRANSLATION_KEYS: Record<string, string> = {
-  backlog: "analytics.status.backlog",
-  "to do": "analytics.status.toDo",
-  "in progress": "analytics.status.inProgress",
-  review: "analytics.status.review",
-  testing: "analytics.status.testing",
-  done: "analytics.status.done",
 };
 
 function ProjectAnalyticsContent({
@@ -41,18 +32,7 @@ function ProjectAnalyticsContent({
       : "skip",
   );
 
-  const getLocalizedStatusName = (name: string) => {
-    const normalizedName = name.trim().toLowerCase();
-    const translationKey = STATUS_TRANSLATION_KEYS[normalizedName];
-
-    if (!translationKey) {
-      return name;
-    }
-
-    return t(translationKey, {
-      defaultValue: name,
-    });
-  };
+  const getLocalizedStatusName = (name: string) => getColumnLabel(name, t);
 
   if (!can("analytics.view")) {
     return (

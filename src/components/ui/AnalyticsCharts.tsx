@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { useTranslation } from "react-i18next";
-
+import { getColumnLabel } from "../../lib/columnLabel";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 type StatusData = {
@@ -48,15 +48,6 @@ const PRIORITY_COLORS: Record<string, string> = {
   low: "#22c55e",
 };
 
-const STATUS_TRANSLATION_KEYS: Record<string, string> = {
-  backlog: "analytics.status.backlog",
-  "to do": "analytics.status.toDo",
-  "in progress": "analytics.status.inProgress",
-  review: "analytics.status.review",
-  testing: "analytics.status.testing",
-  done: "analytics.status.done",
-};
-
 export default function AnalyticsCharts({
   analytics,
   theme,
@@ -79,17 +70,10 @@ export default function AnalyticsCharts({
     borderRadius: "8px",
     color: textColor,
   };
-
-  const localizedStatusData = analytics.byStatus.map((status) => {
-    const normalizedName = status.name.trim().toLowerCase();
-    const translationKey = STATUS_TRANSLATION_KEYS[normalizedName];
-
-    return {
-      ...status,
-      name: translationKey ? t(translationKey) : status.name,
-    };
-  });
-
+  const localizedStatusData = analytics.byStatus.map((status) => ({
+    ...status,
+    name: getColumnLabel(status.name, t),
+  }));
   const localizedPriorityData = analytics.byPriority.map((priority) => ({
     ...priority,
     name: t(`analytics.priority.${priority.priority}`, {

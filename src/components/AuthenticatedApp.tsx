@@ -61,7 +61,7 @@ export default function AuthenticatedApp() {
     status: workspaceListStatus,
     loadMore: loadWorkspaces,
   } = usePaginatedQuery(
-    api.workspaces.workspacesPage,
+    api.lib.directoryQueries.workspacesPage,
     {},
     { initialNumItems: 30 },
   );
@@ -84,7 +84,7 @@ export default function AuthenticatedApp() {
     status: boardListStatus,
     loadMore: loadBoards,
   } = usePaginatedQuery(
-    api.boards.projectsPage,
+    api.lib.directoryQueries.projectsPage,
     { workspaceId: displayWorkspace?._id },
     { initialNumItems: 30 },
   );

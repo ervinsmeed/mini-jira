@@ -1,7 +1,7 @@
 import { Authenticated, Unauthenticated } from "convex/react";
 import AuthenticatedApp from "./components/AuthenticatedApp";
 import { Toaster } from "sonner";
-import AuthPage from "./components/AuthPage"; // проверь точный путь к файлу!
+import AuthPage from "./components/AuthPage";
 export default function App() {
   return (
     <>
