@@ -1,13 +1,19 @@
-import QueryBoundary from "./ui/QueryBoundary";
-import { useAction } from "../lib/useAction";
-import { useTaskPages } from "../lib/useTaskPages";
+import QueryBoundary from "../ui/QueryBoundary";
+
+import { useAction } from "../../lib/useAction";
+import { useTaskPages } from "../../lib/useTaskPages";
+
 import { useEffect, useState } from "react";
-import RecentTasksMenu from "./ui/RecentTasksMenu";
+
+import RecentTasksMenu from "../ui/RecentTasksMenu";
+
 import { Plus } from "lucide-react";
-import SelectField from "./ui/SelectField";
+
 import BoardBulkActions from "./BoardBulkActions";
 import BoardFilters from "./BoardFilters";
+import SelectField from "../ui/SelectField";
 import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
+
 import {
   closestCenter,
   DndContext,
@@ -17,23 +23,28 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+
 import { useTranslation } from "react-i18next";
+
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+
 import {
   SortableContext,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
+
 import { UserButton } from "@clerk/clerk-react";
-import { api } from "../../convex/_generated/api";
-import type { Doc, Id } from "../../convex/_generated/dataModel";
 
-import Column from "./ui/Column";
+import { api } from "../../../convex/_generated/api";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
+
+import Column from "./Column";
 import TaskCard from "./TaskCard";
-import TaskModal from "./ui/TaskModal";
-import CreateTaskModal from "./ui/CreateTaskModal";
-import CreateColumnModal from "./ui/CreateColumnModal";
-import EditColumnModal from "./EditColumnModal";
 
+import TaskModal from "../ui/TaskModal";
+import CreateTaskModal from "../ui/CreateTaskModal";
+import CreateColumnModal from "../ui/CreateColumnModal";
+import EditColumnModal from "../EditColumnModal";
 type BoardProps = {
   board: Doc<"boards"> | null;
   theme: "light" | "dark";

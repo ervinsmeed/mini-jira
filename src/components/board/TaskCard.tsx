@@ -1,11 +1,11 @@
 import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CalendarDays, GripVertical, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import type { Doc } from "../../convex/_generated/dataModel";
+import type { Doc } from "../../../convex/_generated/dataModel";
 
 type TaskCardProps = {
   task: Doc<"tasks">;
@@ -20,7 +20,7 @@ type TaskCardProps = {
   theme: "light" | "dark";
 };
 
-import { Progress } from "./ui/progress";
+import { Progress } from "../ui/progress";
 
 export default function TaskCard({
   task,

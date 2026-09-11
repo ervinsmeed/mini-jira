@@ -1,4 +1,4 @@
-import type { Id } from "../../convex/_generated/dataModel";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "react-i18next";
 type BoardBulkActionsProps = {
   theme: "light" | "dark";

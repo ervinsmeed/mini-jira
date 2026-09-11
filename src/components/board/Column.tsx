@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { api } from "../../../convex/_generated/api";
-import TaskCard from "../TaskCard";
+import TaskCard from "./TaskCard";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
 type ColumnProps = {
@@ -38,9 +38,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./dropdown-menu";
+} from "../ui/dropdown-menu";
 
-import { Button } from "./Button";
+import { Button } from "../ui/Button";
 
 import {
   Dialog,
@@ -51,7 +51,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "./Dialog";
+} from "../ui/Dialog";
 
 export default function Column({
   column,

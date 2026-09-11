@@ -7,7 +7,7 @@ import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import RolesModal from "./RolesModal";
 import Sidebar from "./Sidebar";
-import Board from "./Board";
+import Board from "./board/Board";
 
 import CreateBoardModal from "./CreateBoardModal";
 import CreateWorkspaceModal from "./CreateWorkspaceModal";
