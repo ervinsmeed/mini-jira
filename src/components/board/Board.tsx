@@ -456,7 +456,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
           />
 
           <BoardFilters
-            theme={theme}
             pending={pending}
             columns={columns}
             projectMembers={projectMembers}

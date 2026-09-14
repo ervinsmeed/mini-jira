@@ -23,7 +23,6 @@ type FilterMember = {
 };
 
 type BoardFiltersProps = {
-  theme: "light" | "dark";
   pending: boolean;
   columns: FilterColumn[];
   projectMembers: FilterMember[];
@@ -39,7 +38,6 @@ type BoardFiltersProps = {
   setPriorityFilter: (value: PriorityFilter) => void;
 };
 export default function BoardFilters({
-  theme,
   pending,
   columns,
   projectMembers,
@@ -58,23 +56,11 @@ export default function BoardFilters({
 
   return (
     <details className="relative">
-      <summary
-        className={`cursor-pointer list-none rounded-md border px-4 py-2 text-sm font-medium ${
-          theme === "dark"
-            ? "border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
-            : "border-slate-300 bg-white text-slate-900 hover:bg-slate-100"
-        }`}
-      >
+      <summary className="cursor-pointer list-none rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
         {t("board.filters", { defaultValue: "Filters" })}
       </summary>
 
-      <div
-        className={`absolute right-0 top-12 z-50 grid w-72 gap-3 rounded-lg border p-4 shadow-xl ${
-          theme === "dark"
-            ? "border-slate-700 bg-slate-900"
-            : "border-slate-300 bg-white"
-        }`}
-      >
+      <div className="absolute right-0 top-12 z-50 grid w-72 gap-3 rounded-lg border border-border bg-card p-4 shadow-xl">
         <SelectField
           value={statusFilter}
           onChange={(event) =>
@@ -203,11 +189,7 @@ export default function BoardFilters({
             setDeadlineFilter("all");
             setPriorityFilter("all");
           }}
-          className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-            theme === "dark"
-              ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
-              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-          }`}
+          className="rounded-md bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/80"
           disabled={pending}
         >
           {t("board.clearFilters", { defaultValue: "Clear filters" })}
