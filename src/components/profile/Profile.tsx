@@ -8,11 +8,10 @@ import { useTranslation } from "react-i18next";
 import { api } from "../../../convex/_generated/api";
 
 type ProfileProps = {
-  theme: "light" | "dark";
   onBack: () => void;
 };
 
-export default function Profile({ theme, onBack }: ProfileProps) {
+export default function Profile({ onBack }: ProfileProps) {
   const { t } = useTranslation();
 
   const assignedRoles = useQuery(api.users.myRoles);
@@ -61,45 +60,22 @@ export default function Profile({ theme, onBack }: ProfileProps) {
   };
 
   const inputClass =
-    theme === "dark"
-      ? "border-slate-700 bg-slate-900 text-slate-100 placeholder-slate-500 focus:border-purple-500"
-      : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-purple-500";
-
+    "border-border bg-input text-foreground placeholder:text-muted-foreground focus:border-primary";
   if (currentUser === undefined) {
     return (
-      <div
-        className={`flex h-screen items-center justify-center ${
-          theme === "dark" ? "bg-slate-950" : "bg-slate-50"
-        }`}
-      >
+      <div className="flex h-screen items-center justify-center bg-background text-foreground">
         <div className="size-10 animate-spin rounded-full border-4 border-slate-600 border-t-purple-500" />
       </div>
     );
   }
 
   return (
-    <div
-      className={`min-h-screen ${
-        theme === "dark"
-          ? "bg-slate-950 text-slate-100"
-          : "bg-slate-50 text-slate-900"
-      }`}
-    >
-      <header
-        className={`flex items-center justify-between border-b px-6 py-4 ${
-          theme === "dark"
-            ? "border-slate-800 bg-slate-950"
-            : "border-slate-200 bg-white"
-        }`}
-      >
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4">
         <div>
           <h1 className="text-2xl font-bold">{t("profile.title")}</h1>
 
-          <p
-            className={`mt-1 text-sm ${
-              theme === "dark" ? "text-slate-400" : "text-slate-500"
-            }`}
-          >
+          <p className="mt-1 text-sm text-muted-foreground">
             {t("profile.subtitle")}
           </p>
         </div>
@@ -107,11 +83,7 @@ export default function Profile({ theme, onBack }: ProfileProps) {
         <button
           type="button"
           onClick={onBack}
-          className={`flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium ${
-            theme === "dark"
-              ? "border-slate-700 bg-slate-900 hover:bg-slate-800"
-              : "border-slate-300 bg-white hover:bg-slate-100"
-          }`}
+          className="flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
         >
           <ArrowLeft className="size-4" />
           {t("navigation.backToBoard")}
@@ -139,11 +111,7 @@ export default function Profile({ theme, onBack }: ProfileProps) {
         </section>
         <form
           onSubmit={handleSubmit}
-          className={`rounded-xl border p-6 shadow-sm ${
-            theme === "dark"
-              ? "border-slate-800 bg-slate-900"
-              : "border-slate-200 bg-white"
-          }`}
+          className="rounded-xl border border-border bg-card p-6 text-foreground shadow-sm"
         >
           <div className="mb-8 flex items-center gap-4">
             {avatar ? (
@@ -163,11 +131,7 @@ export default function Profile({ theme, onBack }: ProfileProps) {
                 {currentUser.name}
               </h2>
 
-              <p
-                className={`truncate text-sm ${
-                  theme === "dark" ? "text-slate-400" : "text-slate-500"
-                }`}
-              >
+              <p className="truncate text-sm text-muted-foreground">
                 {currentUser.email}
               </p>
             </div>

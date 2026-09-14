@@ -313,7 +313,7 @@ export default function AuthenticatedApp() {
           }
         >
           {currentView === "profile" ? (
-            <Profile theme={theme} onBack={() => setCurrentView("board")} />
+            <Profile onBack={() => setCurrentView("board")} />
           ) : currentView === "analytics" && displayBoard ? (
             <ProjectAnalytics
               board={displayBoard}
