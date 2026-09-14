@@ -4,7 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CalendarDays, GripVertical, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
+import { useEffect, useState } from "react";
 import type { Doc } from "../../../convex/_generated/dataModel";
 
 type TaskCardProps = {
@@ -64,7 +64,17 @@ export default function TaskCard({
 
   const totalSubtasks = task.subtasks ? task.subtasks.length : 0;
 
-  const isOverdue = task.deadline !== undefined && task.deadline < Date.now();
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(Date.now());
+    }, 60_000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const isOverdue = task.deadline !== undefined && task.deadline < now;
 
   const formattedDeadline = task.deadline
     ? new Date(task.deadline).toLocaleDateString(i18n.resolvedLanguage)
