@@ -1,4 +1,4 @@
-import HistoryValue from "../ui/HistoryValue";
+import HistoryValue from "./HistoryValue";
 import { actionError } from "../../lib/actionError";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { getColumnLabel } from "../../lib/columnLabel";

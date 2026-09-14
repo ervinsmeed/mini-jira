@@ -5,7 +5,7 @@ import { useTaskPages } from "../../lib/useTaskPages";
 
 import { useEffect, useState } from "react";
 
-import RecentTasksMenu from "../ui/RecentTasksMenu";
+import RecentTasksMenu from "./RecentTasksMenu";
 
 import { Plus } from "lucide-react";
 
