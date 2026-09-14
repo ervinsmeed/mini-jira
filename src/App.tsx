@@ -1,7 +1,7 @@
 import { Authenticated, Unauthenticated } from "convex/react";
 import AuthenticatedApp from "./components/AuthenticatedApp";
 import { Toaster } from "sonner";
-import AuthPage from "./components/AuthPage";
+import AuthPage from "./components/auth/AuthPage";
 export default function App() {
   return (
     <>
