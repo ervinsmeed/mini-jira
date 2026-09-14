@@ -18,7 +18,7 @@ import WorkspaceMembersModal from "./modals/WorkspaceMembersModal";
 import { api } from "../../convex/_generated/api";
 
 const ProjectAnalytics = lazy(() => import("./analytics/ProjectAnalytics"));
-const Profile = lazy(() => import("./Profile"));
+const Profile = lazy(() => import("./profile/Profile"));
 export default function AuthenticatedApp() {
   const { t } = useTranslation();
   const [currentBoard, setCurrentBoard] = useState<Doc<"boards"> | null>(null);

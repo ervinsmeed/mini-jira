@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { actionError } from "../lib/actionError";
+import { actionError } from "../../lib/actionError";
 import { ArrowLeft, UserRound } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 
 type ProfileProps = {
   theme: "light" | "dark";
