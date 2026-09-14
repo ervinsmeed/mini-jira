@@ -1,7 +1,7 @@
 import type { Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "react-i18next";
+
 type BoardBulkActionsProps = {
-  theme: "light" | "dark";
   selectedCount: number;
   pending: boolean;
   canUpdateTask: boolean;
@@ -33,26 +33,19 @@ export default function BoardBulkActions({
   onAssigneeChange,
   onPriorityChange,
   onDelete,
-  theme,
   onClearSelection,
 }: BoardBulkActionsProps) {
   const { t } = useTranslation();
 
+  const selectClassName =
+    "rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground outline-none";
+
   return (
-    <div
-      className={`mx-6 mb-2 flex flex-wrap items-center gap-3 rounded-lg border p-3 ${
-        theme === "dark"
-          ? "border-slate-800 bg-slate-900"
-          : "border-slate-200 bg-white"
-      }`}
-    >
-      <span
-        className={`text-sm font-semibold ${
-          theme === "dark" ? "text-slate-100" : "text-slate-900"
-        }`}
-      >
+    <div className="mx-6 mb-2 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3">
+      <span className="text-sm font-semibold text-foreground">
         {t("board.selected")} {selectedCount}
       </span>
+
       {canUpdateTask && (
         <>
           <select
@@ -63,11 +56,7 @@ export default function BoardBulkActions({
               onStatusChange(event.target.value);
               event.target.value = "";
             }}
-            className={`rounded-md border px-3 py-2 text-sm ${
-              theme === "dark"
-                ? "border-slate-700 bg-slate-950 text-slate-100"
-                : "border-slate-300 bg-white text-slate-900"
-            }`}
+            className={selectClassName}
           >
             <option value="" disabled>
               {t("board.column")}
@@ -88,11 +77,7 @@ export default function BoardBulkActions({
               onAssigneeChange(event.target.value);
               event.target.value = "";
             }}
-            className={`rounded-md border px-3 py-2 text-sm ${
-              theme === "dark"
-                ? "border-slate-700 bg-slate-950 text-slate-100"
-                : "border-slate-300 bg-white text-slate-900"
-            }`}
+            className={selectClassName}
           >
             <option value="" disabled>
               {t("createTask.assignee")}
@@ -115,11 +100,7 @@ export default function BoardBulkActions({
               onPriorityChange(event.target.value);
               event.target.value = "";
             }}
-            className={`rounded-md border px-3 py-2 text-sm ${
-              theme === "dark"
-                ? "border-slate-700 bg-slate-950 text-slate-100"
-                : "border-slate-300 bg-white text-slate-900"
-            }`}
+            className={selectClassName}
           >
             <option value="" disabled>
               {t("board.priority")}
@@ -131,6 +112,7 @@ export default function BoardBulkActions({
           </select>
         </>
       )}
+
       {canDeleteTask && (
         <button
           type="button"
@@ -145,11 +127,7 @@ export default function BoardBulkActions({
       <button
         type="button"
         onClick={onClearSelection}
-        className={`rounded-md px-3 py-2 text-sm font-medium ${
-          theme === "dark"
-            ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
-            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-        }`}
+        className="rounded-md bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80"
         disabled={pending}
       >
         {t("board.clearSelection")}

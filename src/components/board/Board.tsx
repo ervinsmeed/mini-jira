@@ -488,7 +488,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
       </div>
       {canSelectTasks && selectedTaskIds.length > 0 && (
         <BoardBulkActions
-          theme={theme}
           selectedCount={selectedTaskIds.length}
           pending={pending}
           canUpdateTask={canUpdateTask}
