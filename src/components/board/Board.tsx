@@ -1,7 +1,7 @@
 import QueryBoundary from "../ui/QueryBoundary";
 
-import { useAction } from "../../lib/useAction";
-import { useTaskPages } from "../../lib/useTaskPages";
+import { useAction } from "../../hooks/useAction";
+import { useTaskPages } from "../../hooks/useTaskPages";
 
 import { useEffect, useState } from "react";
 

@@ -1,4 +1,4 @@
-import { useAction } from "../../lib/useAction";
+import { useAction } from "../../hooks/useAction";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";

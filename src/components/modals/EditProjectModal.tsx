@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import type { Doc } from "../../../convex/_generated/dataModel";
-import { useAction } from "../../lib/useAction";
+import { useAction } from "../../hooks/useAction";
 
 import { useEffect, useState } from "react";
 import { useMutation } from "convex/react";

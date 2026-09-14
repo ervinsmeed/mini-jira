@@ -1,4 +1,4 @@
-import { useAction } from "../../lib/useAction";
+import { useAction } from "../../hooks/useAction";
 import { getColumnLabel } from "../../lib/columnLabel";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 

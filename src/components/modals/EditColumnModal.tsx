@@ -6,7 +6,7 @@ import { api } from "../../../convex/_generated/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { useAction } from "../../lib/useAction";
+import { useAction } from "../../hooks/useAction";
 
 const PRESET_COLORS = [
   "#22d3ee",

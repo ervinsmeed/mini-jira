@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
-import { useAction } from "../../lib/useAction";
+import { useAction } from "../../hooks/useAction";
 
 type RecentTasksMenuProps = {
   theme: "light" | "dark";

@@ -1,5 +1,5 @@
 import { getColumnLabel } from "../../lib/columnLabel";
-import { useAction } from "../../lib/useAction";
+import { useAction } from "../../hooks/useAction";
 import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {

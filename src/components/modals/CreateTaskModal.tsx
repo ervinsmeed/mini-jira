@@ -1,5 +1,5 @@
 import { actionError } from "../../lib/actionError";
-import { useAction } from "../../lib/useAction";
+import { useAction } from "../../hooks/useAction";
 import { getColumnLabel } from "../../lib/columnLabel";
 import { useState, useEffect, type CSSProperties, type FormEvent } from "react";
 import { X, GripVertical } from "lucide-react";

@@ -1,6 +1,6 @@
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { actionError } from "../../lib/actionError";
-import { useAction } from "../../lib/useAction";
+import { useAction } from "../../hooks/useAction";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { useMutation, useQuery, usePaginatedQuery } from "convex/react";

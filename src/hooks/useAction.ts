@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { actionError } from "./actionError";
+import { actionError } from "../lib/actionError";
 
 export function useAction() {
   const lock = useRef(false);
