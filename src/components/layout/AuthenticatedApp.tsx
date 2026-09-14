@@ -1,24 +1,24 @@
-import type { Doc, Id } from "../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { actionError } from "../lib/actionError";
+import { actionError } from "../../lib/actionError";
 import { useUser } from "@clerk/clerk-react";
 import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
 import { lazy, Suspense, useEffect, useState } from "react";
-import RolesModal from "./modals/RolesModal";
-import Sidebar from "./workspace/Sidebar";
-import Board from "./board/Board";
+import RolesModal from "../modals/RolesModal";
+import Sidebar from "../workspace/Sidebar";
+import Board from "../board/Board";
 
-import CreateBoardModal from "./modals/CreateBoardModal";
-import CreateWorkspaceModal from "./modals/CreateWorkspaceModal";
-import EditProjectModal from "./modals/EditProjectModal";
-import EditWorkspaceModal from "./modals/EditWorkspaceModal";
-import ProjectMembersModal from "./modals/ProjectMembersModal";
-import WorkspaceMembersModal from "./modals/WorkspaceMembersModal";
-import { api } from "../../convex/_generated/api";
+import CreateBoardModal from "../modals/CreateBoardModal";
+import CreateWorkspaceModal from "../modals/CreateWorkspaceModal";
+import EditProjectModal from "../modals/EditProjectModal";
+import EditWorkspaceModal from "../modals/EditWorkspaceModal";
+import ProjectMembersModal from "../modals/ProjectMembersModal";
+import WorkspaceMembersModal from "../modals/WorkspaceMembersModal";
+import { api } from "../../../convex/_generated/api";
 
-const ProjectAnalytics = lazy(() => import("./analytics/ProjectAnalytics"));
-const Profile = lazy(() => import("./profile/Profile"));
+const ProjectAnalytics = lazy(() => import("../analytics/ProjectAnalytics"));
+const Profile = lazy(() => import("../profile/Profile"));
 export default function AuthenticatedApp() {
   const { t } = useTranslation();
   const [currentBoard, setCurrentBoard] = useState<Doc<"boards"> | null>(null);
