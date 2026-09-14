@@ -6,7 +6,6 @@ import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useAction } from "../../hooks/useAction";
 
 type RecentTasksMenuProps = {
-  theme: "light" | "dark";
   onTaskClick: (task: Doc<"tasks">) => void;
 };
 type RecentTaskEntry = {
@@ -19,10 +18,7 @@ type RecentTaskEntry = {
   };
 };
 
-export default function RecentTasksMenu({
-  theme,
-  onTaskClick,
-}: RecentTasksMenuProps) {
+export default function RecentTasksMenu({ onTaskClick }: RecentTasksMenuProps) {
   const { t, i18n } = useTranslation();
   const recentTasks = useQuery(api.recentTasks.list, {
     limit: 8,
@@ -37,30 +33,14 @@ export default function RecentTasksMenu({
 
   return (
     <details className="relative">
-      <summary
-        className={`flex cursor-pointer list-none items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium ${
-          theme === "dark"
-            ? "border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
-            : "border-slate-300 bg-white text-slate-900 hover:bg-slate-100"
-        }`}
-      >
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
         <Clock3 className="size-4" />
         {t("recentTasks.button")}
       </summary>
 
-      <div
-        className={`absolute right-0 top-12 z-50 w-80 rounded-lg border p-3 shadow-xl ${
-          theme === "dark"
-            ? "border-slate-700 bg-slate-900"
-            : "border-slate-300 bg-white"
-        }`}
-      >
+      <div className="absolute right-0 top-12 z-50 w-80 rounded-lg border border-border bg-card p-3 shadow-xl">
         <div className="mb-3 flex items-center justify-between">
-          <h3
-            className={`text-sm font-semibold ${
-              theme === "dark" ? "text-slate-100" : "text-slate-900"
-            }`}
-          >
+          <h3 className="text-sm font-semibold text-foreground">
             {t("recentTasks.title")}
           </h3>
 
@@ -69,11 +49,7 @@ export default function RecentTasksMenu({
               type="button"
               onClick={handleClear}
               disabled={pending}
-              className={`rounded p-1 ${
-                theme === "dark"
-                  ? "text-slate-400 hover:bg-slate-800 hover:text-red-400"
-                  : "text-slate-500 hover:bg-slate-100 hover:text-red-500"
-              }`}
+              className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-500"
               title={t("recentTasks.clear")}
             >
               <Trash2 className="size-4" />
@@ -82,19 +58,11 @@ export default function RecentTasksMenu({
         </div>
 
         {recentTasks === undefined ? (
-          <p
-            className={`py-4 text-center text-sm ${
-              theme === "dark" ? "text-slate-400" : "text-slate-500"
-            }`}
-          >
+          <p className="py-4 text-center text-sm text-muted-foreground">
             {t("recentTasks.loading")}
           </p>
         ) : recentTasks.length === 0 ? (
-          <p
-            className={`py-4 text-center text-sm ${
-              theme === "dark" ? "text-slate-400" : "text-slate-500"
-            }`}
-          >
+          <p className="py-4 text-center text-sm text-muted-foreground">
             {t("recentTasks.empty")}
           </p>
         ) : (
@@ -104,25 +72,13 @@ export default function RecentTasksMenu({
                 key={entry.recentTaskId}
                 type="button"
                 onClick={() => onTaskClick(entry.task)}
-                className={`w-full rounded-md border p-3 text-left transition-colors ${
-                  theme === "dark"
-                    ? "border-slate-700 bg-slate-950 hover:bg-slate-800"
-                    : "border-slate-200 bg-slate-50 hover:bg-slate-100"
-                }`}
+                className="w-full rounded-md border border-border bg-input p-3 text-left transition-colors hover:bg-muted"
               >
-                <div
-                  className={`truncate text-sm font-semibold ${
-                    theme === "dark" ? "text-slate-100" : "text-slate-900"
-                  }`}
-                >
+                <div className="truncate text-sm font-semibold text-foreground">
                   {entry.task.title}
                 </div>
 
-                <div
-                  className={`mt-1 flex items-center justify-between gap-3 text-xs ${
-                    theme === "dark" ? "text-slate-400" : "text-slate-500"
-                  }`}
-                >
+                <div className="mt-1 flex items-center justify-between gap-3 text-xs text-muted-foreground">
                   <span className="truncate">{entry.board.name}</span>
 
                   <span className="shrink-0">

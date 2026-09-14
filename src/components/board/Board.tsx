@@ -424,7 +424,7 @@ function BoardContent({ board, theme, can }: BoardProps) {
               {t("members.loadMore")}
             </button>
           )}
-          <RecentTasksMenu theme={theme} onTaskClick={handleTaskClick} />
+          <RecentTasksMenu onTaskClick={handleTaskClick} />
           <input
             type="text"
             value={searchQuery}
