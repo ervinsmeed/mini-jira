@@ -6,7 +6,7 @@ import { useUser } from "@clerk/clerk-react";
 import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import RolesModal from "./modals/RolesModal";
-import Sidebar from "./Sidebar";
+import Sidebar from "./workspace/Sidebar";
 import Board from "./board/Board";
 
 import CreateBoardModal from "./modals/CreateBoardModal";

@@ -1,5 +1,5 @@
-import { useAction } from "../lib/useAction";
-import type { Doc, Id } from "../../convex/_generated/dataModel";
+import { useAction } from "../../lib/useAction";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 
@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import type { DragEndEvent } from "@dnd-kit/core";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { useTranslation } from "react-i18next";
 import {
   DndContext,
