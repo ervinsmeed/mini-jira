@@ -195,7 +195,7 @@ export default function TaskModal({
 
   const totalSubtasks = task.subtasks ? task.subtasks.length : 0;
 
-  const isOverdue = task.deadline !== undefined && task.deadline < Date.now();
+  const isOverdue = task.deadline !== undefined && task.deadline < now;
 
   const formattedDeadline = task.deadline
     ? new Date(task.deadline).toLocaleDateString(i18n.resolvedLanguage)
