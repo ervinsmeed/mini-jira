@@ -1,12 +1,12 @@
-import type { Doc, Id } from "../../convex/_generated/dataModel";
-import { actionError } from "../lib/actionError";
-import { useAction } from "../lib/useAction";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import { actionError } from "../../lib/actionError";
+import { useAction } from "../../lib/useAction";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { useMutation, usePaginatedQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog";
 
 type Permission =
   | "project.view"

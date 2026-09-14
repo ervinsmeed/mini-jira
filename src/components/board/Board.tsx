@@ -41,10 +41,10 @@ import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import Column from "./Column";
 import TaskCard from "./TaskCard";
 
-import TaskModal from "../ui/TaskModal";
-import CreateTaskModal from "../ui/CreateTaskModal";
-import CreateColumnModal from "../ui/CreateColumnModal";
-import EditColumnModal from "../EditColumnModal";
+import TaskModal from "../modals/TaskModal";
+import CreateTaskModal from "../modals/CreateTaskModal";
+import CreateColumnModal from "../modals/CreateColumnModal";
+import EditColumnModal from "../modals/EditColumnModal";
 type BoardProps = {
   board: Doc<"boards"> | null;
   theme: "light" | "dark";

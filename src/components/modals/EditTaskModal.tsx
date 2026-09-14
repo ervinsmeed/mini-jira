@@ -1,12 +1,12 @@
-import { useAction } from "../lib/useAction";
-import { getColumnLabel } from "../lib/columnLabel";
+import { useAction } from "../../lib/useAction";
+import { getColumnLabel } from "../../lib/columnLabel";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 
 import { GripVertical, X } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 
-import { api } from "../../convex/_generated/api";
-import type { Doc, Id } from "../../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -29,7 +29,7 @@ import {
 
 import { CSS } from "@dnd-kit/utilities";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog";
 
 import {
   Select,
@@ -37,7 +37,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "../ui/select";
 
 import { toast } from "sonner";
 

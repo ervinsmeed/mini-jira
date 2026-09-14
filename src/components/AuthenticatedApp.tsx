@@ -5,16 +5,16 @@ import { actionError } from "../lib/actionError";
 import { useUser } from "@clerk/clerk-react";
 import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
 import { lazy, Suspense, useEffect, useState } from "react";
-import RolesModal from "./RolesModal";
+import RolesModal from "./modals/RolesModal";
 import Sidebar from "./Sidebar";
 import Board from "./board/Board";
 
-import CreateBoardModal from "./CreateBoardModal";
-import CreateWorkspaceModal from "./CreateWorkspaceModal";
-import EditProjectModal from "./EditProjectModal";
-import EditWorkspaceModal from "./EditWorkspaceModal";
-import ProjectMembersModal from "./ProjectMembersModal";
-import WorkspaceMembersModal from "./WorkspaceMembersModal";
+import CreateBoardModal from "./modals/CreateBoardModal";
+import CreateWorkspaceModal from "./modals/CreateWorkspaceModal";
+import EditProjectModal from "./modals/EditProjectModal";
+import EditWorkspaceModal from "./modals/EditWorkspaceModal";
+import ProjectMembersModal from "./modals/ProjectMembersModal";
+import WorkspaceMembersModal from "./modals/WorkspaceMembersModal";
 import { api } from "../../convex/_generated/api";
 
 const ProjectAnalytics = lazy(() => import("./ProjectAnalytics"));

@@ -1,22 +1,24 @@
 import type { FormEvent } from "react";
-import type { Doc } from "../../convex/_generated/dataModel";
-import { useAction } from "../lib/useAction";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import { useAction } from "../../lib/useAction";
 import { useState } from "react";
 import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
+import { api } from "../../../convex/_generated/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-export default function CreateWorkspaceModal({
+export default function CreateBoardModal({
   isOpen,
   onClose,
-  onWorkspaceCreated,
+  onBoardCreated,
+  workspaceId,
   theme,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onWorkspaceCreated: (workspace: Doc<"workspaces">) => void;
+  onBoardCreated: (board: Doc<"boards">) => void;
+  workspaceId?: Id<"workspaces">;
   theme: "light" | "dark";
 }) {
   const { t } = useTranslation();
@@ -25,29 +27,33 @@ export default function CreateWorkspaceModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
-  const createWorkspace = useMutation(api.workspaces.create);
+  const createBoard = useMutation(api.boards.create);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     await run(async () => {
-      if (!name.trim()) return;
+      const trimmedName = name.trim();
+      const trimmedDescription = description.trim();
 
-      const workspace = await createWorkspace({
-        name: name.trim(),
-        description: description.trim() || undefined,
+      if (!trimmedName) return;
+
+      const board = await createBoard({
+        name: trimmedName,
+        description: trimmedDescription || undefined,
+        workspaceId: workspaceId ?? undefined,
       });
-
-      toast.success(
-        t("createWorkspaceModal.created", {
-          name,
-        }),
-      );
 
       setName("");
       setDescription("");
 
       onClose();
-      onWorkspaceCreated(workspace);
+      onBoardCreated(board);
+
+      toast.success(
+        t("createBoardModal.created", {
+          name: trimmedName,
+        }),
+      );
     });
   };
 
@@ -62,7 +68,7 @@ export default function CreateWorkspaceModal({
       >
         <DialogHeader>
           <DialogTitle className="text-xl! font-semibold">
-            {t("createWorkspaceModal.title")}
+            {t("createBoardModal.title")}
           </DialogTitle>
         </DialogHeader>
 
@@ -74,14 +80,14 @@ export default function CreateWorkspaceModal({
                   theme === "dark" ? "text-slate-300" : "text-slate-700"
                 }`}
               >
-                {t("createWorkspaceModal.workspaceName")}
+                {t("createBoardModal.boardName")}
               </label>
 
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={t("createWorkspaceModal.namePlaceholder")}
+                placeholder={t("createBoardModal.placeholder")}
                 className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 transition ${
                   theme === "dark"
                     ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
@@ -97,15 +103,15 @@ export default function CreateWorkspaceModal({
                   theme === "dark" ? "text-slate-300" : "text-slate-700"
                 }`}
               >
-                {t("createWorkspaceModal.description")}
+                {t("createBoardModal.description")}
               </label>
 
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder={t("createWorkspaceModal.descriptionPlaceholder")}
+                placeholder={t("createBoardModal.descriptionPlaceholder")}
                 rows={4}
-                className={`w-full resize-none px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 transition ${
+                className={`w-full px-3 py-2 rounded-lg border resize-none focus:outline-none focus:ring-2 transition ${
                   theme === "dark"
                     ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
                     : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
@@ -122,7 +128,7 @@ export default function CreateWorkspaceModal({
               }`}
               disabled={pending}
             >
-              {t("createWorkspaceModal.create")}
+              {t("createBoardModal.create")}
             </button>
           </fieldset>
         </form>

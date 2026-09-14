@@ -27,7 +27,7 @@ import {
 } from "@dnd-kit/sortable";
 
 import { CSS } from "@dnd-kit/utilities";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./Dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog";
 
 import {
   Select,
@@ -35,7 +35,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./select";
+} from "../ui/select";
 
 import { toast } from "sonner";
 

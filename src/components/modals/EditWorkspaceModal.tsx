@@ -1,10 +1,10 @@
 import type { FormEvent } from "react";
-import type { Doc } from "../../convex/_generated/dataModel";
-import { useAction } from "../lib/useAction";
+import type { Doc } from "../../../convex/_generated/dataModel";
+import { useAction } from "../../lib/useAction";
 import { useEffect, useState } from "react";
 import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
+import { api } from "../../../convex/_generated/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 

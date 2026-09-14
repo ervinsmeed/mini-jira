@@ -1,9 +1,9 @@
+import type { Doc } from "../../../convex/_generated/dataModel";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useMutation } from "convex/react";
-import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./Dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useAction } from "../../lib/useAction";
@@ -19,51 +19,41 @@ const PRESET_COLORS = [
   "#10b981",
 ];
 
-type CreateColumnModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  boardId: Id<"boards">;
-  theme: "light" | "dark";
-};
-
-export default function CreateColumnModal({
-  isOpen,
+export default function EditColumnModal({
+  column,
   onClose,
-  boardId,
   theme,
-}: CreateColumnModalProps) {
+}: {
+  column: Doc<"columns">;
+  onClose: () => void;
+  theme: "light" | "dark";
+}) {
   const { t } = useTranslation();
   const { pending, run } = useAction();
-  const [name, setName] = useState("");
-  const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0]);
+  const [name, setName] = useState(column.name);
+  const [selectedColor, setSelectedColor] = useState(column.color);
 
-  const createColumn = useMutation(api.columns.create);
+  const updateColumn = useMutation(api.columns.update);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!name.trim()) return;
+
     await run(async () => {
-      await createColumn({
+      await updateColumn({
+        id: column._id,
         name: name.trim(),
         color: selectedColor,
-        boardId,
       });
 
-      setName("");
-      setSelectedColor(PRESET_COLORS[0]);
       onClose();
-      toast.success(t("createColumn.created"));
+      toast.success(t("editColumn.updated"));
     });
   };
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
+    <Dialog open={true} onOpenChange={onClose}>
       <DialogContent
         className={`max-w-md border ${
           theme === "dark"
@@ -72,7 +62,7 @@ export default function CreateColumnModal({
         }`}
       >
         <DialogHeader>
-          <DialogTitle>{t("createColumn.title")}</DialogTitle>
+          <DialogTitle>{t("editColumn.title")}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -83,14 +73,14 @@ export default function CreateColumnModal({
                   theme === "dark" ? "text-slate-100" : "text-slate-900"
                 }`}
               >
-                {t("createColumn.columnName")}
+                {t("editColumn.columnName")}
               </label>
 
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={t("createColumn.placeholder")}
+                placeholder={t("editColumn.placeholder")}
                 className={`w-full rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
                   theme === "dark"
                     ? "border-slate-800 bg-slate-950 text-slate-100 placeholder-slate-400 focus:ring-purple-500"
@@ -99,13 +89,14 @@ export default function CreateColumnModal({
                 required
               />
             </div>
+
             <div>
               <label
                 className={`mb-2 block text-sm font-medium ${
                   theme === "dark" ? "text-slate-100" : "text-slate-900"
                 }`}
               >
-                {t("createColumn.color")}
+                {t("editColumn.color")}
               </label>
 
               <div className="grid grid-cols-4 gap-4">
@@ -131,7 +122,7 @@ export default function CreateColumnModal({
               type="submit"
               className="w-full py-2 bg-purple-500 text-white rounded-md font-medium hover:bg-purple-600 transition-colors"
             >
-              {t("createColumn.create")}
+              {t("editColumn.update")}
             </button>
           </fieldset>
         </form>
