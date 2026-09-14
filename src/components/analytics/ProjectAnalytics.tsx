@@ -1,12 +1,12 @@
-import WorkspaceAnalytics from "./ui/WorkspaceAnalytics";
-import QueryBoundary from "./ui/QueryBoundary";
+import WorkspaceAnalytics from "./WorkspaceAnalytics";
+import QueryBoundary from "../ui/QueryBoundary";
 import { ArrowLeft } from "lucide-react";
 import { useQuery } from "convex/react";
 import { useTranslation } from "react-i18next";
-import { getColumnLabel } from "../lib/columnLabel";
-import { api } from "../../convex/_generated/api";
-import type { Doc, Id } from "../../convex/_generated/dataModel";
-import AnalyticsCharts from "./ui/AnalyticsCharts";
+import { getColumnLabel } from "../../lib/columnLabel";
+import { api } from "../../../convex/_generated/api";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import AnalyticsCharts from "./AnalyticsCharts";
 
 type ProjectAnalyticsProps = {
   board: Doc<"boards">;

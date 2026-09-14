@@ -17,7 +17,7 @@ import ProjectMembersModal from "./modals/ProjectMembersModal";
 import WorkspaceMembersModal from "./modals/WorkspaceMembersModal";
 import { api } from "../../convex/_generated/api";
 
-const ProjectAnalytics = lazy(() => import("./ProjectAnalytics"));
+const ProjectAnalytics = lazy(() => import("./analytics/ProjectAnalytics"));
 const Profile = lazy(() => import("./Profile"));
 export default function AuthenticatedApp() {
   const { t } = useTranslation();
