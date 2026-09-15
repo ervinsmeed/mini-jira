@@ -24,7 +24,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useAction } from "../../hooks/useAction";
 import { getColumnLabel } from "../../lib/columnLabel";
-
+import TaskPriorityField from "./TaskPriorityField";
 import SortableSubTask from "./SortableSubTask";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog";
 import {
@@ -318,56 +318,12 @@ export default function EditTaskModal({
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    className={`mb-2 block text-sm font-medium ${
-                      theme === "dark" ? "text-slate-300" : "text-slate-700"
-                    }`}
-                  >
-                    {t("editTask.priority")}
-                  </label>
-
-                  <Select value={priority} onValueChange={setPriority}>
-                    <SelectTrigger
-                      className={`w-full transition-colors ${
-                        theme === "dark"
-                          ? "border-slate-800 bg-slate-900 text-slate-100"
-                          : "border-slate-300 bg-white text-slate-900"
-                      }`}
-                    >
-                      <SelectValue placeholder={t("editTask.selectPriority")} />
-                    </SelectTrigger>
-
-                    <SelectContent
-                      className={`transition-colors ${
-                        theme === "dark"
-                          ? "border-slate-800 bg-slate-900 text-slate-100"
-                          : "border-slate-200 bg-white text-slate-900"
-                      }`}
-                    >
-                      <SelectItem value="high">
-                        <div className="flex items-center space-x-2">
-                          <div className="size-2 rounded-full bg-red-500" />
-                          <span>{t("priority.high")}</span>
-                        </div>
-                      </SelectItem>
-
-                      <SelectItem value="medium">
-                        <div className="flex items-center space-x-2">
-                          <div className="size-2 rounded-full bg-yellow-500" />
-                          <span>{t("priority.medium")}</span>
-                        </div>
-                      </SelectItem>
-
-                      <SelectItem value="low">
-                        <div className="flex items-center space-x-2">
-                          <div className="size-2 rounded-full bg-green-500" />
-                          <span>{t("priority.low")}</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <TaskPriorityField
+                  value={priority}
+                  onChange={setPriority}
+                  label={t("editTask.priority")}
+                  placeholder={t("editTask.selectPriority")}
+                />
 
                 <div>
                   <label

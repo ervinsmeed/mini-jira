@@ -2,7 +2,7 @@ import { actionError } from "../../lib/actionError";
 import { useAction } from "../../hooks/useAction";
 import { getColumnLabel } from "../../lib/columnLabel";
 import { useState, useEffect, type FormEvent } from "react";
-
+import TaskPriorityField from "./TaskPriorityField";
 import { useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import SortableSubTask from "./SortableSubTask";
@@ -622,64 +622,12 @@ export default function CreateTaskModal({
             </div>
 
             <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    theme === "dark" ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
-                  {t("createTask.priority")}
-                </label>
-
-                <Select
-                  value={priority}
-                  onValueChange={(value) => setPriority(value as Priority)}
-                >
-                  <SelectTrigger
-                    className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
-                      theme === "dark"
-                        ? "bg-slate-900 border-slate-800 text-slate-100"
-                        : "bg-white border-slate-300 text-slate-900"
-                    }`}
-                  >
-                    <SelectValue
-                      placeholder={t("createTask.selectPriority")}
-                      className="w-full"
-                    />
-                  </SelectTrigger>
-
-                  <SelectContent
-                    position="popper"
-                    className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
-                      theme === "dark"
-                        ? "bg-slate-900 border-slate-800 text-slate-100"
-                        : "bg-white border-slate-200 text-slate-900"
-                    }`}
-                  >
-                    <SelectItem value="high">
-                      <div className="flex items-center space-x-2">
-                        <div className="size-2 rounded-full bg-red-500" />
-                        <span>{t("priority.high")}</span>
-                      </div>
-                    </SelectItem>
-
-                    <SelectItem value="medium">
-                      <div className="flex items-center space-x-2">
-                        <div className="size-2 rounded-full bg-yellow-500" />
-                        <span>{t("priority.medium")}</span>
-                      </div>
-                    </SelectItem>
-
-                    <SelectItem value="low">
-                      <div className="flex items-center space-x-2">
-                        <div className="size-2 rounded-full bg-green-500" />
-                        <span>{t("priority.low")}</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
+              <TaskPriorityField
+                value={priority}
+                onChange={setPriority}
+                label={t("createTask.priority")}
+                placeholder={t("createTask.selectPriority")}
+              />
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 ${
