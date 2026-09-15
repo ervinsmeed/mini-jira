@@ -39,7 +39,6 @@ type AnalyticsChartsProps = {
     byAssignee: AssigneeData[];
     byPriority: PriorityData[];
   };
-  theme: "light" | "dark";
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -48,32 +47,30 @@ const PRIORITY_COLORS: Record<string, string> = {
   low: "#22c55e",
 };
 
-export default function AnalyticsCharts({
-  analytics,
-  theme,
-}: AnalyticsChartsProps) {
+export default function AnalyticsCharts({ analytics }: AnalyticsChartsProps) {
   const { t, i18n } = useTranslation();
 
-  const textColor = theme === "dark" ? "#cbd5e1" : "var(--muted-foreground)";
-  const gridColor = theme === "dark" ? "#334155" : "var(--border)";
-  const tooltipBackground = theme === "dark" ? "#0f172a" : "var(--popover)";
-  const tooltipBorder = theme === "dark" ? "#334155" : "var(--border)";
+  const textColor = "var(--muted-foreground)";
+  const gridColor = "var(--border)";
 
-  const chartCardClass =
-    theme === "dark"
-      ? "border-slate-800 bg-slate-900"
-      : "border-slate-200 bg-white";
+  const chartCardClass = "border-border bg-card text-card-foreground";
 
   const tooltipStyle = {
-    backgroundColor: tooltipBackground,
-    border: `1px solid ${tooltipBorder}`,
+    backgroundColor: "var(--popover)",
+    border: "1px solid var(--border)",
     borderRadius: "8px",
-    color: textColor,
+    color: "var(--popover-foreground)",
   };
+
+  const tooltipItemStyle = {
+    color: "var(--popover-foreground)",
+  };
+
   const localizedStatusData = analytics.byStatus.map((status) => ({
     ...status,
     name: getColumnLabel(status.name, t),
   }));
+
   const localizedPriorityData = analytics.byPriority.map((priority) => ({
     ...priority,
     name: t(`analytics.priority.${priority.priority}`, {
@@ -120,14 +117,14 @@ export default function AnalyticsCharts({
                     ? value.toLocaleString(i18n.resolvedLanguage)
                     : value
                 }
-                itemStyle={theme === "light" ? { color: textColor } : undefined}
+                itemStyle={tooltipItemStyle}
                 contentStyle={tooltipStyle}
               />
 
               <Bar
                 dataKey="count"
                 name={t("analytics.tasks")}
-                fill={theme === "dark" ? "#8b5cf6" : "var(--primary)"}
+                fill="var(--analytics-bar)"
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
@@ -166,18 +163,13 @@ export default function AnalyticsCharts({
                     ? value.toLocaleString(i18n.resolvedLanguage)
                     : value
                 }
-                itemStyle={theme === "light" ? { color: textColor } : undefined}
+                itemStyle={tooltipItemStyle}
                 contentStyle={tooltipStyle}
               />
               <Legend
-                wrapperStyle={{ color: textColor }}
-                formatter={
-                  theme === "light"
-                    ? (value) => (
-                        <span style={{ color: textColor }}>{value}</span>
-                      )
-                    : undefined
-                }
+                formatter={(value) => (
+                  <span style={{ color: textColor }}>{value}</span>
+                )}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -218,7 +210,7 @@ export default function AnalyticsCharts({
                     ? value.toLocaleString(i18n.resolvedLanguage)
                     : value
                 }
-                itemStyle={theme === "light" ? { color: textColor } : undefined}
+                itemStyle={tooltipItemStyle}
                 contentStyle={tooltipStyle}
               />
 

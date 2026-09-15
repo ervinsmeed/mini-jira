@@ -10,14 +10,12 @@ import AnalyticsCharts from "./AnalyticsCharts";
 
 type ProjectAnalyticsProps = {
   board: Doc<"boards">;
-  theme: "light" | "dark";
   can: (permission: string) => boolean;
   onBack: () => void;
 };
 
 function ProjectAnalyticsContent({
   board,
-  theme,
   can,
   onBack,
 }: ProjectAnalyticsProps) {
@@ -113,7 +111,7 @@ function ProjectAnalyticsContent({
           ))}
         </section>
 
-        <AnalyticsCharts analytics={analytics} theme={theme} />
+        <AnalyticsCharts analytics={analytics} />
 
         <section className="grid gap-6 px-6 xl:grid-cols-2">
           <div className={`rounded-lg border p-4 ${cardClass}`}>

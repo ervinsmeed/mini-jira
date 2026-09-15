@@ -116,6 +116,14 @@
   background-color: var(--secondary);
   color: var(--primary-hover);
 }
+
+:root {
+  --analytics-bar: #8b5cf6;
+}
+
+[data-theme="light"] {
+  --analytics-bar: #7c3aed;
+}
 /* --- Default - Dark Theme --- */
 body {
   @apply bg-slate-950 text-slate-100;

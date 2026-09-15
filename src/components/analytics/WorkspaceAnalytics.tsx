@@ -52,7 +52,7 @@ export default function WorkspaceAnalytics({
               <Bar
                 dataKey="count"
                 name={t("analytics.tasks")}
-                fill="var(--primary)"
+                fill="var(--analytics-bar)"
               />
             </BarChart>
           </ResponsiveContainer>

@@ -317,7 +317,6 @@ export default function AuthenticatedApp() {
           ) : currentView === "analytics" && displayBoard ? (
             <ProjectAnalytics
               board={displayBoard}
-              theme={theme}
               can={canProject}
               onBack={() => setCurrentView("board")}
             />
