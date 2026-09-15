@@ -12,12 +12,10 @@ export default function CreateWorkspaceModal({
   isOpen,
   onClose,
   onWorkspaceCreated,
-  theme,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onWorkspaceCreated: (workspace: Doc<"workspaces">) => void;
-  theme: "light" | "dark";
 }) {
   const { t } = useTranslation();
   const { pending, run } = useAction();
@@ -53,13 +51,7 @@ export default function CreateWorkspaceModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className={`max-w-md rounded-xl border shadow-lg ${
-          theme === "dark"
-            ? "bg-slate-950 border-slate-800 text-slate-100"
-            : "bg-white border-slate-200 text-slate-900"
-        }`}
-      >
+      <DialogContent className="max-w-md rounded-xl border border-border bg-card text-card-foreground shadow-lg">
         <DialogHeader>
           <DialogTitle className="text-xl! font-semibold">
             {t("createWorkspaceModal.title")}
@@ -69,11 +61,7 @@ export default function CreateWorkspaceModal({
         <form onSubmit={handleSubmit} className="space-y-5 mt-2">
           <fieldset disabled={pending} className="contents">
             <div>
-              <label
-                className={`block text-sm font-medium mb-2 ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
+              <label className="mb-2 block text-sm font-medium text-muted-foreground">
                 {t("createWorkspaceModal.workspaceName")}
               </label>
 
@@ -82,21 +70,13 @@ export default function CreateWorkspaceModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("createWorkspaceModal.namePlaceholder")}
-                className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 transition ${
-                  theme === "dark"
-                    ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                    : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-                }`}
+                className="w-full rounded-lg border border-border bg-input px-3 py-2 text-foreground placeholder:text-muted-foreground outline-none transition focus:ring-2 focus:ring-ring"
                 required
               />
             </div>
 
             <div>
-              <label
-                className={`block text-sm font-medium mb-2 ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
+              <label className="mb-2 block text-sm font-medium text-muted-foreground">
                 {t("createWorkspaceModal.description")}
               </label>
 
@@ -105,21 +85,13 @@ export default function CreateWorkspaceModal({
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t("createWorkspaceModal.descriptionPlaceholder")}
                 rows={4}
-                className={`w-full resize-none px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 transition ${
-                  theme === "dark"
-                    ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                    : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-                }`}
+                className="w-full resize-none rounded-lg border border-border bg-input px-3 py-2 text-foreground placeholder:text-muted-foreground outline-none transition focus:ring-2 focus:ring-ring"
               />
             </div>
 
             <button
               type="submit"
-              className={`w-full py-2 rounded-lg transition focus:outline-none focus:ring-2 ${
-                theme === "dark"
-                  ? "bg-purple-500 text-white hover:bg-purple-600 focus:ring-purple-400"
-                  : "bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500"
-              }`}
+              className="w-full rounded-lg bg-primary py-2 text-primary-foreground transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring"
               disabled={pending}
             >
               {t("createWorkspaceModal.create")}

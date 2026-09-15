@@ -337,7 +337,6 @@ export default function AuthenticatedApp() {
         isOpen={isCreateWorkspaceModalOpen}
         onClose={() => setIsCreateWorkspaceModalOpen(false)}
         onWorkspaceCreated={handleWorkspaceCreated}
-        theme={theme}
       />
 
       {editingWorkspace && (
