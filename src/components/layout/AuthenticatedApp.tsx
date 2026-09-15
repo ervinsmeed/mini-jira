@@ -331,7 +331,6 @@ export default function AuthenticatedApp() {
         onClose={() => setIsCreateBoardModalOpen(false)}
         onBoardCreated={handleBoardCreated}
         workspaceId={displayWorkspace?._id}
-        theme={theme}
       />
 
       <CreateWorkspaceModal
