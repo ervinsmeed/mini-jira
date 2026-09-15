@@ -33,16 +33,9 @@ function ProjectAnalyticsContent({
   );
 
   const getLocalizedStatusName = (name: string) => getColumnLabel(name, t);
-
   if (!can("analytics.view")) {
     return (
-      <div
-        className={`flex h-full items-center justify-center ${
-          theme === "dark"
-            ? "bg-slate-950 text-slate-100"
-            : "bg-slate-50 text-slate-900"
-        }`}
-      >
+      <div className="flex h-full items-center justify-center bg-background text-foreground">
         <p>{t("analytics.noPermission")}</p>
       </div>
     );
@@ -50,38 +43,18 @@ function ProjectAnalyticsContent({
 
   if (analytics === undefined) {
     return (
-      <div
-        className={`flex h-full items-center justify-center ${
-          theme === "dark" ? "bg-slate-950" : "bg-slate-50"
-        }`}
-      >
-        <div className="size-10 animate-spin rounded-full border-4 border-slate-600 border-t-purple-500" />
+      <div className="flex h-full items-center justify-center bg-background text-foreground">
+        <div className="size-10 animate-spin rounded-full border-4 border-border border-t-primary" />
       </div>
     );
   }
 
-  const cardClass =
-    theme === "dark"
-      ? "border-slate-800 bg-slate-900"
-      : "border-slate-200 bg-white";
-
-  const secondaryText = theme === "dark" ? "text-slate-400" : "text-slate-500";
+  const cardClass = "border-border bg-card text-card-foreground";
+  const secondaryText = "text-muted-foreground";
 
   return (
-    <div
-      className={`min-h-screen overflow-y-auto ${
-        theme === "dark"
-          ? "bg-slate-950 text-slate-100"
-          : "bg-slate-50 text-slate-900"
-      }`}
-    >
-      <header
-        className={`sticky top-0 z-30 flex flex-wrap items-center justify-between gap-4 border-b px-6 py-4 ${
-          theme === "dark"
-            ? "border-slate-800 bg-slate-950"
-            : "border-slate-200 bg-sidebar"
-        }`}
-      >
+    <div className="min-h-screen overflow-y-auto bg-background text-foreground">
+      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-4 border-b border-border bg-card px-6 py-4 text-card-foreground">
         <div>
           <h1 className="text-2xl font-bold">{t("analytics.title")}</h1>
 
@@ -91,11 +64,7 @@ function ProjectAnalyticsContent({
         <button
           type="button"
           onClick={onBack}
-          className={`flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium ${
-            theme === "dark"
-              ? "border-slate-700 bg-slate-900 hover:bg-slate-800"
-              : "border-slate-300 bg-white hover:bg-slate-100"
-          }`}
+          className="flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-card-foreground hover:bg-muted"
         >
           <ArrowLeft className="size-4" />
           {t("navigation.backToBoard")}
