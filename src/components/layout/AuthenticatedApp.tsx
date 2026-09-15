@@ -343,7 +343,6 @@ export default function AuthenticatedApp() {
         <EditWorkspaceModal
           workspace={editingWorkspace}
           onClose={() => setEditingWorkspace(null)}
-          theme={theme}
         />
       )}
 

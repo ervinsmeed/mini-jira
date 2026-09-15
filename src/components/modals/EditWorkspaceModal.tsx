@@ -11,11 +11,9 @@ import { useTranslation } from "react-i18next";
 export default function EditWorkspaceModal({
   workspace,
   onClose,
-  theme,
 }: {
   workspace: Doc<"workspaces">;
   onClose: () => void;
-  theme: "light" | "dark";
 }) {
   const { t } = useTranslation();
   const { pending, run } = useAction();
@@ -49,13 +47,7 @@ export default function EditWorkspaceModal({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent
-        className={`max-w-md rounded-xl border shadow-lg ${
-          theme === "dark"
-            ? "bg-slate-950 border-slate-800 text-slate-100"
-            : "bg-white border-slate-200 text-slate-900"
-        }`}
-      >
+      <DialogContent className="max-w-md rounded-xl border border-border bg-card text-card-foreground shadow-lg">
         <DialogHeader>
           <DialogTitle className="text-xl! font-semibold">
             {t("editWorkspaceModal.title")}
@@ -65,11 +57,7 @@ export default function EditWorkspaceModal({
         <form onSubmit={handleSubmit} className="mt-2 space-y-5">
           <fieldset disabled={pending} className="contents">
             <div>
-              <label
-                className={`mb-2 block text-sm font-medium ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
+              <label className="mb-2 block text-sm font-medium text-muted-foreground">
                 {t("editWorkspaceModal.workspaceName")}
               </label>
 
@@ -77,21 +65,13 @@ export default function EditWorkspaceModal({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
-                  theme === "dark"
-                    ? "border-slate-800 bg-slate-900 text-slate-100 focus:ring-purple-400"
-                    : "border-slate-300 bg-white text-slate-900 focus:ring-purple-500"
-                }`}
+                className="w-full rounded-lg border border-border bg-input px-3 py-2 text-foreground outline-none focus:ring-2 focus:ring-ring"
                 required
               />
             </div>
 
             <div>
-              <label
-                className={`mb-2 block text-sm font-medium ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
+              <label className="mb-2 block text-sm font-medium text-muted-foreground">
                 {t("editWorkspaceModal.description")}
               </label>
 
@@ -99,11 +79,7 @@ export default function EditWorkspaceModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
-                className={`w-full resize-none rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
-                  theme === "dark"
-                    ? "border-slate-800 bg-slate-900 text-slate-100 focus:ring-purple-400"
-                    : "border-slate-300 bg-white text-slate-900 focus:ring-purple-500"
-                }`}
+                className="w-full resize-none rounded-lg border border-border bg-input px-3 py-2 text-foreground outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
