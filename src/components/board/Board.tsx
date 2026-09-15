@@ -555,18 +555,12 @@ function BoardContent({ board, theme, can }: BoardProps) {
                 />
               ))}
             </SortableContext>
-
-            {/* Кнопка новой колонки */}
             {canCreateColumn && (
               <div className="flex w-72 shrink-0 items-start justify-center pt-12">
                 <button
                   type="button"
                   onClick={() => setIsCreateColumnModalOpen(true)}
-                  className={`flex min-h-[200px] w-full items-center justify-center space-x-2 rounded-lg border px-6 py-6 text-lg font-medium transition-colors ${
-                    theme === "dark"
-                      ? "border-slate-800 bg-slate-900 text-slate-400 hover:border-purple-500 hover:text-slate-100"
-                      : "border-slate-200 bg-slate-100 text-slate-900 hover:border-purple-500"
-                  }`}
+                  className="flex min-h-[200px] w-full items-center justify-center space-x-2 rounded-lg border border-border bg-card px-6 py-6 text-lg font-medium text-muted-foreground transition-colors hover:border-purple-500 hover:text-foreground"
                   disabled={pending}
                 >
                   <Plus className="size-6" />
@@ -595,11 +589,7 @@ function BoardContent({ board, theme, can }: BoardProps) {
               type="button"
               disabled={pending || pageStatus === "LoadingMore"}
               onClick={() => loadMore(12)}
-              className={`rounded-md border px-5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                theme === "dark"
-                  ? "border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
-                  : "border-slate-300 bg-white text-slate-900 hover:bg-slate-100"
-              }`}
+              className="rounded-md border border-border bg-card px-5 py-2 text-sm font-medium text-card-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
             >
               {t(
                 pageStatus === "LoadingMore"
@@ -610,8 +600,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
           </div>
         )}
       </div>
-
-      {/* Модальное окно задачи */}
       {selectedTask && (
         <TaskModal
           task={selectedTask}
