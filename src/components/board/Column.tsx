@@ -95,25 +95,14 @@ export default function Column({
   };
 
   return (
-    <div
-      className={`w-72 shrink-0 rounded-lg border p-3 ${
-        theme === "dark"
-          ? "border-slate-800 bg-slate-950"
-          : "border-slate-200 bg-input"
-      }`}
-    >
+    <div className="w-72 shrink-0 rounded-lg border border-border bg-card p-3 text-card-foreground">
       <div className="group mb-6 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div
             className="size-4 rounded-full"
             style={{ backgroundColor: column.color }}
           />
-
-          <h3
-            className={`text-xs font-semibold uppercase tracking-wider ${
-              theme === "dark" ? "text-slate-400" : "text-slate-700"
-            }`}
-          >
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {displayedColumnName} ({taskCount})
           </h3>
         </div>
@@ -122,31 +111,16 @@ export default function Column({
           <div className="relative">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <MoreHorizontal
-                  className={`size-4 cursor-pointer ${
-                    theme === "dark"
-                      ? "text-slate-400 hover:text-slate-100"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                />
+                <MoreHorizontal className="size-4 cursor-pointer text-muted-foreground hover:text-foreground" />
               </DropdownMenuTrigger>
-
               <DropdownMenuContent
                 align="end"
-                className={`w-auto rounded-md border shadow-lg ${
-                  theme === "dark"
-                    ? "border-slate-800 bg-slate-900 text-slate-100"
-                    : "border-slate-200 bg-white text-slate-900"
-                }`}
+                className="w-auto rounded-md border border-border bg-popover text-popover-foreground shadow-lg"
               >
                 {canEditColumn && (
                   <DropdownMenuItem
                     onClick={() => onEditColumn(column)}
-                    className={`cursor-pointer ${
-                      theme === "dark"
-                        ? "hover:bg-slate-800"
-                        : "hover:bg-slate-100"
-                    }`}
+                    className="cursor-pointer hover:bg-muted"
                   >
                     <Edit className="mr-2 size-3" />
                     <span>{t("column.edit")}</span>
@@ -154,11 +128,7 @@ export default function Column({
                 )}
 
                 {canEditColumn && canDeleteColumn && (
-                  <DropdownMenuSeparator
-                    className={
-                      theme === "dark" ? "bg-slate-800" : "bg-slate-200"
-                    }
-                  />
+                  <DropdownMenuSeparator className="bg-border" />
                 )}
 
                 {canDeleteColumn && (
@@ -166,35 +136,19 @@ export default function Column({
                     open={showDeleteConfirm}
                     onOpenChange={setShowDeleteConfirm}
                   >
-                    <DialogTrigger
-                      className={`flex cursor-pointer items-center ${
-                        theme === "dark"
-                          ? "text-red-400 hover:bg-red-900"
-                          : "text-red-600 hover:bg-red-100"
-                      }`}
-                    >
+                    <DialogTrigger className="flex cursor-pointer items-center text-destructive hover:bg-destructive/10">
                       <Trash2 className="mr-2 size-3" />
                       <span>{t("column.delete")}</span>
                     </DialogTrigger>
 
-                    <DialogContent
-                      className={`max-w-md border ${
-                        theme === "dark"
-                          ? "border-slate-800 bg-slate-950 text-slate-100"
-                          : "border-slate-200 bg-white text-slate-900"
-                      }`}
-                    >
+                    <DialogContent className="max-w-md border border-border bg-card text-card-foreground">
                       <DialogHeader>
                         <DialogTitle className="text-lg!">
                           {t("column.deleteTitle")}
                         </DialogTitle>
                       </DialogHeader>
 
-                      <DialogDescription
-                        className={
-                          theme === "dark" ? "text-slate-400" : "text-slate-600"
-                        }
-                      >
+                      <DialogDescription className="text-muted-foreground">
                         {t("column.deleteDescription")}
                       </DialogDescription>
 
@@ -213,11 +167,7 @@ export default function Column({
                             <Button
                               size="sm"
                               variant="secondary"
-                              className={
-                                theme === "dark"
-                                  ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
-                                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                              }
+                              className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
                             >
                               {t("common.no")}
                             </Button>
@@ -235,9 +185,7 @@ export default function Column({
 
       <div
         ref={setNodeRef}
-        className={`min-h-[200px] space-y-4 rounded-lg p-2 ${
-          theme === "dark" ? "bg-slate-900" : "bg-slate-200"
-        }`}
+        className="min-h-[200px] space-y-4 rounded-lg bg-muted p-2"
       >
         <SortableContext
           items={tasks.map((task) => task._id)}
