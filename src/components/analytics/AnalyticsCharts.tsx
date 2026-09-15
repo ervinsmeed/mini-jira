@@ -93,20 +93,21 @@ export default function AnalyticsCharts({ analytics }: AnalyticsChartsProps) {
 
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={localizedStatusData}>
+            <BarChart data={localizedStatusData} layout="vertical">
               <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
 
               <XAxis
-                dataKey="name"
+                type="number"
+                allowDecimals={false}
                 stroke={textColor}
                 tick={{ fill: textColor, fontSize: 12 }}
               />
 
               <YAxis
-                tickFormatter={(value: number) =>
-                  value.toLocaleString(i18n.resolvedLanguage)
-                }
-                allowDecimals={false}
+                type="category"
+                dataKey="name"
+                width={125}
+                interval={0}
                 stroke={textColor}
                 tick={{ fill: textColor, fontSize: 12 }}
               />
@@ -125,7 +126,7 @@ export default function AnalyticsCharts({ analytics }: AnalyticsChartsProps) {
                 dataKey="count"
                 name={t("analytics.tasks")}
                 fill="var(--analytics-bar)"
-                radius={[4, 4, 0, 0]}
+                radius={[0, 4, 4, 0]}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -194,9 +195,6 @@ export default function AnalyticsCharts({ analytics }: AnalyticsChartsProps) {
               />
 
               <YAxis
-                tickFormatter={(value: number) =>
-                  value.toLocaleString(i18n.resolvedLanguage)
-                }
                 type="category"
                 dataKey="name"
                 width={110}
