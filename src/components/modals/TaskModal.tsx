@@ -804,7 +804,7 @@ export default function TaskModal({
                                   field={change.field}
                                   value={change.before}
                                 />{" "}
-                                ?{" "}
+                                {"\u2192"}{" "}
                                 <HistoryValue
                                   field={change.field}
                                   value={change.after}
