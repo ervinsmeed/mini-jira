@@ -1,10 +1,11 @@
 import { actionError } from "../../lib/actionError";
 import { useAction } from "../../hooks/useAction";
 import { getColumnLabel } from "../../lib/columnLabel";
-import { useState, useEffect, type CSSProperties, type FormEvent } from "react";
-import { X, GripVertical } from "lucide-react";
+import { useState, useEffect, type FormEvent } from "react";
+
 import { useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import SortableSubTask from "./SortableSubTask";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "react-i18next";
 
@@ -23,10 +24,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-  useSortable,
 } from "@dnd-kit/sortable";
-
-import { CSS } from "@dnd-kit/utilities";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog";
 
 import {
@@ -43,88 +41,12 @@ type Theme = "dark" | "light";
 type Priority = "high" | "medium" | "low";
 type StoryPoints = 1 | 2 | 3 | 5 | 8 | 13 | 21;
 
-interface SortableSubTaskProps {
-  subtask: string;
-  index: number;
-  onRemove: (index: number) => void;
-  onChange: (index: number, value: string) => void;
-  theme: Theme;
-}
-
 interface CreateTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   boardId: Id<"boards">;
   columns?: Doc<"columns">[];
   theme?: Theme;
-}
-
-function SortableSubTask({
-  subtask,
-  index,
-  onRemove,
-  onChange,
-  theme,
-}: SortableSubTaskProps) {
-  const { t } = useTranslation();
-
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({
-      id: `subtask-${index}`,
-    });
-
-  const style: CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2"
-    >
-      <div
-        {...listeners}
-        aria-label={t("common.moveSubtask")}
-        title={t("common.moveSubtask")}
-        className={`p-1 cursor-grab transition-colors ${
-          theme === "dark"
-            ? "text-slate-400 hover:text-slate-100"
-            : "text-slate-500 hover:text-slate-900"
-        }`}
-      >
-        <GripVertical className="size-4" />
-      </div>
-
-      <input
-        type="text"
-        value={subtask}
-        onChange={(e) => onChange(index, e.target.value)}
-        placeholder={t("createTask.subtaskPlaceholder")}
-        className={`min-w-0 w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
-          theme === "dark"
-            ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-            : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-        }`}
-      />
-
-      <button
-        type="button"
-        onClick={() => onRemove(index)}
-        aria-label={t("common.removeSubtask")}
-        title={t("common.removeSubtask")}
-        className={`p-2 transition-colors ${
-          theme === "dark"
-            ? "text-slate-400 hover:text-red-400"
-            : "text-slate-500 hover:text-red-500"
-        }`}
-      >
-        <X className="size-4" />
-      </button>
-    </div>
-  );
 }
 
 export default function CreateTaskModal({
@@ -673,11 +595,11 @@ export default function CreateTaskModal({
                     {subtasks.map((subtask, index) => (
                       <SortableSubTask
                         key={index}
-                        subtask={subtask}
+                        text={subtask}
                         index={index}
+                        placeholder={t("createTask.subtaskPlaceholder")}
                         onRemove={handleRemoveSubtask}
                         onChange={handleSubtaskChange}
-                        theme={theme}
                       />
                     ))}
                   </SortableContext>

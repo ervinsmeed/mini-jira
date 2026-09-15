@@ -1,13 +1,7 @@
-import { useAction } from "../../hooks/useAction";
-import { getColumnLabel } from "../../lib/columnLabel";
-import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
-
-import { GripVertical, X } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "convex/react";
-
-import { api } from "../../../convex/_generated/api";
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 import {
   closestCenter,
@@ -23,14 +17,16 @@ import {
   arrayMove,
   sortableKeyboardCoordinates,
   SortableContext,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
-import { CSS } from "@dnd-kit/utilities";
+import { api } from "../../../convex/_generated/api";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import { useAction } from "../../hooks/useAction";
+import { getColumnLabel } from "../../lib/columnLabel";
 
+import SortableSubTask from "./SortableSubTask";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog";
-
 import {
   Select,
   SelectContent,
@@ -38,22 +34,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-
-import { toast } from "sonner";
-
 type Theme = "light" | "dark";
 
 type Subtask = {
   text: string;
   completed: boolean;
-};
-
-type SortableSubTaskProps = {
-  subtask: Subtask;
-  index: number;
-  onRemove: (index: number) => void;
-  onChange: (index: number, value: string) => void;
-  theme: Theme;
 };
 
 type EditTaskModalProps = {
@@ -62,75 +47,6 @@ type EditTaskModalProps = {
   onClose: () => void;
   theme: Theme;
 };
-
-function SortableSubTask({
-  subtask,
-  index,
-  onRemove,
-  onChange,
-  theme,
-}: SortableSubTaskProps) {
-  const { t } = useTranslation();
-
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({
-      id: `subtask-${index}`,
-    });
-
-  const style: CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      className="flex items-center space-x-2"
-    >
-      <button
-        type="button"
-        {...listeners}
-        aria-label={t("common.moveSubtask")}
-        title={t("common.moveSubtask")}
-        className={`cursor-grab p-1 transition-colors ${
-          theme === "dark"
-            ? "text-slate-400 hover:text-slate-100"
-            : "text-slate-500 hover:text-slate-900"
-        }`}
-      >
-        <GripVertical className="size-4" />
-      </button>
-
-      <input
-        type="text"
-        value={subtask.text}
-        onChange={(event) => onChange(index, event.target.value)}
-        placeholder={t("editTask.subtaskPlaceholder")}
-        className={`flex-1 rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
-          theme === "dark"
-            ? "border-slate-800 bg-slate-900 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-            : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-        }`}
-      />
-
-      <button
-        type="button"
-        onClick={() => onRemove(index)}
-        aria-label={t("common.removeSubtask")}
-        title={t("common.removeSubtask")}
-        className={`p-2 transition-colors ${
-          theme === "dark"
-            ? "text-slate-400 hover:text-red-400"
-            : "text-slate-500 hover:text-red-500"
-        }`}
-      >
-        <X className="size-4" />
-      </button>
-    </div>
-  );
-}
 
 export default function EditTaskModal({
   task,
@@ -377,11 +293,11 @@ export default function EditTaskModal({
                       {subtasks.map((subtask, index) => (
                         <SortableSubTask
                           key={`subtask-${index}`}
-                          subtask={subtask}
+                          text={subtask.text}
                           index={index}
+                          placeholder={t("editTask.subtaskPlaceholder")}
                           onRemove={handleRemoveSubtask}
                           onChange={handleSubtaskChange}
-                          theme={theme}
                         />
                       ))}
                     </SortableContext>
