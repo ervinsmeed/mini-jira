@@ -26,7 +26,6 @@ type ColumnProps = {
   onToggleTaskSelection?: (id: Id<"tasks">) => void;
   favoriteTaskIdSet: Set<Id<"tasks">>;
   onToggleTaskFavorite: (id: Id<"tasks">) => void;
-  theme: "light" | "dark";
   canEditColumn: boolean;
   canDeleteColumn: boolean;
   canDragTasks: boolean;
@@ -64,7 +63,6 @@ export default function Column({
   onToggleTaskSelection,
   favoriteTaskIdSet,
   onToggleTaskFavorite,
-  theme,
   canEditColumn,
   canDeleteColumn,
   canDragTasks,
@@ -213,7 +211,6 @@ export default function Column({
               isFavorite={favoriteTaskIdSet.has(task._id)}
               onToggleFavorite={() => onToggleTaskFavorite(task._id)}
               canDrag={canDragTasks}
-              theme={theme}
             />
           ))}
         </SortableContext>

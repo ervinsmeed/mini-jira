@@ -17,7 +17,6 @@ type TaskCardProps = {
   onToggleFavorite?: () => void;
   isDragging?: boolean;
   canDrag?: boolean;
-  theme: "light" | "dark";
 };
 
 import { Progress } from "../ui/progress";
@@ -31,7 +30,6 @@ export default function TaskCard({
   isFavorite = false,
   onToggleFavorite,
   isDragging = false,
-  theme,
   canDrag = false,
 }: TaskCardProps) {
   const { t, i18n } = useTranslation();
@@ -165,9 +163,7 @@ export default function TaskCard({
               className={`rounded p-1 transition-colors ${
                 isFavorite
                   ? "text-yellow-400"
-                  : theme === "dark"
-                    ? "text-slate-500 hover:text-yellow-400"
-                    : "text-slate-400 hover:text-yellow-500"
+                  : "text-muted-foreground hover:text-yellow-500"
               }`}
               title={t(isFavorite ? "favorites.remove" : "favorites.add")}
               aria-label={t(isFavorite ? "favorites.remove" : "favorites.add")}

@@ -521,8 +521,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
         </p>
       )}
 
-      {/* Колонки */}
-
       <div className="flex-1 overflow-auto p-6">
         <div className="flex h-full min-w-max items-start space-x-6">
           <DndContext
@@ -551,7 +549,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
                   }
                   favoriteTaskIdSet={favoriteTaskIdSet}
                   onToggleTaskFavorite={handleToggleTaskFavorite}
-                  theme={theme}
                 />
               ))}
             </SortableContext>
@@ -576,7 +573,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
                   task={activeTask}
                   isDragging={true}
                   onClick={() => {}}
-                  theme={theme}
                 />
               ) : null}
             </DragOverlay>
