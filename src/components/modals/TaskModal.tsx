@@ -75,7 +75,7 @@ export default function TaskModal({
   const [isTimerPending, setIsTimerPending] = useState(false);
   const timerCommandInFlight = useRef(false);
 
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
 
   const columns: Doc<"columns">[] =
     useQuery(api.columns.list, {
@@ -91,6 +91,7 @@ export default function TaskModal({
     { boardId: task.boardId },
     { initialNumItems: 30 },
   );
+
   const {
     results: activityLogs,
     status: activityStatus,
@@ -100,6 +101,7 @@ export default function TaskModal({
     { taskId: task._id },
     { initialNumItems: 20 },
   );
+
   const {
     results: comments,
     status: commentStatus,
@@ -114,16 +116,12 @@ export default function TaskModal({
   const [commentText, setCommentText] = useState("");
 
   useEffect(() => {
-    if (task.timerStatus !== "running") {
-      return;
-    }
-
     const interval = window.setInterval(() => {
       setNow(Date.now());
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [task.timerStatus, task.timerStartedAt]);
+  }, []);
 
   const handleColumnChange = async (value: string) => {
     const newColumnId = columns.find((column) => column._id === value)?._id;
@@ -140,6 +138,7 @@ export default function TaskModal({
       value === "unassigned"
         ? null
         : projectMembers.find((member) => member._id === value)?._id;
+
     if (newAssigneeId === undefined) return;
 
     await updateTask({
@@ -149,14 +148,10 @@ export default function TaskModal({
   };
 
   const handleSubtaskToggle = async (subtaskIndex: number) => {
-    const updatedSubtasks = (task.subtasks ?? []).map(
-      (subtask, index: number) =>
-        index === subtaskIndex
-          ? {
-              ...subtask,
-              completed: !subtask.completed,
-            }
-          : subtask,
+    const updatedSubtasks = (task.subtasks ?? []).map((subtask, index) =>
+      index === subtaskIndex
+        ? { ...subtask, completed: !subtask.completed }
+        : subtask,
     );
 
     await updateTask({
@@ -166,9 +161,7 @@ export default function TaskModal({
   };
 
   const handleAddComment = async () => {
-    if (!commentText.trim()) {
-      return;
-    }
+    if (!commentText.trim()) return;
 
     await addComment({
       taskId: task._id,
@@ -180,26 +173,24 @@ export default function TaskModal({
 
   const handleDeleteTask = async () => {
     if (!can("task.delete")) return;
-    await deleteTask({
-      id: task._id,
-    });
 
+    await deleteTask({ id: task._id });
     onClose();
-
     toast.success(t("taskModal.deleted"));
   };
 
-  const completedSubtasks = task.subtasks
-    ? task.subtasks.filter((st) => st.completed).length
-    : 0;
+  const completedSubtasks = (task.subtasks ?? []).filter(
+    (subtask) => subtask.completed,
+  ).length;
 
-  const totalSubtasks = task.subtasks ? task.subtasks.length : 0;
+  const totalSubtasks = task.subtasks?.length ?? 0;
 
   const isOverdue = task.deadline !== undefined && task.deadline < now;
 
   const formattedDeadline = task.deadline
     ? new Date(task.deadline).toLocaleDateString(i18n.resolvedLanguage)
     : "";
+
   const timerElapsedMs =
     (task.timerElapsedMs ?? 0) +
     (task.timerStatus === "running" && task.timerStartedAt !== undefined
@@ -208,7 +199,6 @@ export default function TaskModal({
 
   const formatTimer = (milliseconds: number) => {
     const totalSeconds = Math.floor(milliseconds / 1000);
-
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
@@ -221,15 +211,16 @@ export default function TaskModal({
   const runTimerCommand = async (command: "start" | "pause" | "stop") => {
     if (!can("task.update") || timerCommandInFlight.current) return;
 
-    // The ref also blocks a second click before React renders the pending state.
     timerCommandInFlight.current = true;
     setIsTimerPending(true);
+
     try {
       const mutations = {
         start: startTimer,
         pause: pauseTimer,
         stop: stopTimer,
       };
+
       await mutations[command]({ id: task._id });
     } catch {
       toast.error(t(`taskModal.timerErrors.${command}`));
@@ -243,7 +234,7 @@ export default function TaskModal({
   const handlePauseTimer = () => runTimerCommand("pause");
   const handleStopTimer = () => runTimerCommand("stop");
 
-  if (liveTask === null)
+  if (liveTask === null) {
     return (
       <Dialog open onOpenChange={onClose}>
         <DialogContent>
@@ -251,10 +242,12 @@ export default function TaskModal({
         </DialogContent>
       </Dialog>
     );
+  }
 
   if (showEditModal && can("task.update")) {
     return (
       <EditTaskModal
+        key={task._id}
         task={task}
         onClose={() => setShowEditModal(false)}
         canUpdate={can("task.update")}

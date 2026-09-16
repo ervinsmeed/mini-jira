@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -62,7 +62,11 @@ export default function EditTaskModal({
   const [deadline, setDeadline] = useState(
     task.deadline ? new Date(task.deadline).toISOString().split("T")[0] : "",
   );
-  const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
+  const [subtasks, setSubtasks] = useState<Subtask[]>(() =>
+    task.subtasks?.length
+      ? task.subtasks.map((subtask) => ({ ...subtask }))
+      : [{ text: "", completed: false }],
+  );
 
   const [columnId, setColumnId] = useState(task.columnId);
 
@@ -72,28 +76,6 @@ export default function EditTaskModal({
     useQuery(api.columns.list, {
       boardId: task.boardId,
     }) ?? [];
-
-  useEffect(() => {
-    setTitle(task.title);
-    setDescription(task.description ?? "");
-    setPriority(task.priority ?? "medium");
-    setStoryPoints(String(task.storyPoints ?? 1));
-    setDeadline(
-      task.deadline ? new Date(task.deadline).toISOString().split("T")[0] : "",
-    );
-    setColumnId(task.columnId);
-
-    if (task.subtasks && task.subtasks.length > 0) {
-      setSubtasks(task.subtasks);
-    } else {
-      setSubtasks([
-        {
-          text: "",
-          completed: false,
-        },
-      ]);
-    }
-  }, [task._id]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
