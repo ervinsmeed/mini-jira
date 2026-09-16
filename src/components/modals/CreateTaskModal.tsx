@@ -1,6 +1,6 @@
 import { useAction } from "../../hooks/useAction";
 import { getColumnLabel } from "../../lib/columnLabel";
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import TaskPriorityField from "./TaskPriorityField";
 import { useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -111,16 +111,9 @@ export default function CreateTaskModal({
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
-
-  useEffect(() => {
-    const firstColumn = columns[0];
-
-    const columnExists = columns.some((column) => column._id === columnId);
-
-    if (firstColumn && (!columnId || !columnExists)) {
-      setColumnId(firstColumn._id);
-    }
-  }, [columns, columnId]);
+  const effectiveColumnId = columns.some((column) => column._id === columnId)
+    ? columnId
+    : (columns[0]?._id ?? "");
   const handleTemplateSelect = (templateId: string) => {
     if (templateId === "none") {
       setSelectedTemplateId("");
@@ -251,7 +244,7 @@ export default function CreateTaskModal({
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!title.trim() || !columnId) {
+    if (!title.trim() || !effectiveColumnId) {
       return;
     }
 
@@ -275,7 +268,7 @@ export default function CreateTaskModal({
           ? new Date(`${deadline}T23:59:59`).getTime()
           : undefined,
         subtasks: validSubtasks,
-        columnId,
+        columnId: effectiveColumnId,
         boardId,
       });
 
@@ -546,7 +539,7 @@ export default function CreateTaskModal({
                   {t("createTask.column")}
                 </label>
                 <Select
-                  value={columnId}
+                  value={effectiveColumnId}
                   onValueChange={(value) => setColumnId(value as Id<"columns">)}
                 >
                   <SelectTrigger className="min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors bg-input border-border text-foreground">
