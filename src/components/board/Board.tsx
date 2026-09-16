@@ -610,7 +610,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
         onClose={() => setIsCreateModalOpen(false)}
         boardId={board._id}
         columns={columns}
-        theme={theme}
       />
 
       <CreateColumnModal

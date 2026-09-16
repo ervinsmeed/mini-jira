@@ -1,4 +1,3 @@
-import { actionError } from "../../lib/actionError";
 import { useAction } from "../../hooks/useAction";
 import { getColumnLabel } from "../../lib/columnLabel";
 import { useState, useEffect, type FormEvent } from "react";
@@ -9,7 +8,7 @@ import SortableSubTask from "./SortableSubTask";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "react-i18next";
 import TaskStoryPointsField from "./TaskStoryPointsField";
-
+import { actionError } from "../../lib/actionError";
 import {
   DndContext,
   closestCenter,
@@ -38,7 +37,6 @@ import {
 
 import { toast } from "sonner";
 
-type Theme = "dark" | "light";
 type Priority = "high" | "medium" | "low";
 type StoryPoints = 1 | 2 | 3 | 5 | 8 | 13 | 21;
 
@@ -47,7 +45,6 @@ interface CreateTaskModalProps {
   onClose: () => void;
   boardId: Id<"boards">;
   columns?: Doc<"columns">[];
-  theme?: Theme;
 }
 
 export default function CreateTaskModal({
@@ -55,7 +52,6 @@ export default function CreateTaskModal({
   onClose,
   boardId,
   columns = [],
-  theme = "dark",
 }: CreateTaskModalProps) {
   const { t } = useTranslation();
   const { pending, run } = useAction();
@@ -302,13 +298,7 @@ export default function CreateTaskModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className={`w-[calc(100%-2rem)] min-w-0 max-w-lg sm:max-w-lg max-h-[min(600px,calc(100dvh-2rem))] overflow-y-auto rounded-xl border shadow-lg transition-colors ${
-          theme === "dark"
-            ? "bg-slate-950 border-slate-800 text-slate-100"
-            : "bg-white border-slate-200 text-slate-900"
-        }`}
-      >
+      <DialogContent className="w-[calc(100%-2rem)] min-w-0 max-w-lg sm:max-w-lg max-h-[min(600px,calc(100dvh-2rem))] overflow-y-auto rounded-xl border shadow-lg transition-colors bg-background border-border text-foreground">
         <DialogHeader>
           <DialogTitle className="min-w-0 pr-6 text-lg! font-semibold wrap-anywhere">
             {t("createTask.title")}
@@ -325,18 +315,8 @@ export default function CreateTaskModal({
           className="min-w-0 space-y-6 mt-2 [&>*]:min-w-0"
         >
           <fieldset disabled={pending} className="contents">
-            <div
-              className={`min-w-0 rounded-lg border p-3 sm:p-4 ${
-                theme === "dark"
-                  ? "border-slate-800 bg-slate-900/50"
-                  : "border-slate-200 bg-slate-50"
-              }`}
-            >
-              <label
-                className={`mb-2 block text-sm font-medium ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
+            <div className="min-w-0 rounded-lg border p-3 sm:p-4 border-border bg-muted/50">
+              <label className="mb-2 block text-sm font-medium text-foreground">
                 {templateStatus === "CanLoadMore" && (
                   <button type="button" onClick={() => loadTemplates(30)}>
                     {t("pagination.loadMore")}
@@ -351,11 +331,7 @@ export default function CreateTaskModal({
                 <select
                   value={selectedTemplateId || "none"}
                   onChange={(event) => handleTemplateSelect(event.target.value)}
-                  className={`min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none ${
-                    theme === "dark"
-                      ? "border-slate-700 bg-slate-950 text-slate-100"
-                      : "border-slate-300 bg-white text-slate-900"
-                  }`}
+                  className="min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none border-border bg-input text-foreground"
                 >
                   <option value="none">
                     {t("createTask.noTemplate", {
@@ -374,11 +350,7 @@ export default function CreateTaskModal({
                   type="button"
                   onClick={handleDeleteTemplate}
                   disabled={!selectedTemplateId}
-                  className={`min-w-0 max-w-full whitespace-normal wrap-anywhere rounded-md border px-3 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                    theme === "dark"
-                      ? "border-red-900 text-red-400 hover:bg-red-950"
-                      : "border-red-200 text-red-600 hover:bg-red-50"
-                  }`}
+                  className="min-w-0 max-w-full whitespace-normal wrap-anywhere rounded-md border px-3 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 border-destructive/40 text-destructive hover:bg-destructive/10"
                 >
                   {t("createTask.deleteTemplate", {
                     defaultValue: "Delete",
@@ -394,11 +366,7 @@ export default function CreateTaskModal({
                   placeholder={t("createTask.templateNamePlaceholder", {
                     defaultValue: "Template name, e.g. Bug",
                   })}
-                  className={`min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 ${
-                    theme === "dark"
-                      ? "border-slate-700 bg-slate-950 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                      : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-                  }`}
+                  className="min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 border-border bg-input text-foreground placeholder:text-muted-foreground focus:ring-ring"
                 />
 
                 <button
@@ -417,11 +385,7 @@ export default function CreateTaskModal({
                 </button>
               </div>
 
-              <p
-                className={`mt-2 text-xs ${
-                  theme === "dark" ? "text-slate-500" : "text-slate-500"
-                }`}
-              >
+              <p className="mt-2 text-xs text-muted-foreground">
                 {t("createTask.templateHint", {
                   defaultValue:
                     "The template saves the current title, description, priority and Story Points.",
@@ -429,11 +393,7 @@ export default function CreateTaskModal({
               </p>
             </div>
             <div>
-              <label
-                className={`block text-sm font-medium mb-2 ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
+              <label className="block text-sm font-medium mb-2 text-foreground">
                 {t("createTask.taskTitle")}
               </label>
 
@@ -442,21 +402,13 @@ export default function CreateTaskModal({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={t("createTask.titlePlaceholder")}
-                className={`min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
-                  theme === "dark"
-                    ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                    : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-                }`}
+                className="min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition bg-input border-border text-foreground placeholder:text-muted-foreground focus:ring-ring"
                 required
               />
             </div>
 
             <div>
-              <label
-                className={`block text-sm font-medium mb-2 ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
+              <label className="block text-sm font-medium mb-2 text-foreground">
                 {t("createTask.description")}
               </label>
 
@@ -465,20 +417,12 @@ export default function CreateTaskModal({
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t("createTask.descriptionPlaceholder")}
                 rows={4}
-                className={`min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition resize-none ${
-                  theme === "dark"
-                    ? "bg-slate-900 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                    : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-                }`}
+                className="min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition resize-none bg-input border-border text-foreground placeholder:text-muted-foreground focus:ring-ring"
               />
             </div>
 
             <div>
-              <label
-                className={`block text-sm font-medium mb-2 ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
+              <label className="block text-sm font-medium mb-2 text-foreground">
                 {t("createTask.type")}
                 <span className="block text-xs font-normal opacity-70">
                   {t("hints.epic")}
@@ -497,23 +441,13 @@ export default function CreateTaskModal({
                   }
                 }}
               >
-                <SelectTrigger
-                  className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
-                    theme === "dark"
-                      ? "bg-slate-900 border-slate-800 text-slate-100"
-                      : "bg-white border-slate-300 text-slate-900"
-                  }`}
-                >
+                <SelectTrigger className="min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors bg-input border-border text-foreground">
                   <SelectValue placeholder={t("createTask.selectType")} />
                 </SelectTrigger>
 
                 <SelectContent
                   position="popper"
-                  className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
-                    theme === "dark"
-                      ? "bg-slate-900 border-slate-800 text-slate-100"
-                      : "bg-white border-slate-200 text-slate-900"
-                  }`}
+                  className="max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors bg-popover border-border text-popover-foreground"
                 >
                   <SelectItem value="task">{t("createTask.task")}</SelectItem>
                   <SelectItem value="epic">{t("createTask.epic")}</SelectItem>
@@ -528,11 +462,7 @@ export default function CreateTaskModal({
             )}
             {taskType === "task" && (
               <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    theme === "dark" ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
+                <label className="block text-sm font-medium mb-2 text-foreground">
                   {t("createTask.epic")}
                 </label>
 
@@ -542,23 +472,13 @@ export default function CreateTaskModal({
                     setEpicId(value === "none" ? "" : (value as Id<"tasks">))
                   }
                 >
-                  <SelectTrigger
-                    className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
-                      theme === "dark"
-                        ? "bg-slate-900 border-slate-800 text-slate-100"
-                        : "bg-white border-slate-300 text-slate-900"
-                    }`}
-                  >
+                  <SelectTrigger className="min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors bg-input border-border text-foreground">
                     <SelectValue placeholder={t("createTask.selectEpic")} />
                   </SelectTrigger>
 
                   <SelectContent
                     position="popper"
-                    className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
-                      theme === "dark"
-                        ? "bg-slate-900 border-slate-800 text-slate-100"
-                        : "bg-white border-slate-200 text-slate-900"
-                    }`}
+                    className="max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors bg-popover border-border text-popover-foreground"
                   >
                     <SelectItem value="none">
                       {t("createTask.noEpic")}
@@ -575,11 +495,7 @@ export default function CreateTaskModal({
             )}
 
             <div>
-              <label
-                className={`block text-sm font-medium mb-2 ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
+              <label className="block text-sm font-medium mb-2 text-foreground">
                 {t("createTask.subtasks")}
               </label>
 
@@ -609,11 +525,7 @@ export default function CreateTaskModal({
                     <button
                       type="button"
                       onClick={handleAddSubtask}
-                      className={`min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 border-2 border-dashed rounded-md font-medium transition ${
-                        theme === "dark"
-                          ? "border-slate-800 text-purple-400 hover:bg-slate-900"
-                          : "border-slate-300 text-purple-600 hover:bg-slate-100"
-                      }`}
+                      className="min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 border-2 border-dashed rounded-md font-medium transition border-border text-foreground hover:bg-muted"
                     >
                       + {t("createTask.addSubtask")}
                     </button>
@@ -630,24 +542,14 @@ export default function CreateTaskModal({
                 placeholder={t("createTask.selectPriority")}
               />
               <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    theme === "dark" ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
+                <label className="block text-sm font-medium mb-2 text-foreground">
                   {t("createTask.column")}
                 </label>
                 <Select
                   value={columnId}
                   onValueChange={(value) => setColumnId(value as Id<"columns">)}
                 >
-                  <SelectTrigger
-                    className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
-                      theme === "dark"
-                        ? "bg-slate-900 border-slate-800 text-slate-100"
-                        : "bg-white border-slate-300 text-slate-900"
-                    }`}
-                  >
+                  <SelectTrigger className="min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors bg-input border-border text-foreground">
                     <SelectValue
                       placeholder={t("createTask.selectColumn")}
                       className="w-full"
@@ -656,11 +558,7 @@ export default function CreateTaskModal({
 
                   <SelectContent
                     position="popper"
-                    className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
-                      theme === "dark"
-                        ? "bg-slate-900 border-slate-800 text-slate-100"
-                        : "bg-white border-slate-200 text-slate-900"
-                    }`}
+                    className="max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors bg-popover border-border text-popover-foreground"
                   >
                     {columns.map((column) => (
                       <SelectItem key={column._id} value={column._id}>
@@ -672,11 +570,7 @@ export default function CreateTaskModal({
               </div>
             </div>
             <div>
-              <label
-                className={`block text-sm font-medium mb-2 ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
+              <label className="block text-sm font-medium mb-2 text-foreground">
                 {t("createTask.assignee")}
               </label>
 
@@ -688,23 +582,13 @@ export default function CreateTaskModal({
                   )
                 }
               >
-                <SelectTrigger
-                  className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
-                    theme === "dark"
-                      ? "bg-slate-900 border-slate-800 text-slate-100"
-                      : "bg-white border-slate-300 text-slate-900"
-                  }`}
-                >
+                <SelectTrigger className="min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors bg-input border-border text-foreground">
                   <SelectValue placeholder={t("createTask.selectAssignee")} />
                 </SelectTrigger>
 
                 <SelectContent
                   position="popper"
-                  className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
-                    theme === "dark"
-                      ? "bg-slate-900 border-slate-800 text-slate-100"
-                      : "bg-white border-slate-200 text-slate-900"
-                  }`}
+                  className="max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors bg-popover border-border text-popover-foreground"
                 >
                   <SelectItem value="unassigned">{t("unassigned")}</SelectItem>
 
@@ -733,11 +617,7 @@ export default function CreateTaskModal({
             />
 
             <div>
-              <label
-                className={`block text-sm font-medium mb-2 ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
+              <label className="block text-sm font-medium mb-2 text-foreground">
                 {t("createTask.deadline")}
               </label>
 
@@ -745,22 +625,14 @@ export default function CreateTaskModal({
                 type="date"
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
-                className={`min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition ${
-                  theme === "dark"
-                    ? "bg-slate-900 border-slate-800 text-slate-100 focus:ring-purple-400"
-                    : "bg-white border-slate-300 text-slate-900 focus:ring-purple-500"
-                }`}
+                className="min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition bg-input border-border text-foreground focus:ring-ring"
               />
             </div>
 
             <button
               type="submit"
               disabled={pending}
-              className={`min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 rounded-lg transition focus:outline-none focus:ring-2 ${
-                theme === "dark"
-                  ? "bg-purple-500 text-white hover:bg-purple-600 focus:ring-purple-400"
-                  : "bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500"
-              }`}
+              className="min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 rounded-lg transition focus:outline-none focus:ring-2 bg-purple-600 text-white hover:bg-purple-700 focus:ring-ring"
             >
               {t("createTask.create")}
             </button>
