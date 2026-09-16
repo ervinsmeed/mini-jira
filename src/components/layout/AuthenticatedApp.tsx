@@ -321,7 +321,12 @@ export default function AuthenticatedApp() {
               onBack={() => setCurrentView("board")}
             />
           ) : (
-            <Board board={displayBoard} theme={theme} can={canProject} />
+            <Board
+              key={displayBoard?._id ?? "no-board"}
+              board={displayBoard}
+              theme={theme}
+              can={canProject}
+            />
           )}
         </Suspense>
       </div>

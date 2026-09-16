@@ -203,17 +203,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
     }
   }, [board?._id, columnsResult, initializeColumns, canCreateColumn]);
 
-  useEffect(() => {
-    setSearchQuery("");
-    setStatusFilter("all");
-    setAssigneeFilter("all");
-    setStoryPointsFilter("all");
-    setDeadlineFilter("all");
-    setPriorityFilter("all");
-    setSortBy("manual");
-    setSelectedTaskIds([]);
-  }, [board?._id]);
-
   const getTasksByColumn = (columnId: Id<"columns">) => {
     return tasks
       .filter((task) => task.columnId === columnId)
