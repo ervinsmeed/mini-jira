@@ -258,7 +258,6 @@ export default function TaskModal({
         task={task}
         onClose={() => setShowEditModal(false)}
         canUpdate={can("task.update")}
-        theme={theme}
       />
     );
   }

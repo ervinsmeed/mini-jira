@@ -34,7 +34,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-type Theme = "light" | "dark";
 
 type Subtask = {
   text: string;
@@ -45,13 +44,11 @@ type EditTaskModalProps = {
   canUpdate: boolean;
   task: Doc<"tasks">;
   onClose: () => void;
-  theme: Theme;
 };
 
 export default function EditTaskModal({
   task,
   onClose,
-  theme,
   canUpdate,
 }: EditTaskModalProps) {
   const { t } = useTranslation();
@@ -210,13 +207,7 @@ export default function EditTaskModal({
         }
       }}
     >
-      <DialogContent
-        className={`max-h-[600px] max-w-lg overflow-auto rounded-xl border shadow-lg transition-colors ${
-          theme === "dark"
-            ? "border-slate-800 bg-slate-950 text-slate-100"
-            : "border-slate-200 bg-white text-slate-900"
-        }`}
-      >
+      <DialogContent className="max-h-[600px] max-w-lg overflow-auto rounded-xl border border-border bg-background text-foreground shadow-lg transition-colors">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold">
             {t("editTask.title")}
