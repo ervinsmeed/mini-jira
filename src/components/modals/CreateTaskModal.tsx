@@ -8,6 +8,7 @@ import { api } from "../../../convex/_generated/api";
 import SortableSubTask from "./SortableSubTask";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "react-i18next";
+import TaskStoryPointsField from "./TaskStoryPointsField";
 
 import {
   DndContext,
@@ -724,55 +725,13 @@ export default function CreateTaskModal({
               </Select>
             </div>
 
-            {/* STORY POINTS */}
-            <div>
-              <label
-                className={`block text-sm font-medium mb-2 ${
-                  theme === "dark" ? "text-slate-300" : "text-slate-700"
-                }`}
-              >
-                {t("createTask.storyPoints")}
-                <span className="block text-xs font-normal opacity-70">
-                  {t("hints.storyPoints")}
-                </span>
-              </label>
+            <TaskStoryPointsField
+              value={String(storyPoints)}
+              onChange={(value) => setStoryPoints(Number(value) as StoryPoints)}
+              label={t("createTask.storyPoints")}
+              placeholder={t("createTask.selectStoryPoints")}
+            />
 
-              <Select
-                value={storyPoints.toString()}
-                onValueChange={(value) =>
-                  setStoryPoints(Number(value) as StoryPoints)
-                }
-              >
-                <SelectTrigger
-                  className={`min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors ${
-                    theme === "dark"
-                      ? "bg-slate-900 border-slate-800 text-slate-100"
-                      : "bg-white border-slate-300 text-slate-900"
-                  }`}
-                >
-                  <SelectValue
-                    placeholder={t("createTask.selectStoryPoints")}
-                  />
-                </SelectTrigger>
-
-                <SelectContent
-                  position="popper"
-                  className={`max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors ${
-                    theme === "dark"
-                      ? "bg-slate-900 border-slate-800 text-slate-100"
-                      : "bg-white border-slate-200 text-slate-900"
-                  }`}
-                >
-                  {[1, 2, 3, 5, 8, 13, 21].map((points) => (
-                    <SelectItem key={points} value={points.toString()}>
-                      {points} SP
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* DEADLINE */}
             <div>
               <label
                 className={`block text-sm font-medium mb-2 ${

@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-
+import TaskStoryPointsField from "./TaskStoryPointsField";
 import {
   closestCenter,
   DndContext,
@@ -222,16 +222,11 @@ export default function EditTaskModal({
             {t("editTask.title")}
           </DialogTitle>
         </DialogHeader>
-
         <form onSubmit={handleSubmit} className="mt-2">
           <fieldset disabled={pending} className="contents">
             <fieldset disabled={!canUpdate} className="min-w-0 space-y-6">
               <div>
-                <label
-                  className={`mb-2 block text-sm font-medium ${
-                    theme === "dark" ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
+                <label className="mb-2 block text-sm font-medium text-foreground">
                   {t("editTask.taskTitle")}
                 </label>
 
@@ -240,21 +235,13 @@ export default function EditTaskModal({
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                   placeholder={t("editTask.titlePlaceholder")}
-                  className={`w-full rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
-                    theme === "dark"
-                      ? "border-slate-800 bg-slate-900 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                      : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-                  }`}
+                  className="w-full rounded-md border border-border bg-input px-3 py-2 text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                 />
               </div>
 
               <div>
-                <label
-                  className={`mb-2 block text-sm font-medium ${
-                    theme === "dark" ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
+                <label className="mb-2 block text-sm font-medium text-foreground">
                   {t("editTask.description")}
                 </label>
 
@@ -263,20 +250,12 @@ export default function EditTaskModal({
                   onChange={(event) => setDescription(event.target.value)}
                   placeholder={t("editTask.descriptionPlaceholder")}
                   rows={4}
-                  className={`w-full resize-none rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
-                    theme === "dark"
-                      ? "border-slate-800 bg-slate-900 text-slate-100 placeholder-slate-500 focus:ring-purple-400"
-                      : "border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:ring-purple-500"
-                  }`}
+                  className="w-full resize-none rounded-md border border-border bg-input px-3 py-2 text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
 
               <div>
-                <label
-                  className={`mb-2 block text-sm font-medium ${
-                    theme === "dark" ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
+                <label className="mb-2 block text-sm font-medium text-foreground">
                   {t("editTask.subtasks")}
                 </label>
 
@@ -305,11 +284,7 @@ export default function EditTaskModal({
                     <button
                       type="button"
                       onClick={handleAddSubtask}
-                      className={`w-full rounded-md border-2 border-dashed py-2 font-medium transition ${
-                        theme === "dark"
-                          ? "border-slate-800 text-purple-400 hover:bg-slate-900"
-                          : "border-slate-300 text-purple-600 hover:bg-slate-100"
-                      }`}
+                      className="w-full rounded-md border-2 border-dashed border-border py-2 font-medium text-foreground transition hover:bg-muted"
                     >
                       + {t("editTask.addSubtask")}
                     </button>
@@ -317,7 +292,7 @@ export default function EditTaskModal({
                 </DndContext>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
                 <TaskPriorityField
                   value={priority}
                   onChange={setPriority}
@@ -325,12 +300,8 @@ export default function EditTaskModal({
                   placeholder={t("editTask.selectPriority")}
                 />
 
-                <div>
-                  <label
-                    className={`mb-2 block text-sm font-medium ${
-                      theme === "dark" ? "text-slate-300" : "text-slate-700"
-                    }`}
-                  >
+                <div className="min-w-0">
+                  <label className="mb-2 block text-sm font-medium text-foreground">
                     {t("editTask.column")}
                   </label>
 
@@ -340,23 +311,11 @@ export default function EditTaskModal({
                       setColumnId(value as Id<"columns">)
                     }
                   >
-                    <SelectTrigger
-                      className={`w-full transition-colors ${
-                        theme === "dark"
-                          ? "border-slate-800 bg-slate-900 text-slate-100"
-                          : "border-slate-300 bg-white text-slate-900"
-                      }`}
-                    >
+                    <SelectTrigger className="w-full border-border bg-input text-foreground">
                       <SelectValue placeholder={t("editTask.selectColumn")} />
                     </SelectTrigger>
 
-                    <SelectContent
-                      className={`transition-colors ${
-                        theme === "dark"
-                          ? "border-slate-800 bg-slate-900 text-slate-100"
-                          : "border-slate-200 bg-white text-slate-900"
-                      }`}
-                    >
+                    <SelectContent className="border-border bg-popover text-popover-foreground">
                       {columns.map((column) => (
                         <SelectItem key={column._id} value={column._id}>
                           {getColumnLabel(column.name, t)}
@@ -367,53 +326,15 @@ export default function EditTaskModal({
                 </div>
               </div>
 
-              <div>
-                <label
-                  className={`mb-2 block text-sm font-medium ${
-                    theme === "dark" ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
-                  {t("editTask.storyPoints")}
-                  <span className="block text-xs font-normal opacity-70">
-                    {t("hints.storyPoints")}
-                  </span>
-                </label>
+              <TaskStoryPointsField
+                value={storyPoints}
+                onChange={setStoryPoints}
+                label={t("editTask.storyPoints")}
+                placeholder={t("editTask.selectStoryPoints")}
+              />
 
-                <Select value={storyPoints} onValueChange={setStoryPoints}>
-                  <SelectTrigger
-                    className={`w-full transition-colors ${
-                      theme === "dark"
-                        ? "border-slate-800 bg-slate-900 text-slate-100"
-                        : "border-slate-300 bg-white text-slate-900"
-                    }`}
-                  >
-                    <SelectValue
-                      placeholder={t("editTask.selectStoryPoints")}
-                    />
-                  </SelectTrigger>
-
-                  <SelectContent
-                    className={`transition-colors ${
-                      theme === "dark"
-                        ? "border-slate-800 bg-slate-900 text-slate-100"
-                        : "border-slate-200 bg-white text-slate-900"
-                    }`}
-                  >
-                    {[1, 2, 3, 5, 8, 13, 21].map((points) => (
-                      <SelectItem key={points} value={points.toString()}>
-                        {points} SP
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* DEADLINE */}
               <div>
-                <label
-                  className={`mb-2 block text-sm font-medium ${
-                    theme === "dark" ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
+                <label className="mb-2 block text-sm font-medium text-foreground">
                   {t("editTask.deadline")}
                 </label>
 
@@ -421,11 +342,7 @@ export default function EditTaskModal({
                   type="date"
                   value={deadline}
                   onChange={(event) => setDeadline(event.target.value)}
-                  className={`w-full rounded-md border px-3 py-2 transition focus:outline-none focus:ring-2 ${
-                    theme === "dark"
-                      ? "border-slate-800 bg-slate-900 text-slate-100 focus:ring-purple-400"
-                      : "border-slate-300 bg-white text-slate-900 focus:ring-purple-500"
-                  }`}
+                  className="w-full rounded-md border border-border bg-input px-3 py-2 text-foreground transition focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
 
@@ -433,11 +350,7 @@ export default function EditTaskModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className={`flex-1 rounded-lg border py-2 transition-colors ${
-                    theme === "dark"
-                      ? "border-slate-700 text-slate-300 hover:bg-slate-900"
-                      : "border-slate-300 text-slate-700 hover:bg-slate-100"
-                  }`}
+                  className="flex-1 rounded-lg border border-border py-2 text-foreground transition-colors hover:bg-muted"
                 >
                   {t("editTask.cancel")}
                 </button>
