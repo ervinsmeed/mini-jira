@@ -616,14 +616,12 @@ function BoardContent({ board, theme, can }: BoardProps) {
         isOpen={isCreateColumnModalOpen}
         onClose={() => setIsCreateColumnModalOpen(false)}
         boardId={board._id}
-        theme={theme}
       />
 
       {editingColumn && (
         <EditColumnModal
           column={editingColumn}
           onClose={() => setEditingColumn(null)}
-          theme={theme}
         />
       )}
     </div>
