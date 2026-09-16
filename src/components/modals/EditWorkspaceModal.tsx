@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { useAction } from "../../hooks/useAction";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog";
@@ -22,11 +22,6 @@ export default function EditWorkspaceModal({
   const [description, setDescription] = useState(workspace.description ?? "");
 
   const updateWorkspace = useMutation(api.workspaces.update);
-
-  useEffect(() => {
-    setName(workspace.name ?? "");
-    setDescription(workspace.description ?? "");
-  }, [workspace._id]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

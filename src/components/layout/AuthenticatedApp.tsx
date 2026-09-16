@@ -341,6 +341,7 @@ export default function AuthenticatedApp() {
 
       {editingWorkspace && (
         <EditWorkspaceModal
+          key={editingWorkspace._id}
           workspace={editingWorkspace}
           onClose={() => setEditingWorkspace(null)}
         />
@@ -348,13 +349,12 @@ export default function AuthenticatedApp() {
 
       {editingProject && (
         <EditProjectModal
+          key={editingProject._id}
           project={editingProject}
           onProjectUpdated={handleProjectUpdated}
           onClose={() => setEditingProject(null)}
-          theme={theme}
         />
       )}
-
       {membersProject && (
         <ProjectMembersModal
           project={membersProject}
