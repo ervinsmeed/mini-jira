@@ -1,40 +1,62 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { actionError } from "../../lib/actionError";
 import { ArrowLeft, UserRound } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-
+import type { Doc } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 
 type ProfileProps = {
   onBack: () => void;
 };
-
 export default function Profile({ onBack }: ProfileProps) {
   const { t } = useTranslation();
-
-  const assignedRoles = useQuery(api.users.myRoles);
   const currentUser = useQuery(api.users.getCurrent);
+
+  if (currentUser === undefined) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background text-foreground">
+        <div className="size-10 animate-spin rounded-full border-4 border-slate-600 border-t-purple-500" />
+      </div>
+    );
+  }
+
+  if (currentUser === null) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background text-foreground">
+        <p>{t("common.actionError")}</p>
+        <button type="button" onClick={onBack}>
+          {t("navigation.backToBoard")}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <ProfileContent
+      key={currentUser._id}
+      currentUser={currentUser}
+      onBack={onBack}
+    />
+  );
+}
+
+type ProfileContentProps = ProfileProps & {
+  currentUser: Doc<"users">;
+};
+
+function ProfileContent({ currentUser, onBack }: ProfileContentProps) {
+  const { t } = useTranslation();
+  const assignedRoles = useQuery(api.users.myRoles);
   const updateProfile = useMutation(api.users.updateProfile);
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [position, setPosition] = useState("");
-  const [avatar, setAvatar] = useState("");
+  const [firstName, setFirstName] = useState(currentUser.firstName ?? "");
+  const [lastName, setLastName] = useState(currentUser.lastName ?? "");
+  const [position, setPosition] = useState(currentUser.position ?? "");
+  const [avatar, setAvatar] = useState(currentUser.avatar ?? "");
   const [isSaving, setIsSaving] = useState(false);
   const saveLock = useRef(false);
-
-  useEffect(() => {
-    if (!currentUser) {
-      return;
-    }
-
-    setFirstName(currentUser.firstName ?? "");
-    setLastName(currentUser.lastName ?? "");
-    setPosition(currentUser.position ?? "");
-    setAvatar(currentUser.avatar ?? "");
-  }, [currentUser]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -61,13 +83,6 @@ export default function Profile({ onBack }: ProfileProps) {
 
   const inputClass =
     "border-border bg-input text-foreground placeholder:text-muted-foreground focus:border-primary";
-  if (currentUser === undefined) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background text-foreground">
-        <div className="size-10 animate-spin rounded-full border-4 border-slate-600 border-t-purple-500" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
