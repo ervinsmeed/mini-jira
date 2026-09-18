@@ -17,6 +17,7 @@ type TaskCardProps = {
   onToggleFavorite?: () => void;
   isDragging?: boolean;
   canDrag?: boolean;
+  isOverlay?: boolean;
 };
 
 import { Progress } from "../ui/progress";
@@ -38,6 +39,7 @@ export default function TaskCard({
   onToggleFavorite,
   isDragging = false,
   canDrag = false,
+  isOverlay = false,
 }: TaskCardProps) {
   const { t, i18n } = useTranslation();
   const queriedEpic = useQuery(
@@ -54,8 +56,8 @@ export default function TaskCard({
     transition,
     isDragging: isSortableDragging,
   } = useSortable({
-    id: task._id,
-    disabled: !canDrag,
+    id: isOverlay ? `overlay:${task._id}` : task._id,
+    disabled: !canDrag || isOverlay,
   });
 
   const style = {

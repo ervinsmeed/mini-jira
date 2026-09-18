@@ -554,6 +554,7 @@ function BoardContent({ board, theme, can }: BoardProps) {
                   task={activeTask}
                   now={now}
                   isDragging={true}
+                  isOverlay
                   onClick={() => {}}
                 />
               ) : null}
