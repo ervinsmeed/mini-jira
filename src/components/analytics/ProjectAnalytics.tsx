@@ -2,6 +2,7 @@ import WorkspaceAnalytics from "./WorkspaceAnalytics";
 import QueryBoundary from "../ui/QueryBoundary";
 import { ArrowLeft } from "lucide-react";
 import { useQuery } from "convex/react";
+import { useNow } from "../../hooks/useNow";
 import { useTranslation } from "react-i18next";
 import { getColumnLabel } from "../../lib/columnLabel";
 import { api } from "../../../convex/_generated/api";
@@ -20,12 +21,14 @@ function ProjectAnalyticsContent({
   onBack,
 }: ProjectAnalyticsProps) {
   const { t, i18n } = useTranslation();
+  const now = useNow();
 
   const analytics = useQuery(
     api.analytics.getProjectAnalytics,
     can("analytics.view")
       ? {
           boardId: board._id,
+          now,
         }
       : "skip",
   );

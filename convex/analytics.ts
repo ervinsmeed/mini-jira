@@ -7,6 +7,7 @@ import { v } from "convex/values";
 export const getProjectAnalytics = query({
   args: {
     boardId: v.id("boards"),
+    now: v.optional(v.number()),
   },
 
   handler: async (ctx, args) => {
@@ -26,15 +27,20 @@ export const getProjectAnalytics = query({
       .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
       .collect();
 
-    const doneColumnIds = new Set(
-      columns
-        .filter((column) => {
-          const name = column.name.trim().toLowerCase();
-
-          return name === "done" || name === "готово";
-        })
-        .map((column) => column._id),
+    const namedDone = columns.filter((column) => {
+      const name = column.name.trim().toLowerCase();
+      return name === "done" || name === "готово";
+    });
+    const lastColumn = columns.reduce<(typeof columns)[number] | null>(
+      (last, column) => (!last || column.order > last.order ? column : last),
+      null,
     );
+    const doneColumnIds = new Set(
+      (namedDone.length > 0 ? namedDone : lastColumn ? [lastColumn] : []).map(
+        (column) => column._id,
+      ),
+    );
+    const now = args.now ?? Date.now();
 
     const total = tasks.length;
 
@@ -47,7 +53,7 @@ export const getProjectAnalytics = query({
     const overdue = tasks.filter(
       (task) =>
         task.deadline !== undefined &&
-        task.deadline < Date.now() &&
+        task.deadline < now &&
         !doneColumnIds.has(task.columnId),
     ).length;
 
