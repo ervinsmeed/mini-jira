@@ -15,6 +15,7 @@ import type * as columns from "../columns.js";
 import type * as favorites from "../favorites.js";
 import type * as lib_access from "../lib/access.js";
 import type * as lib_cascade from "../lib/cascade.js";
+import type * as lib_defaultColumns from "../lib/defaultColumns.js";
 import type * as lib_directoryQueries from "../lib/directoryQueries.js";
 import type * as lib_projectOrder from "../lib/projectOrder.js";
 import type * as lib_roleDelegation from "../lib/roleDelegation.js";
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   favorites: typeof favorites;
   "lib/access": typeof lib_access;
   "lib/cascade": typeof lib_cascade;
+  "lib/defaultColumns": typeof lib_defaultColumns;
   "lib/directoryQueries": typeof lib_directoryQueries;
   "lib/projectOrder": typeof lib_projectOrder;
   "lib/roleDelegation": typeof lib_roleDelegation;
