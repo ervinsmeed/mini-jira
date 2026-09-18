@@ -141,6 +141,7 @@ function BoardContent({ board, theme, can }: BoardProps) {
           tomorrow,
         }
       : "skip",
+    BOARD_TASK_LIMIT,
   );
 
   const columnsResult = useQuery(
@@ -608,6 +609,8 @@ function BoardContent({ board, theme, can }: BoardProps) {
     </div>
   );
 }
+
+const BOARD_TASK_LIMIT = 200;
 
 export default function Board(props: BoardProps) {
   const { t } = useTranslation();
