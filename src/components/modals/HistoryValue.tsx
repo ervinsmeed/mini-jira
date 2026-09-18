@@ -22,7 +22,7 @@ export default function HistoryValue({
     try {
       items = JSON.parse(value);
     } catch {
-      /* Preserve an unexpected value verbatim, without losing user content. */
+      items = null;
     }
     if (
       Array.isArray(items) &&
