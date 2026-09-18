@@ -55,6 +55,36 @@ async function validateEpic(
   }
 }
 
+const PRIORITIES = ["high", "medium", "low"];
+const MAX_BULK_TASKS = 100;
+
+function cleanTitle(title: string) {
+  const trimmed = title.trim();
+  if (!trimmed) throw new ConvexError({ code: "VALIDATION_FAILED" });
+  return trimmed;
+}
+
+function validatePriority(priority?: string) {
+  if (priority !== undefined && priority !== "" && !PRIORITIES.includes(priority)) {
+    throw new ConvexError({ code: "VALIDATION_FAILED" });
+  }
+}
+
+async function nextOrderInColumn(
+  ctx: MutationCtx,
+  boardId: Id<"boards">,
+  columnId: Id<"columns">,
+) {
+  const last = await ctx.db
+    .query("tasks")
+    .withIndex("by_board_column_order", (q) =>
+      q.eq("boardId", boardId).eq("columnId", columnId),
+    )
+    .order("desc")
+    .first();
+  return (last?.order ?? -1) + 1;
+}
+
 async function addActivityLog(
   ctx: MutationCtx,
   {
@@ -119,6 +149,8 @@ export const create = mutation({
       args.boardId,
       "task.create",
     );
+    const title = cleanTitle(args.title);
+    validatePriority(args.priority);
     await validateAssignee(ctx, board, args.assigneeId);
     if (args.taskType === "epic" && args.epicId) {
       throw new ConvexError({ code: "VALIDATION_FAILED" });
@@ -132,15 +164,10 @@ export const create = mutation({
       throw new ConvexError({ code: "NOT_FOUND" });
     }
 
-    const tasks = await ctx.db
-      .query("tasks")
-      .filter((q) => q.eq(q.field("columnId"), args.columnId))
-      .collect();
-
-    const maxOrder = Math.max(...tasks.map((task) => task.order), -1);
+    const order = await nextOrderInColumn(ctx, args.boardId, args.columnId);
 
     const taskId = await ctx.db.insert("tasks", {
-      title: args.title,
+      title,
       description: args.description,
       priority: args.priority || "medium",
       assigneeId: args.assigneeId ?? undefined,
@@ -153,7 +180,7 @@ export const create = mutation({
       deadline: args.deadline,
       subtasks: args.subtasks || [],
       columnId: args.columnId,
-      order: maxOrder + 1,
+      order,
       boardId: args.boardId,
       userId: user._id,
       createdAt: Date.now(),
@@ -253,7 +280,7 @@ export const update = mutation({
     const updates: Partial<Doc<"tasks">> = {};
 
     if (args.title !== undefined) {
-      updates.title = args.title;
+      updates.title = cleanTitle(args.title);
     }
 
     if (args.assigneeId !== undefined) {
@@ -277,6 +304,7 @@ export const update = mutation({
     }
 
     if (args.priority !== undefined) {
+      validatePriority(args.priority);
       updates.priority = args.priority;
     }
 
@@ -300,6 +328,10 @@ export const update = mutation({
       }
 
       updates.columnId = args.columnId;
+
+      if (args.columnId !== task.columnId && args.order === undefined) {
+        updates.order = await nextOrderInColumn(ctx, task.boardId, args.columnId);
+      }
     }
 
     if (args.order !== undefined) {
@@ -596,9 +628,14 @@ export const bulkUpdate = mutation({
   },
 
   handler: async (ctx, args) => {
+    const taskIds = [...new Set(args.taskIds)];
+    if (taskIds.length > MAX_BULK_TASKS) {
+      throw new ConvexError({ code: "VALIDATION_FAILED" });
+    }
+    validatePriority(args.priority);
     const updatedTasks = [];
 
-    for (const taskId of args.taskIds) {
+    for (const taskId of taskIds) {
       const task = await ctx.db.get("tasks", taskId);
 
       if (!task) {
@@ -624,7 +661,10 @@ export const bulkUpdate = mutation({
       }
 
       const updates: Partial<Doc<"tasks">> = {};
-      if (args.columnId !== undefined) updates.columnId = args.columnId;
+      if (args.columnId !== undefined && args.columnId !== task.columnId) {
+        updates.columnId = args.columnId;
+        updates.order = await nextOrderInColumn(ctx, task.boardId, args.columnId);
+      }
       if (args.assigneeId !== undefined)
         updates.assigneeId = args.assigneeId ?? undefined;
       if (args.priority !== undefined) updates.priority = args.priority;
@@ -644,6 +684,9 @@ export const bulkRemove = mutation({
 
   handler: async (ctx, args) => {
     const uniqueTaskIds = [...new Set(args.taskIds)];
+    if (uniqueTaskIds.length > MAX_BULK_TASKS) {
+      throw new ConvexError({ code: "VALIDATION_FAILED" });
+    }
     const tasksToDelete = [];
 
     for (const taskId of uniqueTaskIds) {
