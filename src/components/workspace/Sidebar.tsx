@@ -1,8 +1,9 @@
+import "./Sidebar.css";
 import { useAction } from "../../hooks/useAction";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
-
+import "./Sidebar.css";
 import {
   Sun,
   Moon,
@@ -72,7 +73,6 @@ type BoardItemProps = Pick<
   | "onBoardSelect"
   | "onProjectMembers"
   | "onEditProject"
-  | "theme"
   | "isCollapsed"
 > & {
   board: Doc<"boards">;
@@ -177,14 +177,11 @@ export default function Sidebar({
   if (isCollapsed) {
     return (
       <div
-        className={`w-16 flex flex-col items-center py-4 border-r transition-colors ${
-          theme === "dark"
-            ? "bg-slate-950 border-slate-800"
-            : "bg-sidebar border-slate-200"
-        }`}
+        data-theme={theme}
+        className="app-sidebar w-16 flex flex-col items-center py-4 border-r transition-colors bg-sidebar text-sidebar-foreground border-sidebar-border"
       >
         <div className="flex flex-col items-center space-y-4 flex-1">
-          <div className="flex items-center justify-center size-10 bg-purple-500 rounded text-white font-bold text-sm">
+          <div className="flex items-center justify-center size-10 bg-sidebar-primary rounded-lg text-sidebar-primary-foreground font-bold text-sm">
             |||
           </div>
           <div className="flex flex-col items-center space-y-2 flex-1 overflow-y-auto">
@@ -212,7 +209,6 @@ export default function Sidebar({
 
                     handleDeleteBoard={handleDeleteBoard}
                     isCollapsed={true}
-                    theme={theme}
                   />
                 ))}
               </SortableContext>
@@ -234,10 +230,8 @@ export default function Sidebar({
               onClick={() => onViewChange("analytics")}
               className={`flex size-10 items-center justify-center rounded transition-colors ${
                 currentView === "analytics"
-                  ? "bg-purple-500 text-white"
-                  : theme === "dark"
-                    ? "bg-slate-900 text-slate-300 hover:bg-purple-600 hover:text-white"
-                    : "bg-slate-100 text-slate-700 hover:bg-purple-600 hover:text-white"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               }`}
               title={t("navigation.analytics")}
             >
@@ -249,10 +243,8 @@ export default function Sidebar({
             onClick={() => onViewChange("profile")}
             className={`flex size-10 items-center justify-center rounded transition-colors ${
               currentView === "profile"
-                ? "bg-purple-500 text-white"
-                : theme === "dark"
-                  ? "bg-slate-900 text-slate-300 hover:bg-purple-600 hover:text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-purple-600 hover:text-white"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             }`}
             title={t("navigation.profile")}
           >
@@ -263,11 +255,7 @@ export default function Sidebar({
         <button
           onClick={onToggleCollapsed}
           aria-label={t(isCollapsed ? "sidebar.expand" : "hideSidebar")}
-          className={`p-2 transition-colors ${
-            theme === "dark"
-              ? "text-slate-400 hover:text-slate-100"
-              : "text-slate-500 hover:text-slate-900"
-          }`}
+          className="p-2 transition-colors text-sidebar-foreground hover:text-sidebar-accent-foreground"
         >
           <SidebarIcon className={"size-4"} />
         </button>
@@ -277,49 +265,34 @@ export default function Sidebar({
 
   return (
     <div
-      className={`w-72 flex flex-col h-screen fixed left-0 top-0 z-40 border-r transition-colors ${
-        theme === "dark"
-          ? "bg-slate-950 border-slate-800"
-          : "bg-sidebar border-slate-200"
-      }`}
+      data-theme={theme}
+      className="app-sidebar w-72 flex flex-col h-screen fixed left-0 top-0 z-40 border-r transition-colors bg-sidebar text-sidebar-foreground border-sidebar-border"
     >
-      <div
-        className={`p-6 border-b transition-colors ${theme === "dark" ? "border-slate-800" : "border-slate-200"}`}
-      >
+      <div className="px-4 py-4 border-b transition-colors border-sidebar-border">
         <div className="flex items-center space-x-3">
-          <div className="flex items-center justify-center size-8 bg-purple-500 rounded text-white font-bold text-sm">
+          <div className="flex items-center justify-center size-8 bg-sidebar-primary rounded-lg text-sidebar-primary-foreground font-bold text-sm">
             |||
           </div>
 
-          <h1
-            className={`text-xl font-bold transition-colors ${theme === "dark" ? "text-slate-100" : "text-slate-900"}`}
-          >
+          <h1 className="text-xl font-bold transition-colors text-sidebar-foreground">
             {t("kanban")}
           </h1>
         </div>
       </div>
       {/* Boards */}
-      <div className="flex-1 p-6 overflow-y-auto">
+      <div className="min-h-0 flex-1 px-3 py-4 overflow-y-auto">
         {/* Workspaces */}
         <div className="mb-6">
-          <div
-            className={`text-xs font-semibold uppercase tracking-wider mb-3 ${
-              theme === "dark" ? "text-slate-400" : "text-slate-500"
-            }`}
-          >
+          <div className="text-xs font-semibold uppercase tracking-wider mb-3 text-sidebar-foreground">
             {t("navigation.workspaces")} ({workspaces.length})
           </div>
 
           <button
             type="button"
             onClick={onCreateWorkspace}
-            className={`w-full flex items-center justify-center p-3 rounded-r-full transition-all mb-2 shadow-sm ${
-              theme === "dark"
-                ? "bg-slate-900 text-slate-100 hover:bg-slate-800"
-                : "bg-slate-100 text-slate-900 hover:bg-slate-200"
-            }`}
+            className="w-full flex items-center justify-center px-3 py-2 rounded-lg border border-sidebar-border transition-colors mb-3 bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent"
           >
-            <span className="font-semibold">
+            <span className="text-sm font-medium">
               {t("createWorkspaceModal.title")}
             </span>
           </button>
@@ -333,18 +306,17 @@ export default function Sidebar({
             {workspaces.map((workspace: Doc<"workspaces">) => (
               <div
                 key={workspace._id}
-                className={`group flex w-full items-center rounded-r-full transition-colors ${
+                className={`group flex w-full items-center rounded-lg transition-colors ${
                   currentWorkspace?._id === workspace._id
-                    ? "bg-purple-500 text-white"
-                    : theme === "dark"
-                      ? "text-slate-400 hover:bg-purple-600/20 hover:text-slate-100"
-                      : "text-slate-600 hover:bg-purple-100 hover:text-slate-900"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 }`}
               >
                 <button
                   type="button"
                   onClick={() => onWorkspaceSelect(workspace)}
-                  className="min-w-0 flex-1 truncate px-4 py-2 text-left text-sm font-medium"
+                  title={workspace.name}
+                  className="min-w-0 flex-1 truncate px-2 py-2 text-left text-sm font-medium"
                 >
                   {workspace.name}
                 </button>
@@ -355,7 +327,7 @@ export default function Sidebar({
                     event.stopPropagation();
                     onWorkspaceMembers(workspace);
                   }}
-                  className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
+                  className="relative z-10 shrink-0 rounded p-1 opacity-60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
                   title={t("members.workspaceTitle")}
                 >
                   <Users className="size-3.5" />
@@ -367,7 +339,7 @@ export default function Sidebar({
                     event.stopPropagation();
                     onWorkspaceRoles(workspace);
                   }}
-                  className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
+                  className="relative z-10 shrink-0 rounded p-1 opacity-60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
                   title={t("roles.title")}
                 >
                   <Shield className="size-3.5" />
@@ -380,7 +352,7 @@ export default function Sidebar({
 
                     onEditWorkspace(workspace);
                   }}
-                  className="relative z-10 mr-3 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
+                  className="relative z-10 mr-1 shrink-0 rounded p-1 opacity-60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
                   title={t("sidebar.editWorkspace")}
                 >
                   <Pencil className="size-3.5" />
@@ -436,7 +408,7 @@ export default function Sidebar({
                       event.stopPropagation();
                       setShowDeleteWorkspaceConfirm(workspace._id);
                     }}
-                    className="relative z-10 mr-3 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400"
+                    className="relative z-10 mr-1 shrink-0 rounded p-1 opacity-60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 hover:text-red-400"
                     title={t("sidebar.deleteWorkspace")}
                   >
                     <Trash2 className="size-3.5" />
@@ -446,21 +418,15 @@ export default function Sidebar({
             ))}
           </div>
         </div>
-        <div
-          className={`text-xs font-semibold uppercase tracking-wider mb-4 transition-colors ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}
-        >
+        <div className="text-xs font-semibold uppercase tracking-wider mb-4 transition-colors text-sidebar-foreground">
           {t("allBoards")} ({boards.length})
         </div>
         {can("project.create") && (
           <button
             onClick={onCreateBoard}
-            className={`w-full flex items-center justify-center space-x-3 p-3 rounded-r-full transition-all mb-2 shadow-sm ${
-              theme === "dark"
-                ? "bg-purple-600 text-white hover:bg-purple-700"
-                : "bg-purple-500 text-white hover:bg-purple-600"
-            }`}
+            className="w-full flex items-center justify-center space-x-3 px-3 py-2 rounded-lg border border-sidebar-border transition-colors mb-3 bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent"
           >
-            <span className="font-semibold">{t("createBoard")}</span>
+            <span className="text-sm font-medium">{t("createBoard")}</span>
           </button>
         )}
         <DndContext
@@ -488,8 +454,6 @@ export default function Sidebar({
 
                   isCollapsed={false}
                   onEditProject={onEditProject}
-
-                  theme={theme}
                 />
               ))}
             </SortableContext>
@@ -509,12 +473,10 @@ export default function Sidebar({
           <button
             type="button"
             onClick={() => onViewChange("analytics")}
-            className={`mt-4 flex w-full items-center gap-3 rounded-r-full px-4 py-3 text-sm font-semibold transition-colors ${
+            className={`mt-4 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
               currentView === "analytics"
-                ? "bg-purple-500 text-white"
-                : theme === "dark"
-                  ? "text-slate-400 hover:bg-purple-600/20 hover:text-slate-100"
-                  : "text-slate-600 hover:bg-purple-100 hover:text-slate-900"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             }`}
           >
             <BarChart3 className="size-4" />
@@ -525,12 +487,10 @@ export default function Sidebar({
         <button
           type="button"
           onClick={() => onViewChange("profile")}
-          className={`mt-2 flex w-full items-center gap-3 rounded-r-full px-4 py-3 text-sm font-semibold transition-colors ${
+          className={`mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
             currentView === "profile"
-              ? "bg-purple-500 text-white"
-              : theme === "dark"
-                ? "text-slate-400 hover:bg-purple-600/20 hover:text-slate-100"
-                : "text-slate-600 hover:bg-purple-100 hover:text-slate-900"
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           }`}
         >
           <UserRound className="size-4" />
@@ -538,25 +498,19 @@ export default function Sidebar({
         </button>
       </div>
 
-      <div
-        className={`flex items-center justify-center space-x-2 rounded-lg p-2 transition-colors ${
-          theme === "dark" ? "bg-slate-900" : "bg-slate-100"
-        }`}
-      >
-        <Sun
-          className={`size-4 ${
-            theme === "light" ? "text-purple-500" : "text-slate-400"
-          }`}
-        />
+      <div className="flex items-center justify-center space-x-2 rounded-lg p-2 transition-colors bg-sidebar-accent">
+        <Sun className="size-4 text-sidebar-foreground" />
 
         <button
           onClick={onThemeToggle}
+          role="switch"
+          aria-checked={theme === "dark"}
           aria-label={t(theme === "dark" ? "sidebar.light" : "sidebar.dark")}
           title={t(theme === "dark" ? "sidebar.light" : "sidebar.dark")}
-          className="relative w-12 h-6 bg-purple-500 rounded-full transition-colors"
+          className="relative w-12 h-6 bg-sidebar-primary rounded-full transition-colors"
         >
           <div
-            className={`absolute size-5 bg-white rounded-full top-0.5 transition-transform ${
+            className={`absolute size-5 bg-sidebar-primary-foreground rounded-full top-0.5 transition-transform ${
               theme === "dark"
                 ? "transform translate-x-6"
                 : "transform translate-x-0.5"
@@ -564,26 +518,16 @@ export default function Sidebar({
           />
         </button>
 
-        <Moon
-          className={`size-4 ${
-            theme === "dark" ? "text-purple-500" : "text-slate-400"
-          }`}
-        />
+        <Moon className="size-4 text-sidebar-foreground" />
       </div>
 
-      <div
-        className={`flex items-center justify-center gap-2 px-2 py-2 ${
-          theme === "dark" ? "text-slate-300" : "text-slate-700"
-        }`}
-      >
+      <div className="flex items-center justify-center gap-2 px-2 py-2 text-sidebar-foreground">
         <button
           onClick={() => i18n.changeLanguage("en")}
           className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
             i18n.resolvedLanguage?.startsWith("en")
-              ? "bg-purple-500 text-white"
-              : theme === "dark"
-                ? "bg-slate-900 hover:bg-slate-800"
-                : "bg-slate-100 hover:bg-slate-200"
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "bg-sidebar hover:bg-sidebar-accent"
           }`}
         >
           English
@@ -592,10 +536,8 @@ export default function Sidebar({
           onClick={() => i18n.changeLanguage("ru")}
           className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
             i18n.resolvedLanguage?.startsWith("ru")
-              ? "bg-purple-500 text-white"
-              : theme === "dark"
-                ? "bg-slate-900 hover:bg-slate-800"
-                : "bg-slate-100 hover:bg-slate-200"
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "bg-sidebar hover:bg-sidebar-accent"
           }`}
         >
           Русский
@@ -604,23 +546,20 @@ export default function Sidebar({
 
       <button
         onClick={onToggleCollapsed}
-        className={`flex items-center space-x-3 px-2 py-1 transition-colors ${theme === "dark" ? "text-slate-400 hover:text-slate-100" : "text-slate-500 hover:text-slate-900"}`}
+        className="flex items-center space-x-3 px-2 py-1 transition-colors text-sidebar-foreground hover:text-sidebar-accent-foreground"
       >
         <EyeOff className="size-4" />
         <span className="text-sm font-medium">{t("hideSidebar")}</span>
       </button>
 
       <SignOutButton>
-        <div
-          className={`flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${
-            theme === "dark"
-              ? "text-slate-400 hover:text-slate-100 hover:bg-slate-900"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-          }`}
+        <button
+          type="button"
+          className="flex items-center space-x-3 px-3 py-2 rounded-md transition-colors bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
           <LogOut className="size-4" />
           <span className="text-sm font-medium">{t("logout")}</span>
-        </div>
+        </button>
       </SignOutButton>
     </div>
   );
@@ -638,7 +577,6 @@ function SortableBoardItem({
   isCollapsed,
   onEditProject,
   handleToggleFavorite,
-  theme,
 }: BoardItemProps) {
   const { t } = useTranslation();
   const projectAccess = useQuery(api.boards.getCurrentAccess, {
@@ -690,7 +628,7 @@ function SortableBoardItem({
       <div ref={setNodeRef} style={style} className="mb-2 px-4">
         <button
           onClick={() => onBoardSelect(board)}
-          className={`size-10 flex items-center justify-center text-xs font-bold transition-colors ${currentBoard?._id === board._id ? "bg-purple-500 text-white" : theme === "dark" ? "bg-slate-900 text-slate-300 hover:bg-purple-600 hover:text-white" : "bg-slate-100 text-slate-700 hover:bg-purple-600 hover:text-white"}`}
+          className={`size-10 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${currentBoard?._id === board._id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"}`}
           title={board.name}
         >
           {getInitials(board.name)}
@@ -703,17 +641,16 @@ function SortableBoardItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group w-full flex items-center justify-between px-4 py-3 rounded-r-full transition-colors ${
+      className={`group w-full flex items-center justify-between px-2 py-2 rounded-lg transition-colors ${
         currentBoard?._id === board._id
-          ? "bg-purple-500 text-white"
-          : theme === "dark"
-            ? "text-slate-400 hover:text-slate-100 hover:bg-purple-600/20"
-            : "text-slate-500 hover:text-slate-900 hover:bg-purple-100"
+          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+          : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       }`}
     >
       <button
         onClick={() => onBoardSelect(board)}
-        className="flex items-center space-x-3 flex-1"
+        title={board.name}
+        className="flex min-w-0 items-center gap-2 flex-1"
       >
         {canReorder && (
           <div
@@ -727,7 +664,7 @@ function SortableBoardItem({
           </div>
         )}
         <div className="min-w-0 flex-1 text-left">
-          <div className="font-medium truncate">{board.name}</div>
+          <div className="text-sm font-medium truncate">{board.name}</div>
 
           <div className="text-[10px] opacity-70">
             {t(`editProjectModal.${board.status ?? "active"}`)}
@@ -749,9 +686,7 @@ function SortableBoardItem({
           className={`size-3.5 transition-colors ${
             isFavorite
               ? "fill-yellow-400 text-yellow-400"
-              : theme === "dark"
-                ? "text-slate-500 hover:text-yellow-400"
-                : "text-slate-400 hover:text-yellow-500"
+              : "text-sidebar-foreground hover:text-sidebar-accent-foreground"
           }`}
         />
       </button>
@@ -762,7 +697,7 @@ function SortableBoardItem({
           event.stopPropagation();
           onProjectMembers(board);
         }}
-        className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
+        className="relative z-10 shrink-0 rounded p-1 opacity-60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
         title={t("members.projectTitle")}
       >
         <Users className="size-3.5" />
@@ -775,7 +710,7 @@ function SortableBoardItem({
             event.stopPropagation();
             onEditProject(board);
           }}
-          className="relative z-10 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
+          className="relative z-10 shrink-0 rounded p-1 opacity-60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
           title={t("sidebar.editProject")}
         >
           <Pencil className="size-3.5" />
@@ -824,7 +759,7 @@ function SortableBoardItem({
             onClick={() => setShowDeleteConfirm(board._id)}
             aria-label={t("sidebar.deleteProject")}
             title={t("sidebar.deleteProject")}
-            className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-all"
+            className="opacity-60 group-hover:opacity-100 group-focus-within:opacity-100 p-1 hover:text-red-400 transition-all"
           >
             <Trash2 className="size-3" />
           </button>

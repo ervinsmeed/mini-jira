@@ -4,12 +4,12 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CalendarDays, GripVertical, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
 import type { Doc } from "../../../convex/_generated/dataModel";
 
 type TaskCardProps = {
   task: Doc<"tasks">;
   epic?: Doc<"tasks"> | null;
+  now?: number;
   onClick: () => void;
   isSelected?: boolean;
   onToggleSelect?: () => void;
@@ -21,9 +21,16 @@ type TaskCardProps = {
 
 import { Progress } from "../ui/progress";
 
+const PRIORITY_STYLES = {
+  high: { border: "border-l-red-500", dot: "bg-red-500" },
+  medium: { border: "border-l-yellow-500", dot: "bg-yellow-500" },
+  low: { border: "border-l-green-500", dot: "bg-green-500" },
+} as const;
+
 export default function TaskCard({
   task,
   epic: providedEpic,
+  now = Date.now(),
   onClick,
   isSelected = false,
   onToggleSelect,
@@ -62,16 +69,6 @@ export default function TaskCard({
 
   const totalSubtasks = task.subtasks ? task.subtasks.length : 0;
 
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setNow(Date.now());
-    }, 60_000);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
   const isOverdue = task.deadline !== undefined && task.deadline < now;
 
   const formattedDeadline = task.deadline
@@ -81,50 +78,31 @@ export default function TaskCard({
   const percentageCompletion =
     totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
 
-  const getPriorityColor = (priority: string | undefined) => {
-    switch (priority) {
-      case "high":
-        return "border-l-red-500";
-
-      case "medium":
-        return "border-l-yellow-500";
-
-      case "low":
-        return "border-l-green-500";
-
-      default:
-        return "border-l-yellow-500";
-    }
-  };
-
-  const getPriorityDot = (priority: string | undefined) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-500";
-
-      case "medium":
-        return "bg-yellow-500";
-
-      case "low":
-        return "bg-green-500";
-
-      default:
-        return "bg-yellow-500";
-    }
-  };
+  const priorityStyle =
+    PRIORITY_STYLES[task.priority as keyof typeof PRIORITY_STYLES] ??
+    PRIORITY_STYLES.medium;
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       onClick={onClick}
-      className={`task-card cursor-pointer rounded-md border border-l-6 p-6 shadow-sm transition-all ${getPriorityColor(
-        task.priority,
-      )} ${
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick();
+        }
+      }}
+      className={`task-card cursor-pointer rounded-md border border-l-4 p-4 shadow-sm transition-all ${
+        priorityStyle.border
+      } ${
         isDragging || isSortableDragging
           ? "rotate-1 scale-105 opacity-50 shadow-lg"
           : ""
-      } ${isSelected ? "ring-2 ring-purple-500" : ""}`}
+      } ${isSelected ? "ring-2 ring-primary" : ""}`}
     >
       {onToggleSelect && (
         <input
@@ -134,7 +112,7 @@ export default function TaskCard({
           onChange={onToggleSelect}
           onClick={(event) => event.stopPropagation()}
           onPointerDown={(event) => event.stopPropagation()}
-          className="mb-3 size-4 cursor-pointer accent-purple-500"
+          className="mb-3 size-4 cursor-pointer accent-primary"
         />
       )}
 
@@ -180,13 +158,13 @@ export default function TaskCard({
             title={t("taskCard.priority", {
               priority: t(`priority.${task.priority || "medium"}`),
             })}
-            className={`size-2 rounded-full ${getPriorityDot(task.priority)}`}
+            className={`size-2 rounded-full ${priorityStyle.dot}`}
           />
         </div>
       </div>
 
       {task.description && (
-        <p className="task-card__description mb-2 line-clamp-2 text-sm! leading-4">
+        <p className="task-card__description mb-2 line-clamp-2 text-sm leading-4">
           {task.description}
         </p>
       )}
@@ -219,7 +197,7 @@ export default function TaskCard({
 
       {totalSubtasks > 0 && (
         <>
-          <p className="task-card__subtasks mb-2 text-sm! font-medium">
+          <p className="task-card__subtasks mb-2 text-sm font-medium">
             {t("taskCard.subtasksProgress", {
               completed: completedSubtasks,
               total: totalSubtasks,

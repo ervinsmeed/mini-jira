@@ -1,4 +1,4 @@
-import HistoryValue from "./HistoryValue";
+import TaskActivity from "./TaskActivity";
 import { actionError } from "../../lib/actionError";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { getColumnLabel } from "../../lib/columnLabel";
@@ -90,16 +90,6 @@ export default function TaskModal({
     api.boardMembers.projectMembersPage,
     { boardId: task.boardId },
     { initialNumItems: 30 },
-  );
-
-  const {
-    results: activityLogs,
-    status: activityStatus,
-    loadMore: loadActivity,
-  } = usePaginatedQuery(
-    api.tasks.activityPage,
-    { taskId: task._id },
-    { initialNumItems: 20 },
   );
 
   const {
@@ -720,108 +710,8 @@ export default function TaskModal({
               </button>
             </div>
           </div>
-          <div>
-            <h4
-              className={`text-sm font-medium mb-3 ${
-                theme === "dark" ? "text-slate-100" : "text-slate-900"
-              }`}
-            >
-              {t("taskModal.activity")}
-            </h4>
 
-            <div className="space-y-3">
-              {activityStatus === "CanLoadMore" && (
-                <button onClick={() => loadActivity(20)}>
-                  {t("pagination.loadMore")}
-                </button>
-              )}
-              {activityStatus === "LoadingFirstPage" ? (
-                <p>{t("common.loading")}</p>
-              ) : activityLogs.length === 0 ? (
-                <p
-                  className={`text-sm ${
-                    theme === "dark" ? "text-slate-500" : "text-slate-500"
-                  }`}
-                >
-                  {t("taskModal.noActivity")}
-                </p>
-              ) : (
-                activityLogs.map((log) => (
-                  <div
-                    key={log._id}
-                    className={`rounded-lg border p-3 ${
-                      theme === "dark"
-                        ? "border-slate-800 bg-slate-900"
-                        : "border-slate-200 bg-slate-50"
-                    }`}
-                  >
-                    <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-4">
-                      <div className="min-w-0 w-full sm:flex-1">
-                        <p
-                          className={`text-sm font-medium ${
-                            theme === "dark"
-                              ? "text-slate-100"
-                              : "text-slate-900"
-                          }`}
-                        >
-                          {log.userName}
-                        </p>
-
-                        <p className="mt-1 text-sm font-medium">
-                          {t(`taskModal.activityEvents.${log.action}`, {
-                            defaultValue: log.action,
-                          })}
-                        </p>
-
-                        <p
-                          className={`mt-1 whitespace-pre-wrap text-sm ${
-                            theme === "dark"
-                              ? "text-slate-400"
-                              : "text-slate-600"
-                          }`}
-                        >
-                          {log.details}
-                          {log.changes?.map(
-                            (
-                              change: {
-                                field: string;
-                                before: string | number | null;
-                                after: string | number | null;
-                              },
-                              index: number,
-                            ) => (
-                              <span className="block" key={index}>
-                                {t(`historyFields.${change.field}`)}:{" "}
-                                <HistoryValue
-                                  field={change.field}
-                                  value={change.before}
-                                />{" "}
-                                {"\u2192"}{" "}
-                                <HistoryValue
-                                  field={change.field}
-                                  value={change.after}
-                                />
-                              </span>
-                            ),
-                          )}
-                        </p>
-                      </div>
-
-                      <span
-                        className={`max-w-full sm:shrink-0 text-xs ${
-                          theme === "dark" ? "text-slate-500" : "text-slate-400"
-                        }`}
-                      >
-                        {new Date(log.createdAt).toLocaleString(
-                          i18n.resolvedLanguage,
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <TaskActivity taskId={task._id} />
 
           <div>
             <label

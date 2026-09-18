@@ -2,11 +2,11 @@ import QueryBoundary from "../ui/QueryBoundary";
 
 import { useAction } from "../../hooks/useAction";
 import { useTaskPages } from "../../hooks/useTaskPages";
+import { useNow } from "../../hooks/useNow";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import RecentTasksMenu from "./RecentTasksMenu";
-
 import { Plus } from "lucide-react";
 
 import BoardBulkActions from "./BoardBulkActions";
@@ -45,6 +45,7 @@ import TaskModal from "../modals/TaskModal";
 import CreateTaskModal from "../modals/CreateTaskModal";
 import CreateColumnModal from "../modals/CreateColumnModal";
 import EditColumnModal from "../modals/EditColumnModal";
+
 type BoardProps = {
   board: Doc<"boards"> | null;
   theme: "light" | "dark";
@@ -89,7 +90,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
   const [statusFilter, setStatusFilter] = useState<Id<"columns"> | "all">(
     "all",
   );
-
   const [assigneeFilter, setAssigneeFilter] = useState<
     Id<"users"> | "all" | "unassigned"
   >("all");
@@ -109,7 +109,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
   const [sortBy, setSortBy] = useState<
     "manual" | "title" | "deadline" | "created" | "storyPoints" | "priority"
   >("manual");
-
   const todayDate = new Date();
   const today = new Date(
     todayDate.getFullYear(),
@@ -121,6 +120,9 @@ function BoardContent({ board, theme, can }: BoardProps) {
     todayDate.getMonth(),
     todayDate.getDate() + 1,
   ).getTime();
+
+  const now = useNow();
+
   const {
     results: tasksResult,
     status: pageStatus,
@@ -156,9 +158,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
         }
       : "skip",
   );
-  const favoriteTaskIdSet = new Set(
-    tasksResult.filter((task) => task.isFavorite).map((task) => task._id),
-  );
 
   const toggleTaskFavorite = useMutation(api.favorites.toggleTask);
   const recordRecentTaskView = useMutation(api.recentTasks.recordView);
@@ -172,10 +171,36 @@ function BoardContent({ board, theme, can }: BoardProps) {
     { initialNumItems: 30 },
   );
 
-  const tasks: Doc<"tasks">[] = tasksResult ?? [];
+  const tasks = tasksResult;
   const columns: Doc<"columns">[] = columnsResult ?? [];
 
-  const visibleTasks = tasks;
+  const favoriteTaskIdSet = useMemo(
+    () =>
+      new Set(tasks.filter((task) => task.isFavorite).map((task) => task._id)),
+    [tasks],
+  );
+
+  const taskById = useMemo(() => {
+    const map = new Map<Id<"tasks">, Doc<"tasks">>();
+    for (const task of tasks) map.set(task._id, task);
+    return map;
+  }, [tasks]);
+
+  const tasksByColumn = useMemo(() => {
+    const map = new Map<Id<"columns">, Doc<"tasks">[]>();
+    for (const task of tasks) {
+      const list = map.get(task.columnId);
+      if (list) {
+        list.push(task);
+      } else {
+        map.set(task.columnId, [task]);
+      }
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => a.order - b.order);
+    }
+    return map;
+  }, [tasks]);
 
   const initializeColumns = useMutation(api.columns.initializeDefaultColumns);
 
@@ -203,18 +228,9 @@ function BoardContent({ board, theme, can }: BoardProps) {
     }
   }, [board?._id, columnsResult, initializeColumns, canCreateColumn]);
 
-  const getTasksByColumn = (columnId: Id<"columns">) => {
-    return tasks
-      .filter((task) => task.columnId === columnId)
-      .sort((firstTask, secondTask) => firstTask.order - secondTask.order);
-  };
-  const getVisibleTasksByColumn = (columnId: Id<"columns">) => {
-    return visibleTasks.filter((task) => task.columnId === columnId);
-  };
+  const getTasksByColumn = (columnId: Id<"columns">) =>
+    tasksByColumn.get(columnId) ?? [];
 
-  const getTaskCount = (columnId: Id<"columns">) => {
-    return getVisibleTasksByColumn(columnId).length;
-  };
   const toggleTaskSelection = (taskId: Id<"tasks">) => {
     if (!canSelectTasks) return;
     setSelectedTaskIds((currentTaskIds) =>
@@ -292,11 +308,8 @@ function BoardContent({ board, theme, can }: BoardProps) {
   };
   const handleTaskClick = (task: Doc<"tasks">) => {
     setSelectedTask(task);
-
-    void recordRecentTaskView({
-      taskId: task._id,
-    }).catch((error) => {
-      console.error("Failed to record recent task:", error);
+    void run(async () => {
+      await recordRecentTaskView({ taskId: task._id });
     });
   };
   const handleDragStart = (event: DragStartEvent) => {
@@ -463,7 +476,7 @@ function BoardContent({ board, theme, can }: BoardProps) {
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(true)}
-              className="flex shrink-0 items-center gap-2 rounded-full bg-purple-500 px-4 py-2 font-medium text-white transition-colors hover:bg-purple-600"
+              className="flex shrink-0 items-center gap-2 rounded-full bg-primary px-4 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               disabled={pending}
             >
               <Plus className="size-4" />
@@ -519,14 +532,14 @@ function BoardContent({ board, theme, can }: BoardProps) {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={visibleTasks.map((task) => task._id)}>
+            <SortableContext items={tasks.map((task) => task._id)}>
               {columns.map((column) => (
                 <Column
                   key={column._id}
                   column={column}
-                  taskCount={getTaskCount(column._id)}
-                  tasks={getVisibleTasksByColumn(column._id)}
-                  allTasks={tasks}
+                  tasks={getTasksByColumn(column._id)}
+                  taskById={taskById}
+                  now={now}
                   onTaskClick={handleTaskClick}
                   onEditColumn={setEditingColumn}
                   canEditColumn={canManageColumn(column)}
@@ -546,7 +559,7 @@ function BoardContent({ board, theme, can }: BoardProps) {
                 <button
                   type="button"
                   onClick={() => setIsCreateColumnModalOpen(true)}
-                  className="flex min-h-[200px] w-full items-center justify-center space-x-2 rounded-lg border border-border bg-card px-6 py-6 text-lg font-medium text-muted-foreground transition-colors hover:border-purple-500 hover:text-foreground"
+                  className="flex min-h-[200px] w-full items-center justify-center space-x-2 rounded-lg border border-border bg-card px-6 py-6 text-lg font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
                   disabled={pending}
                 >
                   <Plus className="size-6" />
@@ -560,6 +573,7 @@ function BoardContent({ board, theme, can }: BoardProps) {
               {activeTask ? (
                 <TaskCard
                   task={activeTask}
+                  now={now}
                   isDragging={true}
                   onClick={() => {}}
                 />

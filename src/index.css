@@ -12,38 +12,50 @@
   font-family: "Geist", sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+
+  /* Тёмная тема по умолчанию (реальный дефолтный вид приложения) */
+  --background: #020617;
+  --foreground: #f1f5f9;
+  --card: #020617;
+  --card-foreground: #f1f5f9;
+  --card-hover: #0f172a;
+  --popover: #0f172a;
+  --popover-foreground: #f1f5f9;
+  --primary: #7c3aed;
+  --primary-hover: #6d28d9;
+  --primary-foreground: #ffffff;
+  --secondary: #1e293b;
+  --secondary-foreground: #f1f5f9;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #d8b4fe;
+  --destructive: #ef4444;
+  --danger-text: #ef4444;
+  --success-text: #22c55e;
+  --warning-button: #eab308;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #7c3aed;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #7c3aed;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f1f5f9;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #7c3aed;
+  --analytics-bar: #8b5cf6;
+}
+
+[data-theme="light"] {
+  --analytics-bar: #7c3aed;
 }
 .task-card__epic-badge,
 .task-card__epic-reference {
@@ -75,13 +87,7 @@
 }
 
 .task-card:hover {
-  background-color: var(--task-card-hover);
-}
-
-[data-theme="light"] .task-card {
-  --task-card-background: var(--card);
-  --task-card-hover: var(--background);
-  --task-card-border: #e2e8f0;
+  background-color: var(--card-hover);
 }
 
 .task-card__title {
@@ -100,16 +106,21 @@
 }
 
 .task-card__deadline--overdue {
-  color: #ef4444;
-}
-
-[data-theme="light"] .task-card__deadline--overdue {
   color: var(--danger-text);
 }
 
+.task-card__epic-badge,
+.task-card__epic-reference {
+  color: var(--accent-foreground);
+}
+
+.task-card__epic-badge {
+  background-color: var(--accent);
+}
+
 .task-card__points {
-  background-color: #1e293b;
-  color: #d8b4fe;
+  background-color: var(--secondary);
+  color: var(--accent-foreground);
 }
 
 [data-theme="light"] .task-card__points {
@@ -124,13 +135,11 @@
 [data-theme="light"] {
   --analytics-bar: #7c3aed;
 }
-/* --- Default - Dark Theme --- */
+
 body {
-  @apply bg-slate-950 text-slate-100;
   margin: 0;
   padding: 0;
 }
-
 button {
   cursor: pointer;
 }
@@ -390,13 +399,14 @@ select {
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
+@layer components {
+  .task-card {
+    background-color: var(--card);
+    border-top-color: var(--border);
+    border-right-color: var(--border);
+    border-bottom-color: var(--border);
   }
-  body {
-    @apply bg-background text-foreground;
-  }
+
   html {
     @apply font-sans;
   }
