@@ -64,6 +64,7 @@ i18n
             created: 'Project "{{name}}" created',
           },
           column: {
+            menu: "Column menu",
             edit: "Edit",
             delete: "Delete",
             deleteTitle: "Delete Column?",
@@ -460,6 +461,7 @@ i18n
             created: "Рабочее пространство «{{name}}» создано",
           },
           column: {
+            menu: "Меню колонки",
             edit: "Редактировать",
             delete: "Удалить",
             deleteTitle: "Удалить колонку?",

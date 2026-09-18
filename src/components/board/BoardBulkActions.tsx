@@ -1,5 +1,6 @@
 import type { Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "react-i18next";
+import { getColumnLabel } from "../../lib/columnLabel";
 
 type BoardBulkActionsProps = {
   selectedCount: number;
@@ -64,7 +65,7 @@ export default function BoardBulkActions({
 
             {columns.map((column) => (
               <option key={column._id} value={column._id}>
-                {column.name}
+                {getColumnLabel(column.name, t)}
               </option>
             ))}
           </select>

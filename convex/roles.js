@@ -37,6 +37,9 @@ export const create = mutation({
       throw new ConvexError({ code: "ACCESS_DENIED" });
     }
     assertRoleDelegation({ isOwner, currentRole }, args.workspaceId, args);
+    if (!args.name.trim()) {
+      throw new ConvexError({ code: "VALIDATION_FAILED" });
+    }
     const existingRoles = await ctx.db
       .query("roles")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
@@ -47,7 +50,7 @@ export const create = mutation({
     );
 
     if (duplicateRole) {
-      throw new ConvexError({ code: "ACCESS_DENIED" });
+      throw new ConvexError({ code: "VALIDATION_FAILED" });
     }
 
     const roleId = await ctx.db.insert("roles", {
@@ -137,7 +140,7 @@ export const update = mutation({
       );
 
       if (duplicateRole) {
-        throw new ConvexError({ code: "ACCESS_DENIED" });
+        throw new ConvexError({ code: "VALIDATION_FAILED" });
       }
     }
 
@@ -209,7 +212,7 @@ export const remove = mutation({
     }
 
     if (workspaceRoleIsAssigned || projectRoleIsAssigned) {
-      throw new ConvexError({ code: "ACCESS_DENIED" });
+      throw new ConvexError({ code: "VALIDATION_FAILED" });
     }
 
     await ctx.db.delete(args.id);
