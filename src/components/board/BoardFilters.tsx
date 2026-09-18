@@ -53,11 +53,27 @@ export default function BoardFilters({
   setPriorityFilter,
 }: BoardFiltersProps) {
   const { t } = useTranslation();
+  const activeFilters = [
+    statusFilter,
+    assigneeFilter,
+    storyPointsFilter,
+    deadlineFilter,
+    priorityFilter,
+  ].filter((value) => value !== "all").length;
 
   return (
-    <details className="relative">
-      <summary className="cursor-pointer list-none rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
+    <details name="board-menu" className="relative">
+      <summary
+        className={`cursor-pointer list-none rounded-md border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted ${
+          activeFilters > 0 ? "border-primary" : "border-border"
+        }`}
+      >
         {t("board.filters", { defaultValue: "Filters" })}
+        {activeFilters > 0 && (
+          <span className="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-xs text-primary-foreground">
+            {activeFilters}
+          </span>
+        )}
       </summary>
 
       <div className="absolute right-0 top-12 z-50 grid w-72 gap-3 rounded-lg border border-border bg-card p-4 shadow-xl">
