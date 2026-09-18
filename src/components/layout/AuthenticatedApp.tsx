@@ -19,6 +19,8 @@ import { api } from "../../../convex/_generated/api";
 
 const ProjectAnalytics = lazy(() => import("../analytics/ProjectAnalytics"));
 const Profile = lazy(() => import("../profile/Profile"));
+const AUTO_LOAD_LIMIT = 100;
+
 export default function AuthenticatedApp() {
   const { t } = useTranslation();
   const [currentBoardId, setCurrentBoardId] = useState<Id<"boards"> | null>(
@@ -92,11 +94,11 @@ export default function AuthenticatedApp() {
     { initialNumItems: 30 },
   );
   useEffect(() => {
-    if (workspaces.length === 0 && workspaceListStatus === "CanLoadMore")
+    if (workspaces.length < AUTO_LOAD_LIMIT && workspaceListStatus === "CanLoadMore")
       loadWorkspaces(30);
   }, [workspaces.length, workspaceListStatus, loadWorkspaces]);
   useEffect(() => {
-    if (boards.length === 0 && boardListStatus === "CanLoadMore")
+    if (boards.length < AUTO_LOAD_LIMIT && boardListStatus === "CanLoadMore")
       loadBoards(30);
   }, [boards.length, boardListStatus, loadBoards]);
 
