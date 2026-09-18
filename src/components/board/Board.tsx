@@ -29,7 +29,6 @@ import { useTranslation } from "react-i18next";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 
 import {
-  SortableContext,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 
@@ -196,11 +195,15 @@ function BoardContent({ board, theme, can }: BoardProps) {
         map.set(task.columnId, [task]);
       }
     }
-    for (const list of map.values()) {
-      list.sort((a, b) => a.order - b.order);
+    if (sortBy === "manual") {
+      for (const list of map.values()) {
+        list.sort((a, b) => a.order - b.order);
+      }
     }
     return map;
-  }, [tasks]);
+  }, [tasks, sortBy]);
+
+  const canReorder = canUpdateTask && sortBy === "manual";
 
   const initializeColumns = useMutation(api.columns.initializeDefaultColumns);
 
@@ -308,9 +311,7 @@ function BoardContent({ board, theme, can }: BoardProps) {
   };
   const handleTaskClick = (task: Doc<"tasks">) => {
     setSelectedTask(task);
-    void run(async () => {
-      await recordRecentTaskView({ taskId: task._id });
-    });
+    recordRecentTaskView({ taskId: task._id }).catch(() => {});
   };
   const handleDragStart = (event: DragStartEvent) => {
     if (!canUpdateTask) {
@@ -332,7 +333,7 @@ function BoardContent({ board, theme, can }: BoardProps) {
         return;
       }
 
-      if (!over) return;
+      if (!over || over.id === active.id) return;
 
       const task = tasks.find((item) => item._id === active.id);
 
@@ -526,13 +527,12 @@ function BoardContent({ board, theme, can }: BoardProps) {
       <div className="flex-1 overflow-auto p-6">
         <div className="flex h-full min-w-max items-start space-x-6">
           <DndContext
-            key={canUpdateTask ? "dnd-enabled" : "dnd-disabled"}
-            sensors={canUpdateTask ? sensors : []}
+            key={canReorder ? "dnd-enabled" : "dnd-disabled"}
+            sensors={canReorder ? sensors : []}
             collisionDetection={closestCenter}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={tasks.map((task) => task._id)}>
               {columns.map((column) => (
                 <Column
                   key={column._id}
@@ -544,7 +544,7 @@ function BoardContent({ board, theme, can }: BoardProps) {
                   onEditColumn={setEditingColumn}
                   canEditColumn={canManageColumn(column)}
                   canDeleteColumn={canManageColumn(column)}
-                  canDragTasks={canUpdateTask}
+                  canDragTasks={canReorder}
                   selectedTaskIds={selectedTaskIds}
                   onToggleTaskSelection={
                     canSelectTasks ? toggleTaskSelection : undefined
@@ -553,7 +553,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
                   onToggleTaskFavorite={handleToggleTaskFavorite}
                 />
               ))}
-            </SortableContext>
             {canCreateColumn && (
               <div className="flex w-72 shrink-0 items-start justify-center pt-12">
                 <button
