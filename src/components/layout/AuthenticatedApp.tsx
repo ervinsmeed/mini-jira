@@ -21,9 +21,11 @@ const ProjectAnalytics = lazy(() => import("../analytics/ProjectAnalytics"));
 const Profile = lazy(() => import("../profile/Profile"));
 export default function AuthenticatedApp() {
   const { t } = useTranslation();
-  const [currentBoard, setCurrentBoard] = useState<Doc<"boards"> | null>(null);
-  const [currentWorkspace, setCurrentWorkspace] =
-    useState<Doc<"workspaces"> | null>(null);
+  const [currentBoardId, setCurrentBoardId] = useState<Id<"boards"> | null>(
+    null,
+  );
+  const [currentWorkspaceId, setCurrentWorkspaceId] =
+    useState<Id<"workspaces"> | null>(null);
   const [currentView, setCurrentView] = useState<
     "board" | "analytics" | "profile"
   >("board");
@@ -67,8 +69,9 @@ export default function AuthenticatedApp() {
   );
 
   const displayWorkspace =
-    currentWorkspace ??
-    (workspaces && workspaces.length > 0 ? workspaces[0] : null);
+    workspaces.find((workspace) => workspace._id === currentWorkspaceId) ??
+    workspaces[0] ??
+    null;
 
   const currentAccess = useQuery(
     api.workspaceMembers.getCurrentAccess,
@@ -122,7 +125,7 @@ export default function AuthenticatedApp() {
   }, [user, createUser, t]);
 
   const displayBoard =
-    currentBoard ?? (boards && boards.length > 0 ? boards[0] : null);
+    boards.find((board) => board._id === currentBoardId) ?? boards[0] ?? null;
 
   const projectAccess = useQuery(
     api.boards.getCurrentAccess,
@@ -185,7 +188,7 @@ export default function AuthenticatedApp() {
   };
 
   const handleBoardCreated = (board: Doc<"boards">) => {
-    setCurrentBoard(board);
+    setCurrentBoardId(board._id);
 
     if (board && board._id) {
       initializeColumns({
@@ -195,8 +198,8 @@ export default function AuthenticatedApp() {
   };
 
   const handleWorkspaceCreated = (workspace: Doc<"workspaces">) => {
-    setCurrentWorkspace(workspace);
-    setCurrentBoard(null);
+    setCurrentWorkspaceId(workspace._id);
+    setCurrentBoardId(null);
     setCurrentView("board");
   };
 
@@ -210,13 +213,13 @@ export default function AuthenticatedApp() {
   };
 
   const handleBoardSelect = (board: Doc<"boards"> | null) => {
-    setCurrentBoard(board);
+    setCurrentBoardId(board?._id ?? null);
     setCurrentView("board");
   };
 
   const handleWorkspaceSelect = (workspace: Doc<"workspaces">) => {
-    setCurrentWorkspace(workspace);
-    setCurrentBoard(null);
+    setCurrentWorkspaceId(workspace._id);
+    setCurrentBoardId(null);
     setCurrentView("board");
   };
 
@@ -231,7 +234,7 @@ export default function AuthenticatedApp() {
   const handleProjectUpdated = (updatedProject: Doc<"boards">) => {
     if (!updatedProject) return;
 
-    setCurrentBoard(updatedProject);
+    setCurrentBoardId(updatedProject._id);
   };
 
   const handleProjectMembers = (project: Doc<"boards">) => {
@@ -253,8 +256,8 @@ export default function AuthenticatedApp() {
       id: workspaceId,
     });
 
-    setCurrentWorkspace(remainingWorkspaces[0] ?? null);
-    setCurrentBoard(null);
+    setCurrentWorkspaceId(remainingWorkspaces[0]?._id ?? null);
+    setCurrentBoardId(null);
     setEditingWorkspace(null);
   };
 

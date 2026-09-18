@@ -13,6 +13,7 @@ type TaskStoryPointsFieldProps = {
   onChange: (value: string) => void;
   label: string;
   placeholder: string;
+  allowNone?: boolean;
 };
 
 const storyPointOptions = [1, 2, 3, 5, 8, 13, 21];
@@ -22,6 +23,7 @@ export default function TaskStoryPointsField({
   onChange,
   label,
   placeholder,
+  allowNone = false,
 }: TaskStoryPointsFieldProps) {
   const { t } = useTranslation();
   const id = useId();
@@ -53,6 +55,9 @@ export default function TaskStoryPointsField({
           position="popper"
           className="max-w-[calc(100vw-2rem)] border-border bg-popover text-popover-foreground"
         >
+          {allowNone && (
+            <SelectItem value="none">{t("common.none")}</SelectItem>
+          )}
           {storyPointOptions.map((points) => (
             <SelectItem key={points} value={String(points)}>
               {points} SP

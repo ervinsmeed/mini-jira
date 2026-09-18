@@ -46,6 +46,13 @@ type EditTaskModalProps = {
   onClose: () => void;
 };
 
+const toDateInput = (value: number) => {
+  const date = new Date(value);
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+};
+
 export default function EditTaskModal({
   task,
   onClose,
@@ -58,9 +65,11 @@ export default function EditTaskModal({
   const [description, setDescription] = useState(task.description || "");
   const [priority, setPriority] = useState(task.priority || "medium");
 
-  const [storyPoints, setStoryPoints] = useState(String(task.storyPoints ?? 1));
+  const [storyPoints, setStoryPoints] = useState(
+    task.storyPoints ? String(task.storyPoints) : "none",
+  );
   const [deadline, setDeadline] = useState(
-    task.deadline ? new Date(task.deadline).toISOString().split("T")[0] : "",
+    task.deadline ? toDateInput(task.deadline) : "",
   );
   const [subtasks, setSubtasks] = useState<Subtask[]>(() =>
     task.subtasks?.length
@@ -167,7 +176,10 @@ export default function EditTaskModal({
         title: title.trim(),
         description: description.trim(),
         priority,
-        storyPoints: Number(storyPoints) as 1 | 2 | 3 | 5 | 8 | 13 | 21,
+        storyPoints:
+          storyPoints === "none"
+            ? null
+            : (Number(storyPoints) as 1 | 2 | 3 | 5 | 8 | 13 | 21),
 
         deadline: deadline ? new Date(`${deadline}T23:59:59`).getTime() : null,
 
@@ -304,6 +316,7 @@ export default function EditTaskModal({
                 onChange={setStoryPoints}
                 label={t("editTask.storyPoints")}
                 placeholder={t("editTask.selectStoryPoints")}
+                allowNone
               />
 
               <div>

@@ -191,6 +191,7 @@ export const update = mutation({
         v.literal(8),
         v.literal(13),
         v.literal(21),
+        v.null(),
       ),
     ),
 
@@ -280,7 +281,7 @@ export const update = mutation({
     }
 
     if (args.storyPoints !== undefined) {
-      updates.storyPoints = args.storyPoints;
+      updates.storyPoints = args.storyPoints ?? undefined;
     }
 
     if (args.deadline !== undefined) {
