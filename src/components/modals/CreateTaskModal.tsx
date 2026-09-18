@@ -366,7 +366,7 @@ export default function CreateTaskModal({
                   type="button"
                   onClick={handleSaveTemplate}
                   disabled={isSavingTemplate}
-                  className="min-w-0 max-w-full whitespace-normal wrap-anywhere rounded-md bg-primary px-3 py-2 text-sm font-medium text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="min-w-0 max-w-full whitespace-normal wrap-anywhere rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSavingTemplate
                     ? t("createTask.savingTemplate", {
@@ -625,7 +625,7 @@ export default function CreateTaskModal({
             <button
               type="submit"
               disabled={pending}
-              className="min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 rounded-lg transition focus:outline-none focus:ring-2 bg-primary text-white hover:bg-primary/90 focus:ring-ring"
+              className="min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 rounded-lg transition focus:outline-none focus:ring-2 bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-ring"
             >
               {t("createTask.create")}
             </button>

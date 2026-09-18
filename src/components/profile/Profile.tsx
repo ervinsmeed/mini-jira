@@ -228,7 +228,7 @@ function ProfileContent({ currentUser, onBack }: ProfileContentProps) {
             <button
               type="submit"
               disabled={isSaving}
-              className="rounded-md bg-primary px-5 py-2 font-medium text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-md bg-primary px-5 py-2 font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? t("profile.saving") : t("profile.save")}
             </button>

@@ -82,7 +82,7 @@ export default function EditColumnModal({
 
             <button
               type="submit"
-              className="w-full rounded-md bg-primary py-2 font-medium text-white transition-colors hover:bg-primary/90"
+              className="w-full rounded-md bg-primary py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               {t("editColumn.update")}
             </button>

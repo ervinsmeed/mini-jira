@@ -7,7 +7,7 @@ export default function AuthPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 text-foreground">
       <div className="text-center mb-8">
         <div className="flex items-center justify-center space-x-3 mb-6">
-          <div className="flex items-center justify-center size-12 bg-primary rounded text-white font-bold text-lg">
+          <div className="flex items-center justify-center size-12 bg-primary rounded text-primary-foreground font-bold text-lg">
             !!!
           </div>
           <h1 className="text-3xl font-bold text-foreground">Kanban</h1>

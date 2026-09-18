@@ -145,7 +145,7 @@ export default function WorkspaceMembersModal({
               <button
                 type="button"
                 onClick={handleAddMember}
-                className="rounded-md bg-primary px-4 py-2 text-white"
+                className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
                 disabled={pending}
               >
                 {t("common.add")}

@@ -134,7 +134,7 @@ export default function EditProjectModal({
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-primary py-2 text-white transition hover:bg-primary/90"
+              className="w-full rounded-lg bg-primary py-2 text-primary-foreground transition hover:bg-primary/90"
               disabled={pending}
             >
               {t("editProjectModal.save")}
