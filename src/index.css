@@ -8,6 +8,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens. Components use only these variables,
+ * so the whole palette can be changed in this file.
+ */
+
 /* Dark theme (default) */
 :root {
   font-family: "Geist Variable", sans-serif;
@@ -15,103 +20,147 @@
   font-weight: 400;
   color-scheme: dark;
 
-  --background: #1d2125;
-  --foreground: #dee4ea;
-  --column: #161a1d;
-  --card: #22272b;
-  --card-foreground: #dee4ea;
-  --task: #22272b;
-  --task-hover: #282e33;
-  --popover: #282e33;
-  --popover-foreground: #dee4ea;
-  --primary: #579dff;
-  --primary-hover: #85b8ff;
-  --primary-foreground: #1d2125;
-  --secondary: #2c333a;
-  --secondary-foreground: #dee4ea;
-  --muted: #22272b;
-  --muted-foreground: #8c9bab;
-  --accent: #2c333a;
-  --accent-foreground: #dee4ea;
-  --destructive: #e2483d;
-  --danger-text: #f87168;
-  --success-text: #4bce97;
-  --warning-button: #f5cd47;
-  --border: #38414a;
-  --input: #22272b;
-  --ring: #579dff;
-  --epic-background: rgb(159 143 239 / 20%);
-  --epic-foreground: #b8acf6;
-  --points-background: #2c333a;
-  --points-foreground: #b6c2cf;
-  --scrollbar-thumb: #38414a;
-  --scrollbar-thumb-hover: #454f59;
-  --chart-1: #579dff;
-  --chart-2: #4bce97;
-  --chart-3: #f5cd47;
-  --chart-4: #f87168;
-  --chart-5: #9f8fef;
-  --analytics-bar: #579dff;
-  --radius: 0.5rem;
-  --sidebar: #1a1e22;
-  --sidebar-foreground: #c7d1db;
-  --sidebar-primary: #579dff;
-  --sidebar-primary-foreground: #1d2125;
-  --sidebar-accent: #2c333a;
-  --sidebar-accent-foreground: #dee4ea;
-  --sidebar-border: #2c333a;
-  --sidebar-ring: #579dff;
+  /* Surfaces: background → sidebar → panels → cards → hover */
+  --background: #0f1115;
+  --surface-1: #14171d;
+  --surface-2: #181b22;
+  --surface-3: #1e222b;
+  --surface-hover: #252a34;
+  --surface-input: #161920;
+
+  --border: rgb(255 255 255 / 7%);
+  --border-strong: rgb(255 255 255 / 12%);
+
+  --text-primary: #f3f4f6;
+  --text-secondary: #a7afbd;
+  --text-muted: #737c8c;
+  --text-disabled: #4f5663;
+
+  --brand: #5b7cfa;
+  --brand-hover: #6f8dfb;
+  --brand-foreground: #ffffff;
+  --brand-soft: rgb(91 124 250 / 14%);
+
+  --danger: #e5646b;
+  --danger-soft: rgb(229 100 107 / 14%);
+  --success: #4fb886;
+  --warning: #e0a54a;
+
+  --priority-high: #e5646b;
+  --priority-medium: #e0a54a;
+  --priority-low: #4fb886;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 35%);
+  --shadow-card-hover: 0 4px 14px rgb(0 0 0 / 35%);
+  --shadow-drag: 0 18px 40px rgb(0 0 0 / 55%);
+
+  --epic-background: rgb(139 124 246 / 14%);
+  --epic-foreground: #b7abf7;
+  --points-background: rgb(255 255 255 / 6%);
+  --points-foreground: var(--text-secondary);
+
+  --backdrop-dot: transparent;
+  --backdrop-glow-1: rgb(91 124 250 / 6%);
+  --backdrop-glow-2: rgb(139 124 246 / 4%);
+  --scrollbar-thumb: rgb(255 255 255 / 10%);
+  --scrollbar-thumb-hover: rgb(255 255 255 / 18%);
+
+  --radius: 0.625rem;
+
+  /* Mapping to component tokens */
+  --foreground: var(--text-primary);
+  --column: var(--surface-2);
+  --card: var(--surface-3);
+  --card-foreground: var(--text-primary);
+  --task: var(--surface-3);
+  --task-hover: var(--surface-hover);
+  --popover: var(--surface-3);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--brand);
+  --primary-hover: var(--brand-hover);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: var(--surface-hover);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--surface-hover);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--danger);
+  --danger-text: var(--danger);
+  --success-text: var(--success);
+  --warning-button: var(--warning);
+  --input: var(--surface-input);
+  --ring: var(--brand);
+  --chart-1: var(--brand);
+  --chart-2: var(--success);
+  --chart-3: var(--warning);
+  --chart-4: var(--danger);
+  --chart-5: #8b7cf6;
+  --analytics-bar: var(--brand);
+  --sidebar: var(--surface-1);
+  --sidebar-foreground: var(--text-secondary);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-foreground);
+  --sidebar-accent: var(--brand-soft);
+  --sidebar-accent-foreground: #dbe3ff;
+  --sidebar-hover: rgb(255 255 255 / 4%);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--brand);
 }
 
 /* Light theme */
 [data-theme="light"] {
   color-scheme: light;
 
-  --background: #f7f8f9;
-  --foreground: #172b4d;
-  --column: #f1f2f4;
-  --card: #ffffff;
-  --card-foreground: #172b4d;
-  --task: #ffffff;
-  --task-hover: #f7f8f9;
-  --popover: #ffffff;
-  --popover-foreground: #172b4d;
-  --primary: #0c66e4;
-  --primary-hover: #0055cc;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f2f4;
-  --secondary-foreground: #172b4d;
-  --muted: #f1f2f4;
-  --muted-foreground: #626f86;
-  --accent: #e9f2ff;
-  --accent-foreground: #0c66e4;
-  --destructive: #c9372c;
-  --danger-text: #ae2e24;
-  --success-text: #216e4e;
-  --warning-button: #a54800;
+  --background: #f5f7fa;
+  --surface-1: #ffffff;
+  --surface-2: #f1f2f4;
+  --surface-3: #ffffff;
+  --surface-hover: #f1f2f4;
+  --surface-input: #ffffff;
+
   --border: #dcdfe4;
-  --input: #ffffff;
-  --ring: #0c66e4;
+  --border-strong: #c1c7d0;
+
+  --text-primary: #172b4d;
+  --text-secondary: #44546f;
+  --text-muted: #626f86;
+  --text-disabled: #8590a2;
+
+  --brand: #0c66e4;
+  --brand-hover: #0055cc;
+  --brand-foreground: #ffffff;
+  --brand-soft: #e9f2ff;
+
+  --danger: #c9372c;
+  --danger-soft: #ffeceb;
+  --success: #1f845a;
+  --warning: #d97008;
+
+  --priority-high: #c9372c;
+  --priority-medium: #d97008;
+  --priority-low: #1f845a;
+
+  --shadow-card: 0 1px 2px rgb(9 30 66 / 12%);
+  --shadow-card-hover: 0 4px 12px rgb(9 30 66 / 14%);
+  --shadow-drag: 0 16px 36px rgb(9 30 66 / 22%);
+
   --epic-background: #f3f0ff;
   --epic-foreground: #5e4db2;
   --points-background: #f1f2f4;
   --points-foreground: #44546f;
+
+  --backdrop-dot: transparent;
+  --backdrop-glow-1: rgb(12 102 228 / 5%);
+  --backdrop-glow-2: transparent;
   --scrollbar-thumb: #c1c7d0;
   --scrollbar-thumb-hover: #a5adba;
-  --chart-1: #0c66e4;
-  --chart-2: #216e4e;
-  --chart-3: #a54800;
-  --chart-4: #c9372c;
+
+  --muted-foreground: var(--text-muted);
+  --sidebar-foreground: var(--text-secondary);
+  --sidebar-accent-foreground: var(--brand);
+  --sidebar-hover: #f1f2f4;
   --chart-5: #6e5dc6;
-  --analytics-bar: #0c66e4;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #44546f;
-  --sidebar-primary: #0c66e4;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e9f2ff;
-  --sidebar-accent-foreground: #0c66e4;
-  --sidebar-border: #dcdfe4;
-  --sidebar-ring: #0c66e4;
 }
 
 @layer base {
@@ -131,16 +180,31 @@
   textarea,
   select {
     background-color: var(--input);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     color: var(--foreground);
+    transition:
+      border-color 150ms,
+      box-shadow 150ms;
+  }
+
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]):focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-soft);
+    outline: none;
   }
 
   :is(input, textarea)::placeholder {
-    color: var(--muted-foreground);
+    color: var(--text-muted);
     opacity: 1;
   }
 
-  :is(button, a, input, textarea, select, [role="checkbox"]):focus-visible {
+  :is(input, textarea, select):disabled {
+    color: var(--text-disabled);
+  }
+
+  :is(button, a, summary, [role="checkbox"], [type="checkbox"]):focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
@@ -150,15 +214,33 @@
   }
 }
 
+.app-backdrop {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(1200px 600px at 10% -10%, var(--backdrop-glow-1), transparent 60%),
+    radial-gradient(900px 520px at 100% 0%, var(--backdrop-glow-2), transparent 55%);
+  background-attachment: fixed;
+}
+
 .task-card {
   background-color: var(--task);
   border-top-color: var(--border);
   border-right-color: var(--border);
   border-bottom-color: var(--border);
+  box-shadow: var(--shadow-card);
 }
 
 .task-card:hover {
   background-color: var(--task-hover);
+  border-top-color: var(--border-strong);
+  border-right-color: var(--border-strong);
+  border-bottom-color: var(--border-strong);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.task-card--dragging,
+.task-card--dragging:hover {
+  box-shadow: var(--shadow-drag);
 }
 
 .task-card__title {
@@ -167,9 +249,12 @@
 
 .task-card__description,
 .task-card__subtasks,
-.task-card__drag-handle,
 .task-card__deadline {
-  color: var(--muted-foreground);
+  color: var(--text-secondary);
+}
+
+.task-card__drag-handle {
+  color: var(--text-muted);
 }
 
 .task-card__drag-handle:hover {
@@ -177,7 +262,7 @@
 }
 
 .task-card__deadline--overdue {
-  color: var(--danger-text);
+  color: var(--danger);
 }
 
 .task-card__epic-badge,
@@ -231,6 +316,7 @@
   --font-sans: "Geist Variable", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-hover: var(--sidebar-hover);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
@@ -246,6 +332,11 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-priority-high: var(--priority-high);
+  --color-priority-medium: var(--priority-medium);
+  --color-priority-low: var(--priority-low);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);

@@ -92,14 +92,17 @@ export default function Column({
   };
 
   return (
-    <div className="column-card w-72 shrink-0 rounded-xl border border-border bg-column p-3 text-card-foreground">
+    <div
+      className="column-card w-72 shrink-0 rounded-xl border border-t-2 border-border bg-column p-3 text-card-foreground"
+      style={{ borderTopColor: column.color }}
+    >
       <div className="group mb-6 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div
             className="size-4 rounded-full"
             style={{ backgroundColor: column.color }}
           />
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
             {displayedColumnName} ({tasks.length})
           </h3>
         </div>

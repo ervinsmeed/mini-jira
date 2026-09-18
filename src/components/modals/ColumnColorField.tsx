@@ -5,14 +5,14 @@ type ColumnColorFieldProps = {
 };
 
 const PRESET_COLORS = [
-  "#22d3ee",
-  "#8b5cf6",
-  "#22c55e",
-  "#f59e0b",
-  "#ef4444",
-  "#3b82f6",
-  "#ec4899",
-  "#10b981",
+  "#5b7cfa",
+  "#8b7cf6",
+  "#4fb886",
+  "#e0a54a",
+  "#e5646b",
+  "#4aa8d8",
+  "#d46fa8",
+  "#7c8594",
 ];
 
 export default function ColumnColorField({

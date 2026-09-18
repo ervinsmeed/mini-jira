@@ -439,7 +439,7 @@ export default function TaskModal({
                     type="button"
                     onClick={handleStartTimer}
                     disabled={!can("task.update") || isTimerPending}
-                    className="min-w-0 max-w-full whitespace-normal rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                    className="min-w-0 max-w-full whitespace-normal rounded-md bg-success px-3 py-2 text-sm font-medium text-white hover:bg-success/90 disabled:opacity-50"
                   >
                     {t("taskModal.start")}
                   </button>
@@ -450,7 +450,7 @@ export default function TaskModal({
                     type="button"
                     onClick={handlePauseTimer}
                     disabled={!can("task.update") || isTimerPending}
-                    className="min-w-0 max-w-full whitespace-normal rounded-md bg-amber-500 px-3 py-2 text-sm font-medium text-amber-950 hover:bg-amber-400 disabled:opacity-50"
+                    className="min-w-0 max-w-full whitespace-normal rounded-md bg-warning px-3 py-2 text-sm font-medium text-black/80 hover:bg-warning/90 disabled:opacity-50"
                   >
                     {t("taskModal.pause")}
                   </button>

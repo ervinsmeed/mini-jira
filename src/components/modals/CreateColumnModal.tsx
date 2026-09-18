@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { useAction } from "../../hooks/useAction";
 import ColumnColorField from "./ColumnColorField";
 
-const DEFAULT_COLUMN_COLOR = "#22d3ee";
+const DEFAULT_COLUMN_COLOR = "#5b7cfa";
 
 type CreateColumnModalProps = {
   isOpen: boolean;

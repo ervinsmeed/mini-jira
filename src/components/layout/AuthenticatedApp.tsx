@@ -295,7 +295,7 @@ export default function AuthenticatedApp() {
       />
 
       <div
-        className={`min-w-0 bg-background transition-all duration-300 ${
+        className={`app-backdrop min-h-screen min-w-0 transition-all duration-300 ${
           sidebarCollapsed ? "flex-1" : "ml-72 w-[calc(100vw-18rem)]"
         }`}
       >

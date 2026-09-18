@@ -229,7 +229,7 @@ export default function Sidebar({
               className={`flex size-10 items-center justify-center rounded transition-colors ${
                 currentView === "analytics"
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-accent-foreground"
               }`}
               title={t("navigation.analytics")}
             >
@@ -242,7 +242,7 @@ export default function Sidebar({
             className={`flex size-10 items-center justify-center rounded transition-colors ${
               currentView === "profile"
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-accent-foreground"
             }`}
             title={t("navigation.profile")}
           >
@@ -286,7 +286,7 @@ export default function Sidebar({
           <button
             type="button"
             onClick={onCreateWorkspace}
-            className="w-full flex items-center justify-center px-3 py-2 rounded-lg border border-sidebar-border transition-colors mb-3 bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent"
+            className="w-full flex items-center justify-center px-3 py-2 rounded-lg border border-sidebar-border transition-colors mb-3 bg-sidebar text-sidebar-foreground hover:bg-sidebar-hover"
           >
             <span className="text-sm font-medium">
               {t("createWorkspaceModal.title")}
@@ -305,7 +305,7 @@ export default function Sidebar({
                 className={`group flex w-full items-center rounded-lg transition-colors ${
                   currentWorkspace?._id === workspace._id
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-accent-foreground"
                 }`}
               >
                 <button
@@ -420,7 +420,7 @@ export default function Sidebar({
         {can("project.create") && (
           <button
             onClick={onCreateBoard}
-            className="w-full flex items-center justify-center space-x-3 px-3 py-2 rounded-lg border border-sidebar-border transition-colors mb-3 bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent"
+            className="w-full flex items-center justify-center space-x-3 px-3 py-2 rounded-lg border border-sidebar-border transition-colors mb-3 bg-sidebar text-sidebar-foreground hover:bg-sidebar-hover"
           >
             <span className="text-sm font-medium">{t("createBoard")}</span>
           </button>
@@ -472,7 +472,7 @@ export default function Sidebar({
             className={`mt-4 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
               currentView === "analytics"
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-accent-foreground"
             }`}
           >
             <BarChart3 className="size-4" />
@@ -486,7 +486,7 @@ export default function Sidebar({
           className={`mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
             currentView === "profile"
               ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-accent-foreground"
           }`}
         >
           <UserRound className="size-4" />
@@ -494,7 +494,7 @@ export default function Sidebar({
         </button>
       </div>
 
-      <div className="flex items-center justify-center space-x-2 rounded-lg p-2 transition-colors bg-sidebar-accent">
+      <div className="flex items-center justify-center space-x-2 rounded-lg p-2 transition-colors bg-sidebar-hover">
         <Sun className="size-4 text-sidebar-foreground" />
 
         <button
@@ -523,7 +523,7 @@ export default function Sidebar({
           className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
             i18n.resolvedLanguage?.startsWith("en")
               ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "bg-sidebar hover:bg-sidebar-accent"
+              : "bg-sidebar hover:bg-sidebar-hover"
           }`}
         >
           English
@@ -533,7 +533,7 @@ export default function Sidebar({
           className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
             i18n.resolvedLanguage?.startsWith("ru")
               ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "bg-sidebar hover:bg-sidebar-accent"
+              : "bg-sidebar hover:bg-sidebar-hover"
           }`}
         >
           Русский
@@ -551,7 +551,7 @@ export default function Sidebar({
       <SignOutButton>
         <button
           type="button"
-          className="flex items-center space-x-3 px-3 py-2 rounded-md transition-colors bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          className="flex items-center space-x-3 px-3 py-2 rounded-md transition-colors bg-sidebar text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-accent-foreground"
         >
           <LogOut className="size-4" />
           <span className="text-sm font-medium">{t("logout")}</span>
@@ -624,7 +624,7 @@ function SortableBoardItem({
       <div ref={setNodeRef} style={style} className="mb-2 px-4">
         <button
           onClick={() => onBoardSelect(board)}
-          className={`size-10 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${currentBoard?._id === board._id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"}`}
+          className={`size-10 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${currentBoard?._id === board._id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-accent-foreground"}`}
           title={board.name}
         >
           {getInitials(board.name)}
@@ -640,7 +640,7 @@ function SortableBoardItem({
       className={`group w-full flex items-center justify-between px-2 py-2 rounded-lg transition-colors ${
         currentBoard?._id === board._id
           ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          : "bg-sidebar text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-accent-foreground"
       }`}
     >
       <button
@@ -681,7 +681,7 @@ function SortableBoardItem({
         <Star
           className={`size-3.5 transition-colors ${
             isFavorite
-              ? "fill-yellow-400 text-yellow-400"
+              ? "fill-warning text-warning"
               : "text-sidebar-foreground hover:text-sidebar-accent-foreground"
           }`}
         />

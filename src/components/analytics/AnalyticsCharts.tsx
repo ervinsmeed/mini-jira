@@ -42,9 +42,9 @@ type AnalyticsChartsProps = {
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
-  high: "#ef4444",
-  medium: "#eab308",
-  low: "#22c55e",
+  high: "var(--priority-high)",
+  medium: "var(--priority-medium)",
+  low: "var(--priority-low)",
 };
 
 export default function AnalyticsCharts({ analytics }: AnalyticsChartsProps) {
@@ -153,7 +153,7 @@ export default function AnalyticsCharts({ analytics }: AnalyticsChartsProps) {
                 {localizedPriorityData.map((item) => (
                   <Cell
                     key={item.priority}
-                    fill={PRIORITY_COLORS[item.priority] ?? "#8b5cf6"}
+                    fill={PRIORITY_COLORS[item.priority] ?? "var(--chart-5)"}
                   />
                 ))}
               </Pie>
@@ -215,7 +215,7 @@ export default function AnalyticsCharts({ analytics }: AnalyticsChartsProps) {
               <Bar
                 dataKey="count"
                 name={t("analytics.tasks")}
-                fill="#06b6d4"
+                fill="var(--analytics-bar)"
                 radius={[0, 4, 4, 0]}
               />
             </BarChart>

@@ -18,9 +18,9 @@ type TaskPriorityFieldProps = {
 };
 
 const priorities = [
-  { value: "high", color: "bg-red-500" },
-  { value: "medium", color: "bg-amber-500" },
-  { value: "low", color: "bg-emerald-500" },
+  { value: "high", color: "bg-priority-high" },
+  { value: "medium", color: "bg-priority-medium" },
+  { value: "low", color: "bg-priority-low" },
 ] as const;
 
 export default function TaskPriorityField({

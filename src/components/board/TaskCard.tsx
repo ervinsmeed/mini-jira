@@ -23,9 +23,9 @@ type TaskCardProps = {
 import { Progress } from "../ui/progress";
 
 const PRIORITY_STYLES = {
-  high: { border: "border-l-red-500", dot: "bg-red-500" },
-  medium: { border: "border-l-amber-500", dot: "bg-amber-500" },
-  low: { border: "border-l-emerald-500", dot: "bg-emerald-500" },
+  high: { border: "border-l-priority-high", dot: "bg-priority-high" },
+  medium: { border: "border-l-priority-medium", dot: "bg-priority-medium" },
+  low: { border: "border-l-priority-low", dot: "bg-priority-low" },
 } as const;
 
 export default function TaskCard({
@@ -98,12 +98,14 @@ export default function TaskCard({
           onClick();
         }
       }}
-      className={`task-card cursor-pointer rounded-lg border border-l-[3px] p-4 shadow-sm transition-all ${
+      className={`task-card cursor-pointer rounded-lg border border-l-[3px] p-4 transition-all ${
         priorityStyle.border
       } ${
-        isDragging || isSortableDragging
-          ? "rotate-1 scale-105 opacity-50 shadow-lg"
-          : ""
+        isOverlay || isDragging
+          ? "task-card--dragging rotate-1 scale-[1.02]"
+          : isSortableDragging
+            ? "opacity-40"
+            : ""
       } ${isSelected ? "ring-2 ring-primary" : ""}`}
     >
       {onToggleSelect && (
@@ -142,15 +144,15 @@ export default function TaskCard({
               onPointerDown={(event) => event.stopPropagation()}
               className={`rounded p-1 transition-colors ${
                 isFavorite
-                  ? "text-yellow-400"
-                  : "text-muted-foreground hover:text-yellow-500"
+                  ? "text-warning"
+                  : "text-muted-foreground hover:text-warning"
               }`}
               title={t(isFavorite ? "favorites.remove" : "favorites.add")}
               aria-label={t(isFavorite ? "favorites.remove" : "favorites.add")}
             >
               <Star
                 className={`size-4 ${
-                  isFavorite ? "fill-yellow-400 text-yellow-400" : ""
+                  isFavorite ? "fill-warning text-warning" : ""
                 }`}
               />
             </button>

@@ -375,7 +375,7 @@ function BoardContent({ board, theme, can }: BoardProps) {
   };
   if (!board?._id) {
     return (
-      <div className="flex h-full flex-1 items-center justify-center bg-background transition-colors">
+      <div className="flex h-full flex-1 items-center justify-center transition-colors">
         <div className="text-center">
           <h2 className="mb-2 text-2xl font-semibold text-foreground transition-colors">
             {t("board.welcome")}
@@ -388,8 +388,8 @@ function BoardContent({ board, theme, can }: BoardProps) {
   }
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col bg-background transition-colors">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border bg-sidebar p-6 transition-colors">
+    <div className="flex min-w-0 flex-1 flex-col transition-colors">
+      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b border-border bg-sidebar/70 p-6 backdrop-blur-md transition-colors">
         <div className="min-w-0">
           <h1 className="break-words text-2xl font-bold text-foreground transition-colors">
             {board.name}
