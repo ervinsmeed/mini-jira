@@ -82,7 +82,7 @@ function client() {
   );
   const exports = {};
   const code = ts.transpileModule(
-    fs.readFileSync("src/lib/useTaskPages.ts", "utf8"),
+    fs.readFileSync("src/hooks/useTaskPages.ts", "utf8"),
     {
       compilerOptions: {
         module: ts.ModuleKind.CommonJS,

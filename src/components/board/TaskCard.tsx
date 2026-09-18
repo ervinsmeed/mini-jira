@@ -9,7 +9,7 @@ import type { Doc } from "../../../convex/_generated/dataModel";
 type TaskCardProps = {
   task: Doc<"tasks">;
   epic?: Doc<"tasks"> | null;
-  now?: number;
+  now: number;
   onClick: () => void;
   isSelected?: boolean;
   onToggleSelect?: () => void;
@@ -30,7 +30,7 @@ const PRIORITY_STYLES = {
 export default function TaskCard({
   task,
   epic: providedEpic,
-  now = Date.now(),
+  now,
   onClick,
   isSelected = false,
   onToggleSelect,
