@@ -41,7 +41,6 @@ export const create = mutation({
       identity.preferredUsername?.trim() ||
       "User";
 
-    // Also detect legacy emails stored with whitespace or mixed case.
     const users = await ctx.db.query("users").collect();
     const emailConflict = users.some(
       (user) =>

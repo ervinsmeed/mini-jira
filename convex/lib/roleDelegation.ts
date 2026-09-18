@@ -11,7 +11,6 @@ type DelegatedRole = Pick<
   "workspaceId" | "level" | "permissions"
 >;
 
-// Access must come from a server-side access helper, never mutation arguments.
 export function assertRoleDelegation(
   access: RoleAccess,
   workspaceId: Id<"workspaces">,

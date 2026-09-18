@@ -113,7 +113,6 @@ export default function AuthenticatedApp() {
 
   const deleteWorkspace = useMutation(api.workspaces.remove);
 
-  // Create user in Convex
   useEffect(() => {
     if (user) {
       createUser({}).catch((error) => {
@@ -146,7 +145,6 @@ export default function AuthenticatedApp() {
     return projectAccess?.permissions?.includes(permission) ?? false;
   };
 
-  // Apply theme
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
 
@@ -159,7 +157,6 @@ export default function AuthenticatedApp() {
     localStorage.setItem("kanban-theme", theme);
   }, [theme]);
 
-  // Responsive sidebar
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {

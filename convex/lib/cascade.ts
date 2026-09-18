@@ -1,7 +1,6 @@
 import type { MutationCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 
-// Internal helpers: callers must authorize the root operation before deleting.
 export async function detachEpic(ctx: MutationCtx, epic: Doc<"tasks">) {
   const children = await ctx.db
     .query("tasks")

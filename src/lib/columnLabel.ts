@@ -9,7 +9,6 @@ const COLUMN_TRANSLATION_KEYS: Record<string, string> = {
   done: "analytics.status.done",
 };
 
-// Keep the board's existing display convention; never change stored names.
 export function getColumnLabel(name: string, t: TFunction): string {
   const key = COLUMN_TRANSLATION_KEYS[name.trim().toLowerCase()];
   return key ? t(key, { defaultValue: name }) : name;

@@ -13,9 +13,6 @@ export function useTaskPages(args: Args | "skip") {
     [page.results],
   );
   const queryKey = JSON.stringify(args);
-  // Empty ranges are not an empty search. Yield between requests so typing or
-  // leaving the board cancels the pending continuation. Convex owns the cursors
-  // and resets its subscriptions when any search/filter/sort argument changes.
   useEffect(() => {
     if (status !== "CanLoadMore" || results.length !== 0) return;
     const timer = setTimeout(() => loadMore(12), 150);

@@ -279,9 +279,7 @@ export default function Sidebar({
           </h1>
         </div>
       </div>
-      {/* Boards */}
       <div className="min-h-0 flex-1 px-3 py-4 overflow-y-auto">
-        {/* Workspaces */}
         <div className="mb-6">
           <div className="text-xs font-semibold uppercase tracking-wider mb-3 text-sidebar-foreground">
             {t("navigation.workspaces")} ({workspaces.length})
