@@ -13,6 +13,7 @@ import type * as boardMembers from "../boardMembers.js";
 import type * as boards from "../boards.js";
 import type * as columns from "../columns.js";
 import type * as favorites from "../favorites.js";
+import type * as lib_access from "../lib/access.js";
 import type * as lib_cascade from "../lib/cascade.js";
 import type * as lib_directoryQueries from "../lib/directoryQueries.js";
 import type * as lib_projectOrder from "../lib/projectOrder.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   boards: typeof boards;
   columns: typeof columns;
   favorites: typeof favorites;
+  "lib/access": typeof lib_access;
   "lib/cascade": typeof lib_cascade;
   "lib/directoryQueries": typeof lib_directoryQueries;
   "lib/projectOrder": typeof lib_projectOrder;

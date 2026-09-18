@@ -1,3 +1,4 @@
+import { getCurrentUser } from "./lib/access";
 import { ConvexError } from "convex/values";
 import { deleteTask } from "./lib/cascade";
 import {
@@ -15,20 +16,7 @@ export const create = mutation({
   },
 
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
+    const user = await getCurrentUser(ctx);
 
     const board = await ctx.db.get(args.boardId);
 
@@ -133,20 +121,7 @@ export const initializeDefaultColumns = mutation({
   },
 
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
+    const user = await getCurrentUser(ctx);
 
     const board = await ctx.db.get(args.boardId);
 
@@ -231,18 +206,7 @@ export const update = mutation({
     color: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) throw new ConvexError({ code: "NOT_FOUND" });
+    const user = await getCurrentUser(ctx);
 
     const column = await ctx.db.get(args.id);
     if (!column) throw new ConvexError({ code: "NOT_FOUND" });
@@ -270,20 +234,7 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id("columns") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
+    const user = await getCurrentUser(ctx);
 
     const column = await ctx.db.get(args.id);
 

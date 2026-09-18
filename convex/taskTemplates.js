@@ -1,6 +1,6 @@
+import { getTaskPermissionAccess } from "./lib/taskAccess";
 import { ConvexError } from "convex/values";
-import { requireParentWorkspaceAccess } from "./lib/workspaceAccess";
-import { mutation, query } from "./_generated/server";
+import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 const priorityValidator = v.union(
@@ -18,86 +18,6 @@ const storyPointsValidator = v.union(
   v.literal(13),
   v.literal(21),
 );
-
-async function getTaskPermissionAccess(ctx, boardId, permission) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-  }
-
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-    .unique();
-
-  if (!user) {
-    throw new ConvexError({ code: "NOT_FOUND" });
-  }
-
-  const board = await ctx.db.get("boards", boardId);
-
-  if (!board) {
-    throw new ConvexError({ code: "NOT_FOUND" });
-  }
-
-  const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
-  if (parentAccess.isWorkspaceOwner || board.userId === user._id) {
-    return {
-      user,
-      board,
-    };
-  }
-
-  if (!board.workspaceId) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  const membership = await ctx.db
-    .query("boardMembers")
-    .withIndex("by_board_user", (q) =>
-      q.eq("boardId", boardId).eq("userId", user._id),
-    )
-    .unique();
-
-  if (!membership || !membership.roleId) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  const role = await ctx.db.get("roles", membership.roleId);
-
-  if (!role || role.workspaceId !== board.workspaceId) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  if (!role.permissions.includes(permission)) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  return {
-    user,
-    board,
-  };
-}
-
-export const list = query({
-  args: {
-    boardId: v.id("boards"),
-  },
-
-  handler: async (ctx, args) => {
-    await getTaskPermissionAccess(ctx, args.boardId, "task.view");
-
-    const templates = await ctx.db
-      .query("taskTemplates")
-      .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
-      .collect();
-
-    return templates.sort((firstTemplate, secondTemplate) =>
-      firstTemplate.name.localeCompare(secondTemplate.name),
-    );
-  },
-});
 
 export const create = mutation({
   args: {
@@ -148,76 +68,6 @@ export const create = mutation({
     });
 
     return await ctx.db.get("taskTemplates", templateId);
-  },
-});
-
-export const update = mutation({
-  args: {
-    id: v.id("taskTemplates"),
-    name: v.optional(v.string()),
-    title: v.optional(v.string()),
-    description: v.optional(v.string()),
-    priority: v.optional(priorityValidator),
-    storyPoints: v.optional(storyPointsValidator),
-  },
-
-  handler: async (ctx, args) => {
-    const template = await ctx.db.get("taskTemplates", args.id);
-
-    if (!template) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
-
-    await getTaskPermissionAccess(ctx, template.boardId, "task.update");
-
-    const updates = {
-      updatedAt: Date.now(),
-    };
-
-    if (args.name !== undefined) {
-      const name = args.name.trim();
-
-      if (!name) {
-        throw new ConvexError({ code: "VALIDATION_FAILED" });
-      }
-
-      const existingTemplates = await ctx.db
-        .query("taskTemplates")
-        .withIndex("by_board", (q) => q.eq("boardId", template.boardId))
-        .collect();
-
-      const duplicate = existingTemplates.some(
-        (currentTemplate) =>
-          currentTemplate._id !== template._id &&
-          currentTemplate.name.trim().toLowerCase() === name.toLowerCase(),
-      );
-
-      if (duplicate) {
-        throw new ConvexError({ code: "VALIDATION_FAILED" });
-      }
-
-      updates.name = name;
-    }
-
-    if (args.title !== undefined) {
-      updates.title = args.title.trim() || undefined;
-    }
-
-    if (args.description !== undefined) {
-      updates.description = args.description.trim() || undefined;
-    }
-
-    if (args.priority !== undefined) {
-      updates.priority = args.priority;
-    }
-
-    if (args.storyPoints !== undefined) {
-      updates.storyPoints = args.storyPoints;
-    }
-
-    await ctx.db.patch(args.id, updates);
-
-    return await ctx.db.get("taskTemplates", args.id);
   },
 });
 

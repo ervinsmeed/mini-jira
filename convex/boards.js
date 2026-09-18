@@ -1,141 +1,12 @@
+import { getCurrentUser, getWorkspacePermissionAccess } from "./lib/access";
+import { getTaskPermissionAccess } from "./lib/taskAccess";
 import { projectOrder } from "./lib/projectOrder";
 export { projectsPage } from "./lib/directoryQueries";
 import { ConvexError } from "convex/values";
 import { deleteBoard } from "./lib/cascade";
-import {
-  getParentWorkspaceAccess,
-  requireParentWorkspaceAccess,
-} from "./lib/workspaceAccess";
+import { getParentWorkspaceAccess } from "./lib/workspaceAccess";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-
-async function getProjectPermissionAccess(ctx, workspaceId, permission) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-  }
-
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-    .unique();
-
-  if (!user) {
-    throw new ConvexError({ code: "NOT_FOUND" });
-  }
-
-  const workspace = await ctx.db.get(workspaceId);
-
-  if (!workspace) {
-    throw new ConvexError({ code: "NOT_FOUND" });
-  }
-
-  const isOwner = workspace.ownerId === user._id;
-
-  if (isOwner) {
-    return {
-      user,
-      workspace,
-      isOwner: true,
-      currentRole: null,
-    };
-  }
-
-  const membership = await ctx.db
-    .query("workspaceMembers")
-    .withIndex("by_workspace_user", (q) =>
-      q.eq("workspaceId", workspaceId).eq("userId", user._id),
-    )
-    .unique();
-
-  if (!membership || !membership.roleId) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  const currentRole = await ctx.db.get(membership.roleId);
-
-  if (!currentRole || currentRole.workspaceId !== workspaceId) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  if (!currentRole.permissions.includes(permission)) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  return {
-    user,
-    workspace,
-    isOwner: false,
-    currentRole,
-  };
-}
-
-async function getBoardPermissionAccess(ctx, boardId, permission) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-  }
-
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-    .unique();
-
-  if (!user) {
-    throw new ConvexError({ code: "NOT_FOUND" });
-  }
-
-  const board = await ctx.db.get(boardId);
-
-  if (!board) {
-    throw new ConvexError({ code: "NOT_FOUND" });
-  }
-
-  const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
-
-  if (parentAccess.isWorkspaceOwner || board.userId === user._id) {
-    return {
-      user,
-      board,
-      isOwner: true,
-      currentRole: null,
-    };
-  }
-
-  if (!board.workspaceId) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  const membership = await ctx.db
-    .query("boardMembers")
-    .withIndex("by_board_user", (q) =>
-      q.eq("boardId", boardId).eq("userId", user._id),
-    )
-    .unique();
-
-  if (!membership || !membership.roleId) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  const currentRole = await ctx.db.get(membership.roleId);
-
-  if (!currentRole || currentRole.workspaceId !== board.workspaceId) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  if (!currentRole.permissions.includes(permission)) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  return {
-    user,
-    board,
-    isOwner: false,
-    currentRole,
-  };
-}
 
 export const create = mutation({
   args: {
@@ -145,23 +16,10 @@ export const create = mutation({
   },
 
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
+    const user = await getCurrentUser(ctx);
 
     if (args.workspaceId) {
-      await getProjectPermissionAccess(ctx, args.workspaceId, "project.create");
+      await getWorkspacePermissionAccess(ctx, args.workspaceId, "project.create");
     }
 
     const boards = await ctx.db
@@ -186,111 +44,6 @@ export const create = mutation({
   },
 });
 
-export const list = query({
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) {
-      return [];
-    }
-
-    const boards = await ctx.db
-      .query("boards")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
-    const visible = await Promise.all(
-      boards.map(async (board) =>
-        (await getParentWorkspaceAccess(ctx, user._id, board)) ? board : null,
-      ),
-    );
-    return visible
-      .filter(Boolean)
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
-  },
-});
-export const listByWorkspace = query({
-  args: {
-    workspaceId: v.id("workspaces"),
-  },
-
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) {
-      return [];
-    }
-
-    const workspace = await ctx.db.get(args.workspaceId);
-
-    if (!workspace) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
-
-    const boards = await ctx.db
-      .query("boards")
-      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-      .collect();
-
-    const visibleBoards = await Promise.all(
-      boards.map(async (board) => {
-        const parentAccess = await getParentWorkspaceAccess(
-          ctx,
-          user._id,
-          board,
-        );
-        if (!parentAccess) return null;
-        if (parentAccess.isWorkspaceOwner || board.userId === user._id) {
-          return board;
-        }
-
-        const membership = await ctx.db
-          .query("boardMembers")
-          .withIndex("by_board_user", (q) =>
-            q.eq("boardId", board._id).eq("userId", user._id),
-          )
-          .unique();
-
-        if (!membership || !membership.roleId) {
-          return null;
-        }
-
-        const role = await ctx.db.get(membership.roleId);
-
-        if (
-          !role ||
-          role.workspaceId !== args.workspaceId ||
-          !role.permissions.includes("project.view")
-        ) {
-          return null;
-        }
-
-        return board;
-      }),
-    );
-
-    return visibleBoards
-      .filter(Boolean)
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
-  },
-});
 export const update = mutation({
   args: {
     id: v.id("boards"),
@@ -312,7 +65,7 @@ export const update = mutation({
       throw new ConvexError({ code: "NOT_FOUND" });
     }
 
-    await getBoardPermissionAccess(ctx, args.id, "project.update");
+    await getTaskPermissionAccess(ctx, args.id, "project.update");
 
     const updates = {};
 
@@ -346,7 +99,7 @@ export const updateOrder = mutation({
   },
 
   handler: async (ctx, args) => {
-    const { board } = await getBoardPermissionAccess(
+    const { board } = await getTaskPermissionAccess(
       ctx,
       args.boardId,
       "project.update",
@@ -373,7 +126,7 @@ export const remove = mutation({
       throw new ConvexError({ code: "NOT_FOUND" });
     }
 
-    await getBoardPermissionAccess(ctx, args.id, "project.delete");
+    await getTaskPermissionAccess(ctx, args.id, "project.delete");
 
     await deleteBoard(ctx, args.id);
   },

@@ -1,26 +1,8 @@
+import { getCurrentUser } from "./lib/access";
 import { ConvexError } from "convex/values";
 import { requireParentWorkspaceAccess } from "./lib/workspaceAccess";
-import { mutation, query } from "./_generated/server";
+import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-
-async function getCurrentUser(ctx) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-  }
-
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-    .unique();
-
-  if (!user) {
-    throw new ConvexError({ code: "NOT_FOUND" });
-  }
-
-  return user;
-}
 
 async function requireBoardPermission(ctx, user, boardId, permission) {
   const board = await ctx.db.get("boards", boardId);
@@ -61,46 +43,6 @@ async function requireBoardPermission(ctx, user, boardId, permission) {
 
   return board;
 }
-
-export const listProjectIds = query({
-  handler: async (ctx) => {
-    const user = await getCurrentUser(ctx);
-
-    const favorites = await ctx.db
-      .query("favorites")
-      .withIndex("by_user_type", (q) =>
-        q.eq("userId", user._id).eq("itemType", "project"),
-      )
-      .collect();
-
-    return favorites.map((favorite) => favorite.boardId);
-  },
-});
-
-export const listTaskIds = query({
-  args: {
-    boardId: v.optional(v.id("boards")),
-  },
-
-  handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-
-    const favorites = await ctx.db
-      .query("favorites")
-      .withIndex("by_user_type", (q) =>
-        q.eq("userId", user._id).eq("itemType", "task"),
-      )
-      .collect();
-
-    return favorites
-      .filter(
-        (favorite) =>
-          favorite.taskId &&
-          (!args.boardId || favorite.boardId === args.boardId),
-      )
-      .map((favorite) => favorite.taskId);
-  },
-});
 
 export const toggleProject = mutation({
   args: {

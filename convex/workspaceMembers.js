@@ -1,121 +1,10 @@
+import { getWorkspacePermissionAccess } from "./lib/access";
 export { workspaceMembersPage } from "./lib/directoryQueries";
 import { ConvexError } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { assertRoleDelegation } from "./lib/roleDelegation";
 
-async function getMemberManagementAccess(ctx, workspaceId) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-  }
-
-  const currentUser = await ctx.db
-    .query("users")
-    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-    .unique();
-
-  if (!currentUser) {
-    throw new ConvexError({ code: "NOT_FOUND" });
-  }
-
-  const workspace = await ctx.db.get(workspaceId);
-
-  if (!workspace) {
-    throw new ConvexError({ code: "NOT_FOUND" });
-  }
-
-  const isOwner = workspace.ownerId === currentUser._id;
-
-  if (isOwner) {
-    return {
-      currentUser,
-      workspace,
-      isOwner: true,
-      currentRole: null,
-    };
-  }
-
-  const membership = await ctx.db
-    .query("workspaceMembers")
-    .withIndex("by_workspace_user", (q) =>
-      q.eq("workspaceId", workspaceId).eq("userId", currentUser._id),
-    )
-    .unique();
-
-  if (!membership || !membership.roleId) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  const currentRole = await ctx.db.get(membership.roleId);
-
-  if (!currentRole || currentRole.workspaceId !== workspaceId) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  if (!currentRole.permissions.includes("members.manage")) {
-    throw new ConvexError({ code: "ACCESS_DENIED" });
-  }
-
-  return {
-    currentUser,
-    workspace,
-    isOwner: false,
-    currentRole,
-  };
-}
-
-export const list = query({
-  args: {
-    workspaceId: v.id("workspaces"),
-  },
-
-  handler: async (ctx, args) => {
-    const { workspace } = await getMemberManagementAccess(
-      ctx,
-      args.workspaceId,
-    );
-
-    const memberships = await ctx.db
-      .query("workspaceMembers")
-      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-      .collect();
-
-    const owner = await ctx.db.get(workspace.ownerId);
-
-    const members = [];
-
-    for (const membership of memberships) {
-      const user = await ctx.db.get(membership.userId);
-
-      if (user) {
-        members.push({
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          roleId: membership.roleId ?? null,
-          isOwner: false,
-        });
-      }
-    }
-
-    if (owner) {
-      return [
-        {
-          _id: owner._id,
-          name: owner.name,
-          email: owner.email,
-          roleId: null,
-          isOwner: true,
-        },
-        ...members,
-      ];
-    }
-
-    return members;
-  },
-});
 export const addByEmail = mutation({
   args: {
     workspaceId: v.id("workspaces"),
@@ -123,10 +12,7 @@ export const addByEmail = mutation({
   },
 
   handler: async (ctx, args) => {
-    const { workspace } = await getMemberManagementAccess(
-      ctx,
-      args.workspaceId,
-    );
+    const { workspace } = await getWorkspacePermissionAccess(ctx, args.workspaceId, "members.manage");
 
     const email = args.email.trim().toLowerCase();
 
@@ -171,10 +57,7 @@ export const remove = mutation({
   },
 
   handler: async (ctx, args) => {
-    const { workspace, isOwner, currentRole } = await getMemberManagementAccess(
-      ctx,
-      args.workspaceId,
-    );
+    const { workspace, isOwner, currentRole } = await getWorkspacePermissionAccess(ctx, args.workspaceId, "members.manage");
 
     if (args.userId === workspace.ownerId) {
       throw new ConvexError({ code: "ACCESS_DENIED" });
@@ -236,8 +119,8 @@ export const changeRole = mutation({
   },
 
   handler: async (ctx, args) => {
-    const { currentUser, workspace, isOwner, currentRole } =
-      await getMemberManagementAccess(ctx, args.workspaceId);
+    const { user: currentUser, workspace, isOwner, currentRole } =
+      await getWorkspacePermissionAccess(ctx, args.workspaceId, "members.manage");
 
     if (args.userId === workspace.ownerId) {
       throw new ConvexError({ code: "ACCESS_DENIED" });

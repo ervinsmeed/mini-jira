@@ -12,9 +12,8 @@ export {
   activityPage,
   templatesPage,
 } from "./lib/taskQueries";
-import { query, mutation } from "./_generated/server";
+import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { paginationOptsValidator } from "convex/server";
 async function validateAssignee(
   ctx: QueryCtx | MutationCtx,
   board: Doc<"boards">,
@@ -168,114 +167,6 @@ export const create = mutation({
     });
 
     return await ctx.db.get("tasks", taskId);
-  },
-});
-
-export const list = query({
-  args: {
-    boardId: v.optional(v.id("boards")),
-    columnId: v.optional(v.id("columns")),
-  },
-
-  handler: async (ctx, args) => {
-    const priorityOrder: Record<string, number> = {
-      high: 0,
-      medium: 1,
-      low: 2,
-    };
-
-    if (args.boardId) {
-      await getTaskPermissionAccess(ctx, args.boardId, "task.view");
-
-      const tasks = await ctx.db
-        .query("tasks")
-        .withIndex("by_board", (q) => q.eq("boardId", args.boardId!))
-        .collect();
-
-      const sortedTasks = tasks.sort((a, b) => {
-        const aPriority = priorityOrder[a.priority || "medium"];
-        const bPriority = priorityOrder[b.priority || "medium"];
-
-        if (aPriority !== bPriority) {
-          return aPriority - bPriority;
-        }
-
-        return a.order - b.order;
-      });
-      const userIds = [
-        ...new Set(
-          tasks
-            .flatMap((task) => [task.userId, task.assigneeId])
-            .filter((value) => value !== undefined && value !== null),
-        ),
-      ];
-      const users = await Promise.all(
-        userIds.map((id) => ctx.db.get("users", id)),
-      );
-      const searchUsers = new Map(
-        users
-          .filter((value) => value !== undefined && value !== null)
-          .map((user) => [user._id, `${user.name} ${user.email}`]),
-      );
-      return sortedTasks.map((task) => ({
-        ...task,
-        searchUserText: [
-          searchUsers.get(task.userId),
-          task.assigneeId ? searchUsers.get(task.assigneeId) : undefined,
-        ]
-          .filter((value) => value !== undefined && value !== null)
-          .join(" "),
-      }));
-    }
-
-    if (args.columnId) {
-      const column = await ctx.db.get("columns", args.columnId);
-
-      if (!column) {
-        return [];
-      }
-
-      await getTaskPermissionAccess(ctx, column.boardId, "task.view");
-
-      const tasks = await ctx.db
-        .query("tasks")
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("columnId"), args.columnId),
-            q.eq(q.field("boardId"), column.boardId),
-          ),
-        )
-        .collect();
-
-      return tasks.sort((a, b) => {
-        const aPriority = priorityOrder[a.priority || "medium"];
-        const bPriority = priorityOrder[b.priority || "medium"];
-
-        if (aPriority !== bPriority) {
-          return aPriority - bPriority;
-        }
-
-        return a.order - b.order;
-      });
-    }
-
-    return [];
-  },
-});
-
-export const listPaginated = query({
-  args: {
-    boardId: v.id("boards"),
-    paginationOpts: paginationOptsValidator,
-  },
-
-  handler: async (ctx, args) => {
-    await getTaskPermissionAccess(ctx, args.boardId, "task.view");
-
-    return await ctx.db
-      .query("tasks")
-      .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
-      .paginate(args.paginationOpts);
   },
 });
 
@@ -653,39 +544,6 @@ export const stopTimer = mutation({
     return await ctx.db.get("tasks", args.id);
   },
 });
-export const listActivity = query({
-  args: {
-    taskId: v.id("tasks"),
-  },
-
-  handler: async (ctx, args) => {
-    const task = await ctx.db.get("tasks", args.taskId);
-
-    if (!task) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
-
-    await getTaskPermissionAccess(ctx, task.boardId, "task.view");
-
-    const logs = await ctx.db
-      .query("activityLogs")
-      .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
-      .collect();
-
-    const result = await Promise.all(
-      logs.map(async (log) => {
-        const user = await ctx.db.get("users", log.userId);
-
-        return {
-          ...log,
-          userName: user?.name ?? user?.email ?? "Unknown user",
-        };
-      }),
-    );
-
-    return result.sort((a, b) => b.createdAt - a.createdAt);
-  },
-});
 export const addComment = mutation({
   args: {
     taskId: v.id("tasks"),
@@ -726,39 +584,6 @@ export const addComment = mutation({
     });
 
     return await ctx.db.get("comments", commentId);
-  },
-});
-export const listComments = query({
-  args: {
-    taskId: v.id("tasks"),
-  },
-
-  handler: async (ctx, args) => {
-    const task = await ctx.db.get("tasks", args.taskId);
-
-    if (!task) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
-
-    await getTaskPermissionAccess(ctx, task.boardId, "task.view");
-
-    const comments = await ctx.db
-      .query("comments")
-      .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
-      .collect();
-
-    const result = await Promise.all(
-      comments.map(async (comment) => {
-        const user = await ctx.db.get("users", comment.userId);
-
-        return {
-          ...comment,
-          userName: user?.name ?? user?.email ?? "Unknown user",
-        };
-      }),
-    );
-
-    return result.sort((a, b) => a.createdAt - b.createdAt);
   },
 });
 export const bulkUpdate = mutation({

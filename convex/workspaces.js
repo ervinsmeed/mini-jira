@@ -1,7 +1,8 @@
+import { getCurrentUser } from "./lib/access";
 export { workspacesPage } from "./lib/directoryQueries";
 import { ConvexError } from "convex/values";
 import { deleteBoard } from "./lib/cascade";
-import { mutation, query } from "./_generated/server";
+import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 export const create = mutation({
@@ -11,20 +12,7 @@ export const create = mutation({
   },
 
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
+    const user = await getCurrentUser(ctx);
 
     const workspaceId = await ctx.db.insert("workspaces", {
       name: args.name,
@@ -37,53 +25,6 @@ export const create = mutation({
   },
 });
 
-export const list = query({
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) {
-      return [];
-    }
-
-    const ownedWorkspaces = await ctx.db
-      .query("workspaces")
-      .withIndex("by_owner", (q) => q.eq("ownerId", user._id))
-      .collect();
-
-    const memberships = await ctx.db
-      .query("workspaceMembers")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
-
-    const memberWorkspaces = [];
-
-    for (const membership of memberships) {
-      const workspace = await ctx.db.get(membership.workspaceId);
-
-      if (workspace) {
-        memberWorkspaces.push(workspace);
-      }
-    }
-
-    const allWorkspaces = [...ownedWorkspaces, ...memberWorkspaces];
-
-    return Array.from(
-      new Map(
-        allWorkspaces.map((workspace) => [workspace._id, workspace]),
-      ).values(),
-    );
-  },
-});
-
 export const update = mutation({
   args: {
     id: v.id("workspaces"),
@@ -92,20 +33,7 @@ export const update = mutation({
   },
 
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
+    const user = await getCurrentUser(ctx);
 
     const workspace = await ctx.db.get(args.id);
 
@@ -134,20 +62,7 @@ export const remove = mutation({
   },
 
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-
-    if (!user) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
+    const user = await getCurrentUser(ctx);
 
     const workspace = await ctx.db.get(args.id);
 

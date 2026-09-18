@@ -1,26 +1,8 @@
+import { getCurrentUser } from "./lib/access";
 import { ConvexError } from "convex/values";
 import { getParentWorkspaceAccess } from "./lib/workspaceAccess";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-
-async function getCurrentUser(ctx) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    throw new ConvexError({ code: "NOT_AUTHENTICATED" });
-  }
-
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-    .unique();
-
-  if (!user) {
-    throw new ConvexError({ code: "NOT_FOUND" });
-  }
-
-  return user;
-}
 
 async function canViewBoard(ctx, user, board) {
   const parentAccess = await getParentWorkspaceAccess(ctx, user._id, board);
