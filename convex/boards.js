@@ -1,3 +1,4 @@
+import { insertDefaultColumns } from "./lib/defaultColumns";
 import { getCurrentUser, getWorkspacePermissionAccess } from "./lib/access";
 import { getTaskPermissionAccess } from "./lib/taskAccess";
 import { projectOrder } from "./lib/projectOrder";
@@ -22,23 +23,34 @@ export const create = mutation({
       await getWorkspacePermissionAccess(ctx, args.workspaceId, "project.create");
     }
 
-    const boards = await ctx.db
-      .query("boards")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
+    const name = args.name.trim();
+    if (!name) throw new ConvexError({ code: "VALIDATION_FAILED" });
 
-    const maxOrder = Math.max(...boards.map((b) => b.order || 0), -1);
+    const lastBoard = args.workspaceId
+      ? await ctx.db
+          .query("boards")
+          .withIndex("by_workspace_order", (q) =>
+            q.eq("workspaceId", args.workspaceId),
+          )
+          .order("desc")
+          .first()
+      : await ctx.db
+          .query("boards")
+          .withIndex("by_user_order", (q) => q.eq("userId", user._id))
+          .order("desc")
+          .first();
 
     const boardId = await ctx.db.insert("boards", {
-      name: args.name,
+      name,
       description: args.description,
       userId: user._id,
       workspaceId: args.workspaceId,
       status: "active",
       favorite: false,
-      order: maxOrder + 1,
+      order: (lastBoard?.order ?? -1) + 1,
       createdAt: Date.now(),
     });
+    await insertDefaultColumns(ctx, boardId, user._id);
 
     return await ctx.db.get(boardId);
   },

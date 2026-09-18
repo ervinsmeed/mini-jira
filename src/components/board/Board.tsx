@@ -4,7 +4,7 @@ import { useAction } from "../../hooks/useAction";
 import { useTaskPages } from "../../hooks/useTaskPages";
 import { useNow } from "../../hooks/useNow";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import RecentTasksMenu from "./RecentTasksMenu";
 import { Plus } from "lucide-react";
@@ -68,12 +68,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
     (!board?.workspaceId || workspaceAccess) &&
     (workspaceAccess?.isOwner || board?.userId === currentUser._id),
   );
-  const canManageColumn = (column: Doc<"columns">): boolean =>
-    Boolean(
-      currentUser &&
-      (!board?.workspaceId || workspaceAccess) &&
-      (workspaceAccess?.isOwner || column.userId === currentUser._id),
-    );
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
@@ -205,8 +199,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
 
   const canReorder = canUpdateTask && sortBy === "manual";
 
-  const initializeColumns = useMutation(api.columns.initializeDefaultColumns);
-
   const updateTaskOrder = useMutation(api.tasks.updateOrder);
   const bulkUpdateTasks = useMutation(api.tasks.bulkUpdate);
   const bulkRemoveTasks = useMutation(api.tasks.bulkRemove);
@@ -217,19 +209,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
-
-  useEffect(() => {
-    if (
-      canCreateColumn &&
-      board?._id &&
-      columnsResult !== undefined &&
-      columnsResult.length === 0
-    ) {
-      void initializeColumns({
-        boardId: board._id,
-      });
-    }
-  }, [board?._id, columnsResult, initializeColumns, canCreateColumn]);
 
   const getTasksByColumn = (columnId: Id<"columns">) =>
     tasksByColumn.get(columnId) ?? [];
@@ -542,8 +521,8 @@ function BoardContent({ board, theme, can }: BoardProps) {
                   now={now}
                   onTaskClick={handleTaskClick}
                   onEditColumn={setEditingColumn}
-                  canEditColumn={canManageColumn(column)}
-                  canDeleteColumn={canManageColumn(column)}
+                  canEditColumn={canCreateColumn}
+                  canDeleteColumn={canCreateColumn}
                   canDragTasks={canReorder}
                   selectedTaskIds={selectedTaskIds}
                   onToggleTaskSelection={

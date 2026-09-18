@@ -112,8 +112,6 @@ export default function AuthenticatedApp() {
     return currentAccess?.permissions?.includes(permission) ?? false;
   };
 
-  const initializeColumns = useMutation(api.columns.initializeDefaultColumns);
-
   const deleteWorkspace = useMutation(api.workspaces.remove);
 
   useEffect(() => {
@@ -189,12 +187,6 @@ export default function AuthenticatedApp() {
 
   const handleBoardCreated = (board: Doc<"boards">) => {
     setCurrentBoardId(board._id);
-
-    if (board && board._id) {
-      initializeColumns({
-        boardId: board._id,
-      }).catch((error) => toast.error(actionError(error, t)));
-    }
   };
 
   const handleWorkspaceCreated = (workspace: Doc<"workspaces">) => {

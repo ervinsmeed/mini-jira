@@ -8,6 +8,17 @@ import {
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+async function requireColumnManager(ctx, boardId) {
+  const user = await getCurrentUser(ctx);
+  const board = await ctx.db.get(boardId);
+  if (!board) throw new ConvexError({ code: "NOT_FOUND" });
+  const parentAccess = await requireParentWorkspaceAccess(ctx, user._id, board);
+  if (!parentAccess.isWorkspaceOwner && board.userId !== user._id) {
+    throw new ConvexError({ code: "ACCESS_DENIED" });
+  }
+  return { user, board };
+}
+
 export const create = mutation({
   args: {
     name: v.string(),
@@ -16,19 +27,7 @@ export const create = mutation({
   },
 
   handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-
-    const board = await ctx.db.get(args.boardId);
-
-    if (!board) throw new ConvexError({ code: "NOT_FOUND" });
-    const parentAccess = await requireParentWorkspaceAccess(
-      ctx,
-      user._id,
-      board,
-    );
-    if (!parentAccess.isWorkspaceOwner && board.userId !== user._id) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
+    const { user } = await requireColumnManager(ctx, args.boardId);
 
     const columns = await ctx.db
       .query("columns")
@@ -115,90 +114,6 @@ export const list = query({
   },
 });
 
-export const initializeDefaultColumns = mutation({
-  args: {
-    boardId: v.id("boards"),
-  },
-
-  handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-
-    const board = await ctx.db.get(args.boardId);
-
-    if (!board) throw new ConvexError({ code: "NOT_FOUND" });
-    const parentAccess = await requireParentWorkspaceAccess(
-      ctx,
-      user._id,
-      board,
-    );
-    if (!parentAccess.isWorkspaceOwner && board.userId !== user._id) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
-
-    const existingColumns = await ctx.db
-      .query("columns")
-      .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
-      .collect();
-
-    if (existingColumns.length > 0) {
-      return existingColumns.sort((a, b) => a.order - b.order);
-    }
-    const defaultColumns = [
-      {
-        name: "Backlog",
-        color: "#64748b",
-        order: 0,
-      },
-      {
-        name: "To Do",
-        color: "#22d3ee",
-        order: 1,
-      },
-      {
-        name: "In Progress",
-        color: "#8b5cf6",
-        order: 2,
-      },
-      {
-        name: "Review",
-        color: "#f59e0b",
-        order: 3,
-      },
-      {
-        name: "Testing",
-        color: "#3b82f6",
-        order: 4,
-      },
-      {
-        name: "Done",
-        color: "#22c55e",
-        order: 5,
-      },
-    ];
-
-    const createdColumns = [];
-
-    for (const column of defaultColumns) {
-      const columnId = await ctx.db.insert("columns", {
-        name: column.name,
-        color: column.color,
-        boardId: args.boardId,
-        userId: user._id,
-        order: column.order,
-        createdAt: Date.now(),
-      });
-
-      const createdColumn = await ctx.db.get(columnId);
-
-      if (createdColumn) {
-        createdColumns.push(createdColumn);
-      }
-    }
-
-    return createdColumns;
-  },
-});
-
 export const update = mutation({
   args: {
     id: v.id("columns"),
@@ -206,20 +121,9 @@ export const update = mutation({
     color: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-
     const column = await ctx.db.get(args.id);
     if (!column) throw new ConvexError({ code: "NOT_FOUND" });
-    const board = await ctx.db.get(column.boardId);
-    if (!board) throw new ConvexError({ code: "NOT_FOUND" });
-    const parentAccess = await requireParentWorkspaceAccess(
-      ctx,
-      user._id,
-      board,
-    );
-    if (!parentAccess.isWorkspaceOwner && column.userId !== user._id) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
+    await requireColumnManager(ctx, column.boardId);
 
     const updates = {};
 
@@ -234,29 +138,14 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id("columns") },
   handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-
     const column = await ctx.db.get(args.id);
-
     if (!column) throw new ConvexError({ code: "NOT_FOUND" });
-    const board = await ctx.db.get(column.boardId);
-    if (!board) throw new ConvexError({ code: "NOT_FOUND" });
-    const parentAccess = await requireParentWorkspaceAccess(
-      ctx,
-      user._id,
-      board,
-    );
-    if (!parentAccess.isWorkspaceOwner && column.userId !== user._id) {
-      throw new ConvexError({ code: "NOT_FOUND" });
-    }
+    await requireColumnManager(ctx, column.boardId);
 
     const tasks = await ctx.db
       .query("tasks")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("columnId"), args.id),
-          q.eq(q.field("boardId"), column.boardId),
-        ),
+      .withIndex("by_board_column_order", (q) =>
+        q.eq("boardId", column.boardId).eq("columnId", args.id),
       )
       .collect();
 
