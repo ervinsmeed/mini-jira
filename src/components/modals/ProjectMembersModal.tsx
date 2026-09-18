@@ -158,7 +158,7 @@ export default function ProjectMembersModal({
               <button
                 type="button"
                 onClick={handleAddMember}
-                className="rounded-md bg-purple-500 px-4 py-2 text-white"
+                className="rounded-md bg-primary px-4 py-2 text-white"
                 disabled={pending}
               >
                 {t("common.add")}
@@ -187,7 +187,7 @@ export default function ProjectMembersModal({
                     </div>
 
                     {member.isOwner && (
-                      <div className="text-xs text-purple-500">
+                      <div className="text-xs text-primary">
                         {t("members.owner")}
                       </div>
                     )}
@@ -228,7 +228,7 @@ export default function ProjectMembersModal({
                       <button
                         type="button"
                         onClick={() => handleRemoveMember(member._id)}
-                        className="shrink-0 text-sm text-red-400 hover:text-red-500"
+                        className="shrink-0 text-sm text-destructive hover:text-destructive"
                         disabled={pending}
                       >
                         {t("common.remove")}

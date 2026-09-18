@@ -1,9 +1,7 @@
-import "./Sidebar.css";
 import { useAction } from "../../hooks/useAction";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
-import "./Sidebar.css";
 import {
   Sun,
   Moon,
@@ -383,7 +381,7 @@ export default function Sidebar({
                           setShowDeleteWorkspaceConfirm(null);
                         });
                       }}
-                      className="text-xs text-red-400 hover:text-red-500"
+                      className="text-xs text-destructive hover:text-destructive"
                     >
                       {t("common.yes")}
                     </button>
@@ -406,7 +404,7 @@ export default function Sidebar({
                       event.stopPropagation();
                       setShowDeleteWorkspaceConfirm(workspace._id);
                     }}
-                    className="relative z-10 mr-1 shrink-0 rounded p-1 opacity-60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 hover:text-red-400"
+                    className="relative z-10 mr-1 shrink-0 rounded p-1 opacity-60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 hover:text-destructive"
                     title={t("sidebar.deleteWorkspace")}
                   >
                     <Trash2 className="size-3.5" />
@@ -737,7 +735,7 @@ function SortableBoardItem({
 
                 void handleDeleteBoard(board._id);
               }}
-              className="p-1 text-xs text-red-400 hover:text-red-500"
+              className="p-1 text-xs text-destructive hover:text-destructive"
             >
               {t("common.yes")}
             </button>
@@ -757,7 +755,7 @@ function SortableBoardItem({
             onClick={() => setShowDeleteConfirm(board._id)}
             aria-label={t("sidebar.deleteProject")}
             title={t("sidebar.deleteProject")}
-            className="opacity-60 group-hover:opacity-100 group-focus-within:opacity-100 p-1 hover:text-red-400 transition-all"
+            className="opacity-60 group-hover:opacity-100 group-focus-within:opacity-100 p-1 hover:text-destructive transition-all"
           >
             <Trash2 className="size-3" />
           </button>

@@ -17,7 +17,7 @@ export default function Profile({ onBack }: ProfileProps) {
   if (currentUser === undefined) {
     return (
       <div className="flex h-screen items-center justify-center bg-background text-foreground">
-        <div className="size-10 animate-spin rounded-full border-4 border-slate-600 border-t-purple-500" />
+        <div className="size-10 animate-spin rounded-full border-4 border-border border-t-primary" />
       </div>
     );
   }
@@ -133,10 +133,10 @@ function ProfileContent({ currentUser, onBack }: ProfileContentProps) {
               <img
                 src={avatar}
                 alt={currentUser.name}
-                className="size-20 rounded-full border border-slate-700 object-cover"
+                className="size-20 rounded-full border border-border object-cover"
               />
             ) : (
-              <div className="flex size-20 items-center justify-center rounded-full bg-purple-500/20 text-purple-400">
+              <div className="flex size-20 items-center justify-center rounded-full bg-primary/15 text-primary">
                 <UserRound className="size-10" />
               </div>
             )}
@@ -228,7 +228,7 @@ function ProfileContent({ currentUser, onBack }: ProfileContentProps) {
             <button
               type="submit"
               disabled={isSaving}
-              className="rounded-md bg-purple-500 px-5 py-2 font-medium text-white hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-md bg-primary px-5 py-2 font-medium text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? t("profile.saving") : t("profile.save")}
             </button>

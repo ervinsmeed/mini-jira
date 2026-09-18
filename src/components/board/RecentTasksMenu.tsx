@@ -49,7 +49,7 @@ export default function RecentTasksMenu({ onTaskClick }: RecentTasksMenuProps) {
               type="button"
               onClick={handleClear}
               disabled={pending}
-              className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-500"
+              className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
               title={t("recentTasks.clear")}
             >
               <Trash2 className="size-4" />

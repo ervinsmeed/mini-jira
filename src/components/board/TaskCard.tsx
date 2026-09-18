@@ -24,8 +24,8 @@ import { Progress } from "../ui/progress";
 
 const PRIORITY_STYLES = {
   high: { border: "border-l-red-500", dot: "bg-red-500" },
-  medium: { border: "border-l-yellow-500", dot: "bg-yellow-500" },
-  low: { border: "border-l-green-500", dot: "bg-green-500" },
+  medium: { border: "border-l-amber-500", dot: "bg-amber-500" },
+  low: { border: "border-l-emerald-500", dot: "bg-emerald-500" },
 } as const;
 
 export default function TaskCard({
@@ -98,7 +98,7 @@ export default function TaskCard({
           onClick();
         }
       }}
-      className={`task-card cursor-pointer rounded-md border border-l-4 p-4 shadow-sm transition-all ${
+      className={`task-card cursor-pointer rounded-lg border border-l-[3px] p-4 shadow-sm transition-all ${
         priorityStyle.border
       } ${
         isDragging || isSortableDragging

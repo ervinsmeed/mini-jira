@@ -118,7 +118,7 @@ export default function BoardBulkActions({
         <button
           type="button"
           onClick={onDelete}
-          className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
+          className="rounded-md bg-destructive px-3 py-2 text-sm font-medium text-white hover:bg-destructive/90"
           disabled={pending}
         >
           {t("board.deleteSelected")}

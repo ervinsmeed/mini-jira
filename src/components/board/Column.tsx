@@ -92,7 +92,7 @@ export default function Column({
   };
 
   return (
-    <div className="column-card w-72 shrink-0 rounded-lg border border-border bg-card p-3 text-card-foreground">
+    <div className="column-card w-72 shrink-0 rounded-xl border border-border bg-column p-3 text-card-foreground">
       <div className="group mb-6 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div

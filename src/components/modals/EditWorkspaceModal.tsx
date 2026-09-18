@@ -80,7 +80,7 @@ export default function EditWorkspaceModal({
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-purple-500 py-2 text-white transition hover:bg-purple-600"
+              className="w-full rounded-lg bg-primary py-2 text-white transition hover:bg-primary/90"
               disabled={pending}
             >
               {t("editWorkspaceModal.save")}

@@ -257,8 +257,8 @@ export default function AuthenticatedApp() {
 
   if (workspaces === undefined || boards === undefined) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-[#0f172a]">
-        <div className="size-12 animate-spin rounded-full border-b-2 border-t-2 border-indigo-500"></div>
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <div className="size-12 animate-spin rounded-full border-b-2 border-t-2 border-primary"></div>
       </div>
     );
   }
@@ -302,7 +302,7 @@ export default function AuthenticatedApp() {
         <Suspense
           fallback={
             <div className="flex h-screen flex-1 items-center justify-center bg-background">
-              <div className="size-10 animate-spin rounded-full border-4 border-slate-600 border-t-purple-500" />
+              <div className="size-10 animate-spin rounded-full border-4 border-border border-t-primary" />
             </div>
           }
         >

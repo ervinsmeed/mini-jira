@@ -344,7 +344,7 @@ export default function EditTaskModal({
                 <button
                   type="submit"
                   disabled={pending}
-                  className="flex-1 rounded-lg bg-purple-600 py-2 text-white transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="flex-1 rounded-lg bg-primary py-2 text-white transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   {t("editTask.updateTask")}
                 </button>
