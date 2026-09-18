@@ -105,13 +105,16 @@ export default function TaskModal({
   const addComment = useMutation(api.tasks.addComment);
   const [commentText, setCommentText] = useState("");
 
+  const isTimerRunning = task.timerStatus === "running";
+
   useEffect(() => {
+    if (!isTimerRunning) return;
     const interval = window.setInterval(() => {
       setNow(Date.now());
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, []);
+  }, [isTimerRunning]);
 
   const handleColumnChange = async (value: string) => {
     const newColumnId = columns.find((column) => column._id === value)?._id;

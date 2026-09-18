@@ -191,11 +191,22 @@ export const remove = mutation({
       (membership) => membership.roleId === args.id,
     );
 
-    const projectMemberships = await ctx.db.query("boardMembers").collect();
+    const workspaceBoards = await ctx.db
+      .query("boards")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", role.workspaceId))
+      .collect();
 
-    const projectRoleIsAssigned = projectMemberships.some(
-      (membership) => membership.roleId === args.id,
-    );
+    let projectRoleIsAssigned = false;
+    for (const board of workspaceBoards) {
+      const members = await ctx.db
+        .query("boardMembers")
+        .withIndex("by_board", (q) => q.eq("boardId", board._id))
+        .collect();
+      if (members.some((membership) => membership.roleId === args.id)) {
+        projectRoleIsAssigned = true;
+        break;
+      }
+    }
 
     if (workspaceRoleIsAssigned || projectRoleIsAssigned) {
       throw new ConvexError({ code: "ACCESS_DENIED" });

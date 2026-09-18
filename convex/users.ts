@@ -41,11 +41,12 @@ export const create = mutation({
       identity.preferredUsername?.trim() ||
       "User";
 
-    const users = await ctx.db.query("users").collect();
-    const emailConflict = users.some(
-      (user) =>
-        user.clerkId !== identity.subject &&
-        user.email.trim().toLowerCase() === email,
+    const usersWithEmail = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .collect();
+    const emailConflict = usersWithEmail.some(
+      (user) => user.clerkId !== identity.subject,
     );
 
     if (emailConflict) {
