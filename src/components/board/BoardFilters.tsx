@@ -1,16 +1,14 @@
 import { useTranslation } from "react-i18next";
-
 import type { Id } from "../../../convex/_generated/dataModel";
-
 import { getColumnLabel } from "../../lib/columnLabel";
-
 import SelectField from "../ui/SelectField";
-type StatusFilter = Id<"columns"> | "all";
-type AssigneeFilter = Id<"users"> | "all" | "unassigned";
-type StoryPointsFilter = "all" | "1" | "2" | "3" | "5" | "8" | "13" | "21";
-type DeadlineFilter = "all" | "overdue" | "today" | "upcoming" | "none";
-type PriorityFilter = "all" | "high" | "medium" | "low";
-
+import type {
+  AssigneeFilter,
+  DeadlineFilter,
+  PriorityFilter,
+  StatusFilter,
+  StoryPointsFilter,
+} from "../../hooks/useBoardFilters";
 type FilterColumn = {
   _id: Id<"columns">;
   name: string;

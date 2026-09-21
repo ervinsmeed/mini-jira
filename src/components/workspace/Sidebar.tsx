@@ -37,6 +37,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { SignOutButton } from "@clerk/clerk-react";
+import { useUiStore } from "../../store/uiStore";
+
 type SidebarProps = {
   currentBoard: Doc<"boards"> | null;
   boards: (Doc<"boards"> & { isFavorite: boolean })[];
@@ -56,23 +58,14 @@ type SidebarProps = {
   onWorkspaceRoles: (workspace: Doc<"workspaces">) => void;
   onEditProject: (board: Doc<"boards">) => void;
   onProjectMembers: (board: Doc<"boards">) => void;
-  currentView: "board" | "analytics" | "profile";
-  onViewChange: (view: "board" | "analytics" | "profile") => void;
   canViewAnalytics: boolean;
   can: (permission: string) => boolean;
-  theme: "light" | "dark";
-  onThemeToggle: () => void;
-  isCollapsed: boolean;
-  onToggleCollapsed: () => void;
 };
 type BoardItemProps = Pick<
   SidebarProps,
-  | "currentBoard"
-  | "onBoardSelect"
-  | "onProjectMembers"
-  | "onEditProject"
-  | "isCollapsed"
+  "currentBoard" | "onBoardSelect" | "onProjectMembers" | "onEditProject"
 > & {
+  isCollapsed: boolean;
   board: Doc<"boards">;
   isFavorite: boolean;
   showDeleteConfirm: Id<"boards"> | null;
@@ -80,7 +73,6 @@ type BoardItemProps = Pick<
   handleDeleteBoard: (id: Id<"boards">) => Promise<void>;
   handleToggleFavorite: (board: Doc<"boards">) => Promise<void>;
 };
-
 export default function Sidebar({
   currentBoard,
   boards,
@@ -100,15 +92,15 @@ export default function Sidebar({
   onWorkspaceRoles,
   onEditProject,
   onProjectMembers,
-  currentView,
-  onViewChange,
   canViewAnalytics,
   can,
-  theme,
-  onThemeToggle,
-  isCollapsed,
-  onToggleCollapsed,
 }: SidebarProps) {
+  const currentView = useUiStore((state) => state.currentView);
+  const onViewChange = useUiStore((state) => state.setView);
+  const theme = useUiStore((state) => state.theme);
+  const onThemeToggle = useUiStore((state) => state.toggleTheme);
+  const isCollapsed = useUiStore((state) => state.sidebarCollapsed);
+  const onToggleCollapsed = useUiStore((state) => state.toggleSidebar);
   const [showDeleteConfirm, setShowDeleteConfirm] =
     useState<Id<"boards"> | null>(null);
   const [showDeleteWorkspaceConfirm, setShowDeleteWorkspaceConfirm] =

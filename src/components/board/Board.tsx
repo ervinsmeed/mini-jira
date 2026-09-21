@@ -1,19 +1,6 @@
-import QueryBoundary from "../ui/QueryBoundary";
-
-import { useAction } from "../../hooks/useAction";
-import { useTaskPages } from "../../hooks/useTaskPages";
-import { useNow } from "../../hooks/useNow";
-
 import { useMemo, useState } from "react";
-
-import RecentTasksMenu from "./RecentTasksMenu";
-import { Plus } from "lucide-react";
-
-import BoardBulkActions from "./BoardBulkActions";
-import BoardFilters from "./BoardFilters";
-import SelectField from "../ui/SelectField";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
-
 import {
   closestCenter,
   DndContext,
@@ -23,35 +10,33 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-
-import { useTranslation } from "react-i18next";
-
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-
-import {
-  sortableKeyboardCoordinates,
-} from "@dnd-kit/sortable";
-
-import { UserButton } from "@clerk/clerk-react";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { Plus } from "lucide-react";
 
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
+import { useAction } from "../../hooks/useAction";
+import { useBoardFilters } from "../../hooks/useBoardFilters";
+import { useNow } from "../../hooks/useNow";
+import { useTaskPages } from "../../hooks/useTaskPages";
+
+import QueryBoundary from "../ui/QueryBoundary";
+import CreateColumnModal from "../modals/CreateColumnModal";
+import CreateTaskModal from "../modals/CreateTaskModal";
+import EditColumnModal from "../modals/EditColumnModal";
+import TaskModal from "../modals/TaskModal";
+
+import BoardBulkActions from "./BoardBulkActions";
+import BoardHeader from "./BoardHeader";
 import Column from "./Column";
 import TaskCard from "./TaskCard";
-
-import TaskModal from "../modals/TaskModal";
-import CreateTaskModal from "../modals/CreateTaskModal";
-import CreateColumnModal from "../modals/CreateColumnModal";
-import EditColumnModal from "../modals/EditColumnModal";
-
 type BoardProps = {
   board: Doc<"boards"> | null;
-  theme: "light" | "dark";
   can: (permission: string) => boolean;
 };
-
-function BoardContent({ board, theme, can }: BoardProps) {
+function BoardContent({ board, can }: BoardProps) {
   const [selectedTask, setSelectedTask] = useState<Doc<"tasks"> | null>(null);
   const { t } = useTranslation();
   const { pending, run } = useAction();
@@ -78,72 +63,18 @@ function BoardContent({ board, theme, can }: BoardProps) {
   );
   const [activeTask, setActiveTask] = useState<Doc<"tasks"> | null>(null);
   const [selectedTaskIds, setSelectedTaskIds] = useState<Id<"tasks">[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const [statusFilter, setStatusFilter] = useState<Id<"columns"> | "all">(
-    "all",
-  );
-  const [assigneeFilter, setAssigneeFilter] = useState<
-    Id<"users"> | "all" | "unassigned"
-  >("all");
-
-  const [storyPointsFilter, setStoryPointsFilter] = useState<
-    "all" | "1" | "2" | "3" | "5" | "8" | "13" | "21"
-  >("all");
-
-  const [deadlineFilter, setDeadlineFilter] = useState<
-    "all" | "overdue" | "today" | "upcoming" | "none"
-  >("all");
-
-  const [priorityFilter, setPriorityFilter] = useState<
-    "all" | "high" | "medium" | "low"
-  >("all");
-
-  const [sortBy, setSortBy] = useState<
-    "manual" | "title" | "deadline" | "created" | "storyPoints" | "priority"
-  >("manual");
-  const todayDate = new Date();
-  const today = new Date(
-    todayDate.getFullYear(),
-    todayDate.getMonth(),
-    todayDate.getDate(),
-  ).getTime();
-  const tomorrow = new Date(
-    todayDate.getFullYear(),
-    todayDate.getMonth(),
-    todayDate.getDate() + 1,
-  ).getTime();
+  const filters = useBoardFilters();
+  const { sortBy, taskQuery } = filters;
 
   const now = useNow();
-
   const {
     results: tasksResult,
     status: pageStatus,
     loadMore,
   } = useTaskPages(
-    board
-      ? {
-          boardId: board._id,
-          search: searchQuery,
-          sort: sortBy,
-          columnId: statusFilter === "all" ? undefined : statusFilter,
-          assigneeId:
-            assigneeFilter === "all"
-              ? undefined
-              : assigneeFilter === "unassigned"
-                ? null
-                : assigneeFilter,
-          priority: priorityFilter === "all" ? undefined : priorityFilter,
-          storyPoints:
-            storyPointsFilter === "all" ? undefined : Number(storyPointsFilter),
-          deadline: deadlineFilter,
-          today,
-          tomorrow,
-        }
-      : "skip",
+    board ? { boardId: board._id, ...taskQuery } : "skip",
     BOARD_TASK_LIMIT,
   );
-
   const columnsResult = useQuery(
     api.columns.list,
     board?._id
@@ -389,85 +320,18 @@ function BoardContent({ board, theme, can }: BoardProps) {
 
   return (
     <div className="flex min-w-0 flex-1 flex-col transition-colors">
-      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b border-border bg-sidebar/70 p-6 backdrop-blur-md transition-colors">
-        <div className="min-w-0">
-          <h1 className="break-words text-2xl font-bold text-foreground transition-colors">
-            {board.name}
-          </h1>
-          {board.description && (
-            <p className="mt-1 max-w-2xl whitespace-pre-wrap break-words text-sm text-muted-foreground transition-colors">
-              {board.description}
-            </p>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          {memberStatus === "CanLoadMore" && (
-            <button type="button" onClick={() => loadMembers(30)}>
-              {t("members.loadMore")}
-            </button>
-          )}
-          <RecentTasksMenu onTaskClick={handleTaskClick} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder={t("board.searchTasks")}
-            className="w-56 rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary"
-          />
-          <SelectField
-            value={sortBy}
-            onChange={(event) =>
-              setSortBy(
-                event.target.value as
-                  | "manual"
-                  | "title"
-                  | "deadline"
-                  | "created"
-                  | "storyPoints"
-                  | "priority",
-              )
-            }
-            data={[
-              { label: t("board.manualOrder"), value: "manual" },
-              { label: t("board.sortTitle"), value: "title" },
-              { label: t("board.sortDeadline"), value: "deadline" },
-              { label: t("board.sortCreated"), value: "created" },
-              { label: t("board.sortStoryPoints"), value: "storyPoints" },
-              { label: t("board.sortPriority"), value: "priority" },
-            ]}
-          />
-
-          <BoardFilters
-            pending={pending}
-            columns={columns}
-            projectMembers={projectMembers}
-            statusFilter={statusFilter}
-            assigneeFilter={assigneeFilter}
-            storyPointsFilter={storyPointsFilter}
-            deadlineFilter={deadlineFilter}
-            priorityFilter={priorityFilter}
-            setStatusFilter={setStatusFilter}
-            setAssigneeFilter={setAssigneeFilter}
-            setStoryPointsFilter={setStoryPointsFilter}
-            setDeadlineFilter={setDeadlineFilter}
-            setPriorityFilter={setPriorityFilter}
-          />
-          {can("task.create") && (
-            <button
-              type="button"
-              onClick={() => setIsCreateModalOpen(true)}
-              className="flex shrink-0 items-center gap-2 rounded-full bg-primary px-4 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-              disabled={pending}
-            >
-              <Plus className="size-4" />
-              <span>{t("board.addTask")}</span>
-            </button>
-          )}
-
-          <UserButton />
-        </div>
-      </div>
+      <BoardHeader
+        board={board}
+        filters={filters}
+        columns={columns}
+        projectMembers={projectMembers}
+        pending={pending}
+        canLoadMoreMembers={memberStatus === "CanLoadMore"}
+        onLoadMoreMembers={() => loadMembers(30)}
+        canCreateTask={can("task.create")}
+        onCreateTask={() => setIsCreateModalOpen(true)}
+        onTaskClick={handleTaskClick}
+      />
       {canSelectTasks && selectedTaskIds.length > 0 && (
         <BoardBulkActions
           selectedCount={selectedTaskIds.length}
@@ -513,26 +377,26 @@ function BoardContent({ board, theme, can }: BoardProps) {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-              {columns.map((column) => (
-                <Column
-                  key={column._id}
-                  column={column}
-                  tasks={getTasksByColumn(column._id)}
-                  taskById={taskById}
-                  now={now}
-                  onTaskClick={handleTaskClick}
-                  onEditColumn={setEditingColumn}
-                  canEditColumn={canCreateColumn}
-                  canDeleteColumn={canCreateColumn}
-                  canDragTasks={canReorder}
-                  selectedTaskIds={selectedTaskIds}
-                  onToggleTaskSelection={
-                    canSelectTasks ? toggleTaskSelection : undefined
-                  }
-                  favoriteTaskIdSet={favoriteTaskIdSet}
-                  onToggleTaskFavorite={handleToggleTaskFavorite}
-                />
-              ))}
+            {columns.map((column) => (
+              <Column
+                key={column._id}
+                column={column}
+                tasks={getTasksByColumn(column._id)}
+                taskById={taskById}
+                now={now}
+                onTaskClick={handleTaskClick}
+                onEditColumn={setEditingColumn}
+                canEditColumn={canCreateColumn}
+                canDeleteColumn={canCreateColumn}
+                canDragTasks={canReorder}
+                selectedTaskIds={selectedTaskIds}
+                onToggleTaskSelection={
+                  canSelectTasks ? toggleTaskSelection : undefined
+                }
+                favoriteTaskIdSet={favoriteTaskIdSet}
+                onToggleTaskFavorite={handleToggleTaskFavorite}
+              />
+            ))}
             {canCreateColumn && (
               <div className="flex w-72 shrink-0 items-start justify-center pt-12">
                 <button
@@ -583,7 +447,6 @@ function BoardContent({ board, theme, can }: BoardProps) {
         <TaskModal
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
-          theme={theme}
           can={can}
         />
       )}

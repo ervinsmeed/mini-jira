@@ -1,0 +1,107 @@
+import type { ComponentProps } from "react";
+import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { UserButton } from "@clerk/clerk-react";
+import type { Doc } from "../../../convex/_generated/dataModel";
+import type { BoardFiltersState, SortBy } from "../../hooks/useBoardFilters";
+import SelectField from "../ui/SelectField";
+import BoardFilters from "./BoardFilters";
+import RecentTasksMenu from "./RecentTasksMenu";
+
+type BoardHeaderProps = {
+  board: Doc<"boards">;
+  filters: BoardFiltersState;
+  columns: Doc<"columns">[];
+  projectMembers: ComponentProps<typeof BoardFilters>["projectMembers"];
+  pending: boolean;
+  canLoadMoreMembers: boolean;
+  onLoadMoreMembers: () => void;
+  canCreateTask: boolean;
+  onCreateTask: () => void;
+  onTaskClick: ComponentProps<typeof RecentTasksMenu>["onTaskClick"];
+};
+
+export default function BoardHeader({
+  board,
+  filters,
+  columns,
+  projectMembers,
+  pending,
+  canLoadMoreMembers,
+  onLoadMoreMembers,
+  canCreateTask,
+  onCreateTask,
+  onTaskClick,
+}: BoardHeaderProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b border-border bg-sidebar/70 p-6 backdrop-blur-md transition-colors">
+      <div className="min-w-0">
+        <h1 className="break-words text-2xl font-bold text-foreground transition-colors">
+          {board.name}
+        </h1>
+        {board.description && (
+          <p className="mt-1 max-w-2xl whitespace-pre-wrap break-words text-sm text-muted-foreground transition-colors">
+            {board.description}
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        {canLoadMoreMembers && (
+          <button type="button" onClick={onLoadMoreMembers}>
+            {t("members.loadMore")}
+          </button>
+        )}
+        <RecentTasksMenu onTaskClick={onTaskClick} />
+        <input
+          type="text"
+          value={filters.searchQuery}
+          onChange={(event) => filters.setSearchQuery(event.target.value)}
+          placeholder={t("board.searchTasks")}
+          className="w-56 rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary"
+        />
+        <SelectField
+          value={filters.sortBy}
+          onChange={(event) => filters.setSortBy(event.target.value as SortBy)}
+          data={[
+            { label: t("board.manualOrder"), value: "manual" },
+            { label: t("board.sortTitle"), value: "title" },
+            { label: t("board.sortDeadline"), value: "deadline" },
+            { label: t("board.sortCreated"), value: "created" },
+            { label: t("board.sortStoryPoints"), value: "storyPoints" },
+            { label: t("board.sortPriority"), value: "priority" },
+          ]}
+        />
+        <BoardFilters
+          pending={pending}
+          columns={columns}
+          projectMembers={projectMembers}
+          statusFilter={filters.statusFilter}
+          assigneeFilter={filters.assigneeFilter}
+          storyPointsFilter={filters.storyPointsFilter}
+          deadlineFilter={filters.deadlineFilter}
+          priorityFilter={filters.priorityFilter}
+          setStatusFilter={filters.setStatusFilter}
+          setAssigneeFilter={filters.setAssigneeFilter}
+          setStoryPointsFilter={filters.setStoryPointsFilter}
+          setDeadlineFilter={filters.setDeadlineFilter}
+          setPriorityFilter={filters.setPriorityFilter}
+        />
+        {canCreateTask && (
+          <button
+            type="button"
+            onClick={onCreateTask}
+            className="flex shrink-0 items-center gap-2 rounded-full bg-primary px-4 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            disabled={pending}
+          >
+            <Plus className="size-4" />
+            <span>{t("board.addTask")}</span>
+          </button>
+        )}
+        <UserButton />
+      </div>
+    </div>
+  );
+}

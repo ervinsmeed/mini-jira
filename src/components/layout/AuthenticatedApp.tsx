@@ -43,9 +43,8 @@ export default function AuthenticatedApp() {
     useState<Doc<"workspaces"> | null>(null);
 
   const theme = useUiStore((state) => state.theme);
-  const toggleTheme = useUiStore((state) => state.toggleTheme);
+
   const sidebarCollapsed = useUiStore((state) => state.sidebarCollapsed);
-  const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const setSidebarCollapsed = useUiStore((state) => state.setSidebarCollapsed);
   const [isCreateBoardModalOpen, setIsCreateBoardModalOpen] = useState(false);
 
@@ -207,8 +206,6 @@ export default function AuthenticatedApp() {
   };
 
   const handleProjectUpdated = (updatedProject: Doc<"boards">) => {
-    if (!updatedProject) return;
-
     selectBoard(updatedProject._id);
   };
   const handleProjectMembers = (project: Doc<"boards">) => {
@@ -222,7 +219,7 @@ export default function AuthenticatedApp() {
   const handleWorkspaceRoles = (workspace: Doc<"workspaces">) =>
     setRolesWorkspace(workspace);
   const handleDeleteWorkspace = async (workspaceId: Id<"workspaces">) => {
-    const remainingWorkspaces = (workspaces ?? []).filter(
+    const remainingWorkspaces = workspaces.filter(
       (workspace: Doc<"workspaces">) => workspace._id !== workspaceId,
     );
 
@@ -234,7 +231,10 @@ export default function AuthenticatedApp() {
     setEditingWorkspace(null);
   };
 
-  if (workspaces === undefined || boards === undefined) {
+  if (
+    workspaceListStatus === "LoadingFirstPage" ||
+    boardListStatus === "LoadingFirstPage"
+  ) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="size-12 animate-spin rounded-full border-b-2 border-t-2 border-primary"></div>
@@ -265,12 +265,6 @@ export default function AuthenticatedApp() {
         onWorkspaceRoles={handleWorkspaceRoles}
         onEditProject={handleEditProject}
         onProjectMembers={handleProjectMembers}
-        currentView={currentView}
-        onViewChange={setView}
-        theme={theme}
-        onThemeToggle={toggleTheme}
-        isCollapsed={sidebarCollapsed}
-        onToggleCollapsed={toggleSidebar}
       />
 
       <div
@@ -297,7 +291,6 @@ export default function AuthenticatedApp() {
             <Board
               key={displayBoard?._id ?? "no-board"}
               board={displayBoard}
-              theme={theme}
               can={canProject}
             />
           )}
