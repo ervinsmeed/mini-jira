@@ -8,7 +8,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import RolesModal from "../modals/RolesModal";
 import Sidebar from "../workspace/Sidebar";
 import Board from "../board/Board";
-
+import { useUiStore } from "../../store/uiStore";
 import CreateBoardModal from "../modals/CreateBoardModal";
 import CreateWorkspaceModal from "../modals/CreateWorkspaceModal";
 import EditProjectModal from "../modals/EditProjectModal";
@@ -23,14 +23,12 @@ const AUTO_LOAD_LIMIT = 100;
 
 export default function AuthenticatedApp() {
   const { t } = useTranslation();
-  const [currentBoardId, setCurrentBoardId] = useState<Id<"boards"> | null>(
-    null,
-  );
-  const [currentWorkspaceId, setCurrentWorkspaceId] =
-    useState<Id<"workspaces"> | null>(null);
-  const [currentView, setCurrentView] = useState<
-    "board" | "analytics" | "profile"
-  >("board");
+  const currentBoardId = useUiStore((state) => state.currentBoardId);
+  const currentWorkspaceId = useUiStore((state) => state.currentWorkspaceId);
+  const selectBoard = useUiStore((state) => state.selectBoard);
+  const selectWorkspace = useUiStore((state) => state.selectWorkspace);
+  const currentView = useUiStore((state) => state.currentView);
+  const setView = useUiStore((state) => state.setView);
   const [editingWorkspace, setEditingWorkspace] =
     useState<Doc<"workspaces"> | null>(null);
   const [editingProject, setEditingProject] = useState<Doc<"boards"> | null>(
@@ -44,13 +42,11 @@ export default function AuthenticatedApp() {
   const [rolesWorkspace, setRolesWorkspace] =
     useState<Doc<"workspaces"> | null>(null);
 
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    const saved = localStorage.getItem("kanban-theme");
-    return saved === "light" ? "light" : "dark";
-  });
-
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
+  const theme = useUiStore((state) => state.theme);
+  const toggleTheme = useUiStore((state) => state.toggleTheme);
+  const sidebarCollapsed = useUiStore((state) => state.sidebarCollapsed);
+  const toggleSidebar = useUiStore((state) => state.toggleSidebar);
+  const setSidebarCollapsed = useUiStore((state) => state.setSidebarCollapsed);
   const [isCreateBoardModalOpen, setIsCreateBoardModalOpen] = useState(false);
 
   const [isCreateWorkspaceModalOpen, setIsCreateWorkspaceModalOpen] =
@@ -94,7 +90,10 @@ export default function AuthenticatedApp() {
     { initialNumItems: 30 },
   );
   useEffect(() => {
-    if (workspaces.length < AUTO_LOAD_LIMIT && workspaceListStatus === "CanLoadMore")
+    if (
+      workspaces.length < AUTO_LOAD_LIMIT &&
+      workspaceListStatus === "CanLoadMore"
+    )
       loadWorkspaces(30);
   }, [workspaces.length, workspaceListStatus, loadWorkspaces]);
   useEffect(() => {
@@ -156,8 +155,6 @@ export default function AuthenticatedApp() {
     } else {
       document.documentElement.classList.remove("dark");
     }
-
-    localStorage.setItem("kanban-theme", theme);
   }, [theme]);
 
   useEffect(() => {
@@ -174,7 +171,7 @@ export default function AuthenticatedApp() {
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [setSidebarCollapsed]);
 
   const handleOpenCreateModal = () => {
     if (!can("project.create")) {
@@ -188,35 +185,19 @@ export default function AuthenticatedApp() {
   };
 
   const handleBoardCreated = (board: Doc<"boards">) => {
-    setCurrentBoardId(board._id);
+    selectBoard(board._id);
   };
 
   const handleWorkspaceCreated = (workspace: Doc<"workspaces">) => {
-    setCurrentWorkspaceId(workspace._id);
-    setCurrentBoardId(null);
-    setCurrentView("board");
-  };
-
-  const handleThemeToggle = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-  };
-
-  const handleToggleCollapse = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
+    selectWorkspace(workspace._id);
   };
 
   const handleBoardSelect = (board: Doc<"boards"> | null) => {
-    setCurrentBoardId(board?._id ?? null);
-    setCurrentView("board");
+    selectBoard(board?._id ?? null);
   };
-
   const handleWorkspaceSelect = (workspace: Doc<"workspaces">) => {
-    setCurrentWorkspaceId(workspace._id);
-    setCurrentBoardId(null);
-    setCurrentView("board");
+    selectWorkspace(workspace._id);
   };
-
   const handleEditWorkspace = (workspace: Doc<"workspaces">) => {
     setEditingWorkspace(workspace);
   };
@@ -228,9 +209,8 @@ export default function AuthenticatedApp() {
   const handleProjectUpdated = (updatedProject: Doc<"boards">) => {
     if (!updatedProject) return;
 
-    setCurrentBoardId(updatedProject._id);
+    selectBoard(updatedProject._id);
   };
-
   const handleProjectMembers = (project: Doc<"boards">) => {
     setMembersProject(project);
   };
@@ -250,8 +230,7 @@ export default function AuthenticatedApp() {
       id: workspaceId,
     });
 
-    setCurrentWorkspaceId(remainingWorkspaces[0]?._id ?? null);
-    setCurrentBoardId(null);
+    selectWorkspace(remainingWorkspaces[0]?._id ?? null);
     setEditingWorkspace(null);
   };
 
@@ -287,11 +266,11 @@ export default function AuthenticatedApp() {
         onEditProject={handleEditProject}
         onProjectMembers={handleProjectMembers}
         currentView={currentView}
-        onViewChange={setCurrentView}
+        onViewChange={setView}
         theme={theme}
-        onThemeToggle={handleThemeToggle}
+        onThemeToggle={toggleTheme}
         isCollapsed={sidebarCollapsed}
-        onToggleCollapsed={handleToggleCollapse}
+        onToggleCollapsed={toggleSidebar}
       />
 
       <div
@@ -307,12 +286,12 @@ export default function AuthenticatedApp() {
           }
         >
           {currentView === "profile" ? (
-            <Profile onBack={() => setCurrentView("board")} />
+            <Profile onBack={() => setView("board")} />
           ) : currentView === "analytics" && displayBoard ? (
             <ProjectAnalytics
               board={displayBoard}
               can={canProject}
-              onBack={() => setCurrentView("board")}
+              onBack={() => setView("board")}
             />
           ) : (
             <Board
