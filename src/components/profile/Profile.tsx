@@ -107,21 +107,37 @@ function ProfileContent({ currentUser, onBack }: ProfileContentProps) {
 
       <main className="mx-auto w-full max-w-3xl p-6">
         <section className="mb-6 rounded-lg border border-border bg-card p-4">
-          <h2>{t("profile.assignedRoles")}</h2>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            {t("profile.assignedRoles")}
+          </h2>
           {assignedRoles === undefined ? (
-            <p>{t("common.loading")}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("common.loading")}
+            </p>
           ) : assignedRoles.length === 0 ? (
-            <p>{t("profile.noRoles")}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("profile.noRoles")}
+            </p>
           ) : (
-            assignedRoles.map((entry) => (
-              <p key={entry.id}>
-                {entry.workspace}
-                {entry.project ? ` / ${entry.project}` : ""}:{" "}
-                {entry.owner
-                  ? t("members.owner")
-                  : (entry.role ?? t("profile.noRole"))}
-              </p>
-            ))
+            <ul className="divide-y divide-border">
+              {assignedRoles.map((entry) => (
+                <li
+                  key={entry.id}
+                  className="flex items-center justify-between gap-4 py-2 text-sm"
+                >
+                  <span className="text-foreground">
+                    {[entry.workspace, entry.project]
+                      .filter(Boolean)
+                      .join(" / ")}
+                  </span>
+                  <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                    {entry.owner
+                      ? t("members.owner")
+                      : (entry.role ?? t("profile.noRole"))}
+                  </span>
+                </li>
+              ))}
+            </ul>
           )}
         </section>
         <form
