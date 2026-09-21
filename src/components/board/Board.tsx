@@ -1,23 +1,14 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
-import {
-  closestCenter,
-  DndContext,
-  DragOverlay,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { closestCenter, DndContext, DragOverlay } from "@dnd-kit/core";
 import { Plus } from "lucide-react";
 
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
 import { useAction } from "../../hooks/useAction";
+import { useBoardDnd } from "../../hooks/useBoardDnd";
 import { useBoardFilters } from "../../hooks/useBoardFilters";
 import { useNow } from "../../hooks/useNow";
 import { useTaskPages } from "../../hooks/useTaskPages";
@@ -61,7 +52,7 @@ function BoardContent({ board, can }: BoardProps) {
   const [editingColumn, setEditingColumn] = useState<Doc<"columns"> | null>(
     null,
   );
-  const [activeTask, setActiveTask] = useState<Doc<"tasks"> | null>(null);
+
   const [selectedTaskIds, setSelectedTaskIds] = useState<Id<"tasks">[]>([]);
   const filters = useBoardFilters();
   const { sortBy, taskQuery } = filters;
@@ -130,17 +121,15 @@ function BoardContent({ board, can }: BoardProps) {
   }, [tasks, sortBy]);
 
   const canReorder = canUpdateTask && sortBy === "manual";
-
-  const updateTaskOrder = useMutation(api.tasks.updateOrder);
+  const { sensors, activeTask, handleDragStart, handleDragEnd } = useBoardDnd({
+    tasks,
+    columns,
+    tasksByColumn,
+    canUpdateTask,
+    run,
+  });
   const bulkUpdateTasks = useMutation(api.tasks.bulkUpdate);
   const bulkRemoveTasks = useMutation(api.tasks.bulkRemove);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
 
   const getTasksByColumn = (columnId: Id<"columns">) =>
     tasksByColumn.get(columnId) ?? [];
@@ -223,86 +212,6 @@ function BoardContent({ board, can }: BoardProps) {
   const handleTaskClick = (task: Doc<"tasks">) => {
     setSelectedTask(task);
     recordRecentTaskView({ taskId: task._id }).catch(() => {});
-  };
-  const handleDragStart = (event: DragStartEvent) => {
-    if (!canUpdateTask) {
-      return;
-    }
-
-    const task = tasks.find((item) => item._id === event.active.id);
-
-    setActiveTask(task ?? null);
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    await run(async () => {
-      const { active, over } = event;
-
-      setActiveTask(null);
-
-      if (!canUpdateTask) {
-        return;
-      }
-
-      if (!over || over.id === active.id) return;
-
-      const task = tasks.find((item) => item._id === active.id);
-
-      if (!task) return;
-
-      const destinationTask = tasks.find((item) => item._id === over.id);
-
-      let destinationColumnId: Id<"columns">;
-
-      if (destinationTask) {
-        destinationColumnId = destinationTask.columnId;
-      } else {
-        const destinationColumn = columns.find(
-          (column) => column._id === over.id,
-        );
-
-        if (!destinationColumn) return;
-
-        destinationColumnId = destinationColumn._id;
-      }
-
-      if (task.columnId === destinationColumnId && !destinationTask) {
-        return;
-      }
-
-      const destinationTasks = getTasksByColumn(destinationColumnId).filter(
-        (item) => item._id !== task._id,
-      );
-
-      let newOrder: number;
-
-      if (destinationTasks.length === 0) {
-        newOrder = 0;
-      } else if (destinationTask) {
-        const destinationIndex = destinationTasks.findIndex(
-          (item) => item._id === destinationTask._id,
-        );
-
-        if (destinationIndex <= 0) {
-          newOrder = destinationTasks[0].order - 1;
-        } else {
-          const beforeTask = destinationTasks[destinationIndex - 1];
-          const afterTask = destinationTasks[destinationIndex];
-
-          newOrder = (beforeTask.order + afterTask.order) / 2;
-        }
-      } else {
-        newOrder = destinationTasks[destinationTasks.length - 1].order + 1;
-      }
-
-      await updateTaskOrder({
-        taskId: task._id,
-        newColumnId: destinationColumnId,
-        newOrder,
-        beforeTaskId: destinationTask?._id,
-        append: !destinationTask,
-      });
-    });
   };
   if (!board?._id) {
     return (
