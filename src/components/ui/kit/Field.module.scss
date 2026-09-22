@@ -1,0 +1,25 @@
+@layer components {
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .label {
+    color: var(--foreground);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .hint {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 400;
+  }
+
+  .error {
+    color: var(--danger);
+    font-size: 0.875rem;
+  }
+}

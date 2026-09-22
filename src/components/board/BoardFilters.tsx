@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { getColumnLabel } from "../../lib/columnLabel";
-import SelectField from "../ui/SelectField";
+import { Select } from "../ui/kit";
 import type {
   AssigneeFilter,
   DeadlineFilter,
@@ -75,13 +75,13 @@ export default function BoardFilters({
       </summary>
 
       <div className="absolute right-0 top-12 z-50 grid w-72 gap-3 rounded-lg border border-border bg-card p-4 shadow-xl">
-        <SelectField
+        <Select
           value={statusFilter}
           onChange={(event) =>
             setStatusFilter(event.target.value as Id<"columns"> | "all")
           }
           className="w-full"
-          data={[
+          options={[
             {
               label: t("board.allStatuses", {
                 defaultValue: "All statuses",
@@ -95,7 +95,7 @@ export default function BoardFilters({
           ]}
         />
 
-        <SelectField
+        <Select
           value={assigneeFilter}
           onChange={(event) =>
             setAssigneeFilter(
@@ -103,7 +103,7 @@ export default function BoardFilters({
             )
           }
           className="w-full"
-          data={[
+          options={[
             {
               label: t("board.allAssignees", {
                 defaultValue: "All assignees",
@@ -123,7 +123,7 @@ export default function BoardFilters({
           ]}
         />
 
-        <SelectField
+        <Select
           value={storyPointsFilter}
           onChange={(event) =>
             setStoryPointsFilter(
@@ -132,7 +132,7 @@ export default function BoardFilters({
             )
           }
           className="w-full"
-          data={[
+          options={[
             {
               label: t("board.allStoryPoints", {
                 defaultValue: "All Story Points",
@@ -145,7 +145,7 @@ export default function BoardFilters({
             })),
           ]}
         />
-        <SelectField
+        <Select
           value={deadlineFilter}
           onChange={(event) =>
             setDeadlineFilter(
@@ -154,7 +154,7 @@ export default function BoardFilters({
             )
           }
           className="w-full"
-          data={[
+          options={[
             {
               label: t("board.allDeadlines", {
                 defaultValue: "All deadlines",
@@ -181,13 +181,13 @@ export default function BoardFilters({
             },
           ]}
         />
-        <SelectField
+        <Select
           value={priorityFilter}
           onChange={(event) =>
             setPriorityFilter(event.target.value as PriorityFilter)
           }
           className="w-full"
-          data={[
+          options={[
             { label: t("board.allPriorities"), value: "all" },
             { label: t("priority.high"), value: "high" },
             { label: t("priority.medium"), value: "medium" },

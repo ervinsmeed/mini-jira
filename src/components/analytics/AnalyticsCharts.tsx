@@ -3,7 +3,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -78,6 +77,10 @@ export default function AnalyticsCharts({ analytics }: AnalyticsChartsProps) {
     }),
   }));
 
+  const visiblePriorityData = localizedPriorityData.filter(
+    (priority) => priority.count > 0,
+  );
+
   const localizedAssigneeData = analytics.byAssignee.map((assignee) => ({
     ...assignee,
     name:
@@ -142,15 +145,15 @@ export default function AnalyticsCharts({ analytics }: AnalyticsChartsProps) {
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={localizedPriorityData}
+                data={visiblePriorityData}
                 dataKey="count"
                 nameKey="name"
                 cx="50%"
-                cy="45%"
+                cy="50%"
                 outerRadius={90}
                 label
               >
-                {localizedPriorityData.map((item) => (
+                {visiblePriorityData.map((item) => (
                   <Cell
                     key={item.priority}
                     fill={PRIORITY_COLORS[item.priority] ?? "var(--chart-5)"}
@@ -167,14 +170,22 @@ export default function AnalyticsCharts({ analytics }: AnalyticsChartsProps) {
                 itemStyle={tooltipItemStyle}
                 contentStyle={tooltipStyle}
               />
-              <Legend
-                formatter={(value) => (
-                  <span style={{ color: textColor }}>{value}</span>
-                )}
-              />
             </PieChart>
           </ResponsiveContainer>
         </div>
+        <ul className="mt-2 flex flex-wrap justify-center gap-4 text-sm">
+          {localizedPriorityData.map((item) => (
+            <li key={item.priority} className="flex items-center gap-2">
+              <span
+                className="size-3 rounded-sm"
+                style={{ backgroundColor: PRIORITY_COLORS[item.priority] }}
+              />
+              <span style={{ color: textColor }}>
+                {item.name} ({item.count})
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div className={`min-w-0 rounded-lg border p-4 ${chartCardClass}`}>

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useAction } from "../../hooks/useAction";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog";
+import { Button, Input, Modal, Select as NativeSelect } from "../ui/kit";
 import {
   Select,
   SelectContent,
@@ -209,9 +209,9 @@ export default function CreateTaskModal({
             )}
           />
           {epics.status === "CanLoadMore" && (
-            <button type="button" onClick={() => epics.loadMore(30)} className="mt-2 text-sm text-primary">
+            <Button variant="ghost" size="sm" onClick={() => epics.loadMore(30)}>
               {t("pagination.loadMore")}
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -243,89 +243,75 @@ export default function CreateTaskModal({
           )}
         />
         {members.status === "CanLoadMore" && (
-          <button type="button" onClick={() => members.loadMore(30)} className="mt-2 text-sm text-primary">
+          <Button variant="ghost" size="sm" onClick={() => members.loadMore(30)}>
             {t("members.loadMore")}
-          </button>
+          </Button>
         )}
       </div>
     </>
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[min(600px,calc(100dvh-2rem))] w-[calc(100%-2rem)] min-w-0 max-w-lg overflow-y-auto rounded-xl border border-border bg-background text-foreground shadow-lg transition-colors sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="min-w-0 pr-6 text-lg font-semibold">
-            {t("createTask.title")}
-          </DialogTitle>
-        </DialogHeader>
-
+    <Modal open={isOpen} onClose={onClose} title={t("createTask.title")}>
         <FormProvider {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="mt-2 min-w-0">
-            <fieldset disabled={pending} className="min-w-0 space-y-6">
-              <div className="min-w-0 rounded-lg border border-border bg-muted/50 p-3 sm:p-4">
-                <label className={labelClassName}>{t("createTask.template")}</label>
-                <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
-                  <select
-                    value={selectedTemplateId || "none"}
-                    onChange={(event) => handleTemplateSelect(event.target.value)}
-                    className="w-full min-w-0 rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground sm:flex-1"
-                  >
-                    <option value="none">{t("createTask.noTemplate")}</option>
-                    {templates.results.map((template) => (
-                      <option key={template._id} value={template._id}>
-                        {template.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={handleDeleteTemplate}
-                    disabled={!selectedTemplateId}
-                    className="rounded-md border border-destructive/40 px-3 py-2 text-sm text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {t("createTask.deleteTemplate")}
-                  </button>
-                </div>
-                {templates.status === "CanLoadMore" && (
-                  <button type="button" onClick={() => templates.loadMore(30)} className="mt-2 text-sm text-primary">
-                    {t("pagination.loadMore")}
-                  </button>
-                )}
-
-                <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row">
-                  <input
-                    type="text"
-                    value={templateName}
-                    onChange={(event) => setTemplateName(event.target.value)}
-                    placeholder={t("createTask.templateNamePlaceholder")}
-                    className="w-full min-w-0 rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground sm:flex-1"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSaveTemplate}
-                    className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-                  >
-                    {pending ? t("createTask.savingTemplate") : t("createTask.saveTemplate")}
-                  </button>
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {t("createTask.templateHint")}
-                </p>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="mt-2 min-w-0">
+          <fieldset disabled={pending} className="min-w-0 space-y-6">
+            <div className="min-w-0 rounded-lg border border-border bg-muted/50 p-3 sm:p-4">
+              <label className={labelClassName}>{t("createTask.template")}</label>
+              <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
+                <NativeSelect
+                  value={selectedTemplateId || "none"}
+                  onChange={(event) => handleTemplateSelect(event.target.value)}
+                  aria-label={t("createTask.template")}
+                  className="w-full sm:flex-1"
+                  options={[
+                    { value: "none", label: t("createTask.noTemplate") },
+                    ...templates.results.map((template) => ({
+                      value: template._id,
+                      label: template.name,
+                    })),
+                  ]}
+                />
+                <Button
+                  variant="secondary"
+                  onClick={handleDeleteTemplate}
+                  disabled={!selectedTemplateId}
+                  className="text-destructive"
+                >
+                  {t("createTask.deleteTemplate")}
+                </Button>
               </div>
+              {templates.status === "CanLoadMore" && (
+                <Button variant="ghost" size="sm" onClick={() => templates.loadMore(30)}>
+                  {t("pagination.loadMore")}
+                </Button>
+              )}
 
-              <TaskFormFields mode="create" columns={columns} extraFields={extraFields} />
+              <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row">
+                <Input
+                  value={templateName}
+                  onChange={(event) => setTemplateName(event.target.value)}
+                  placeholder={t("createTask.templateNamePlaceholder")}
+                  aria-label={t("createTask.templateNamePlaceholder")}
+                  className="sm:flex-1"
+                />
+                <Button onClick={handleSaveTemplate}>
+                  {pending ? t("createTask.savingTemplate") : t("createTask.saveTemplate")}
+                </Button>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t("createTask.templateHint")}
+              </p>
+            </div>
 
-              <button
-                type="submit"
-                className="w-full rounded-lg bg-primary px-3 py-2 text-primary-foreground transition hover:bg-primary/90"
-              >
-                {t("createTask.create")}
-              </button>
-            </fieldset>
-          </form>
-        </FormProvider>
-      </DialogContent>
-    </Dialog>
+            <TaskFormFields mode="create" columns={columns} extraFields={extraFields} />
+
+            <Button type="submit" fullWidth>
+              {t("createTask.create")}
+            </Button>
+          </fieldset>
+        </form>
+      </FormProvider>
+    </Modal>
   );
 }

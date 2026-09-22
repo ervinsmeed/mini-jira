@@ -181,7 +181,15 @@ export const projectsPage = query({
             .eq("itemType", "project"),
         )
         .unique();
-      page.push({ ...board, isFavorite: Boolean(favorite) });
+      const tasks = await ctx.db
+        .query("tasks")
+        .withIndex("by_board", (q) => q.eq("boardId", board._id))
+        .collect();
+      page.push({
+        ...board,
+        isFavorite: Boolean(favorite),
+        taskCount: tasks.length,
+      });
     }
     return { ...result, page };
   },

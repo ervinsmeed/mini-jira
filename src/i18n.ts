@@ -360,6 +360,8 @@ i18n
             remove: "Remove from favorites",
           },
           sidebar: {
+            taskCount_one: "{{count}} task",
+            taskCount_other: "{{count}} tasks",
             editWorkspace: "Edit workspace",
             deleteWorkspace: "Delete workspace",
             editProject: "Edit project",
@@ -761,6 +763,10 @@ i18n
             remove: "Убрать из избранного",
           },
           sidebar: {
+            taskCount_one: "{{count}} задача",
+            taskCount_few: "{{count}} задачи",
+            taskCount_many: "{{count}} задач",
+            taskCount_other: "{{count}} задачи",
             editWorkspace: "Изменить рабочее пространство",
             deleteWorkspace: "Удалить рабочее пространство",
             editProject: "Изменить проект",

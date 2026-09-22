@@ -21,6 +21,7 @@ import TaskModal from "../modals/TaskModal";
 
 import BoardBulkActions from "./BoardBulkActions";
 import BoardHeader from "./BoardHeader";
+import BoardSkeleton from "./BoardSkeleton";
 import Column from "./Column";
 import TaskCard from "./TaskCard";
 type BoardProps = {
@@ -121,6 +122,8 @@ function BoardContent({ board, can }: BoardProps) {
   }, [tasks, sortBy]);
 
   const canReorder = canUpdateTask && sortBy === "manual";
+  const isBoardLoading =
+    columnsResult === undefined || pageStatus === "LoadingFirstPage";
   const { sensors, activeTask, handleDragStart, handleDragEnd } = useBoardDnd({
     tasks,
     columns,
@@ -257,11 +260,6 @@ function BoardContent({ board, can }: BoardProps) {
         />
       )}
 
-      {pageStatus === "LoadingFirstPage" && (
-        <p role="status" className="px-6">
-          {t("pagination.loading")}
-        </p>
-      )}
       {pageStatus === "Exhausted" && tasks.length === 0 && (
         <p role="status" className="px-6">
           {t("board.noMatchingTasks")}
@@ -278,61 +276,68 @@ function BoardContent({ board, can }: BoardProps) {
       )}
 
       <div className="flex-1 overflow-auto p-6">
-        <div className="flex h-full min-w-max items-start space-x-6">
-          <DndContext
-            key={canReorder ? "dnd-enabled" : "dnd-disabled"}
-            sensors={canReorder ? sensors : []}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            {columns.map((column) => (
-              <Column
-                key={column._id}
-                column={column}
-                tasks={getTasksByColumn(column._id)}
-                taskById={taskById}
-                now={now}
-                onTaskClick={handleTaskClick}
-                onEditColumn={setEditingColumn}
-                canEditColumn={canCreateColumn}
-                canDeleteColumn={canCreateColumn}
-                canDragTasks={canReorder}
-                selectedTaskIds={selectedTaskIds}
-                onToggleTaskSelection={
-                  canSelectTasks ? toggleTaskSelection : undefined
-                }
-                favoriteTaskIdSet={favoriteTaskIdSet}
-                onToggleTaskFavorite={handleToggleTaskFavorite}
-              />
-            ))}
-            {canCreateColumn && (
-              <div className="flex w-72 shrink-0 items-start justify-center pt-12">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateColumnModalOpen(true)}
-                  className="flex min-h-[200px] w-full items-center justify-center space-x-2 rounded-lg border border-border bg-card px-6 py-6 text-lg font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
-                  disabled={pending}
-                >
-                  <Plus className="size-6" />
-
-                  {t("board.newColumn")}
-                </button>
-              </div>
-            )}
-
-            <DragOverlay>
-              {activeTask ? (
-                <TaskCard
-                  task={activeTask}
+        <div
+          className="flex h-full min-w-max items-start space-x-6"
+          aria-busy={isBoardLoading}
+        >
+          {isBoardLoading ? (
+            <BoardSkeleton />
+          ) : (
+            <DndContext
+              key={canReorder ? "dnd-enabled" : "dnd-disabled"}
+              sensors={canReorder ? sensors : []}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              {columns.map((column) => (
+                <Column
+                  key={column._id}
+                  column={column}
+                  tasks={getTasksByColumn(column._id)}
+                  taskById={taskById}
                   now={now}
-                  isDragging={true}
-                  isOverlay
-                  onClick={() => {}}
+                  onTaskClick={handleTaskClick}
+                  onEditColumn={setEditingColumn}
+                  canEditColumn={canCreateColumn}
+                  canDeleteColumn={canCreateColumn}
+                  canDragTasks={canReorder}
+                  selectedTaskIds={selectedTaskIds}
+                  onToggleTaskSelection={
+                    canSelectTasks ? toggleTaskSelection : undefined
+                  }
+                  favoriteTaskIdSet={favoriteTaskIdSet}
+                  onToggleTaskFavorite={handleToggleTaskFavorite}
                 />
-              ) : null}
-            </DragOverlay>
-          </DndContext>
+              ))}
+              {canCreateColumn && (
+                <div className="flex w-72 shrink-0 items-start justify-center pt-12">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateColumnModalOpen(true)}
+                    className="flex min-h-[200px] w-full items-center justify-center space-x-2 rounded-lg border border-border bg-card px-6 py-6 text-lg font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+                    disabled={pending}
+                  >
+                    <Plus className="size-6" />
+
+                    {t("board.newColumn")}
+                  </button>
+                </div>
+              )}
+
+              <DragOverlay>
+                {activeTask ? (
+                  <TaskCard
+                    task={activeTask}
+                    now={now}
+                    isDragging={true}
+                    isOverlay
+                    onClick={() => {}}
+                  />
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          )}
         </div>
 
         {(pageStatus === "CanLoadMore" || pageStatus === "LoadingMore") && (
@@ -356,7 +361,6 @@ function BoardContent({ board, can }: BoardProps) {
         <TaskModal
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
-          can={can}
         />
       )}
 

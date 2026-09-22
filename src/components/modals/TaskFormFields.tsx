@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Field, Input, Textarea } from "../ui/kit";
 import SortableSubTask from "./SortableSubTask";
 import TaskPriorityField from "./TaskPriorityField";
 import TaskStoryPointsField from "./TaskStoryPointsField";
@@ -37,8 +38,6 @@ type TaskFormFieldsProps = {
 };
 
 const labelClassName = "mb-2 block text-sm font-medium text-foreground";
-const inputClassName =
-  "w-full min-w-0 rounded-md border border-border bg-input px-3 py-2 text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-ring";
 
 export default function TaskFormFields({
   mode,
@@ -47,6 +46,8 @@ export default function TaskFormFields({
 }: TaskFormFieldsProps) {
   const { t } = useTranslation();
   const titleId = useId();
+  const descriptionId = useId();
+  const deadlineId = useId();
   const prefix = mode === "create" ? "createTask" : "editTask";
   const {
     register,
@@ -77,35 +78,29 @@ export default function TaskFormFields({
 
   return (
     <>
-      <div>
-        <label htmlFor={titleId} className={labelClassName}>
-          {t(`${prefix}.taskTitle`)}
-        </label>
-        <input
+      <Field
+        label={t(`${prefix}.taskTitle`)}
+        htmlFor={titleId}
+        error={errors.title?.message}
+      >
+        <Input
           id={titleId}
-          type="text"
           {...register("title", {
             validate: (value) =>
               value.trim() !== "" || t("taskForm.titleRequired"),
           })}
           placeholder={t(`${prefix}.titlePlaceholder`)}
           aria-invalid={errors.title ? true : undefined}
-          className={inputClassName}
         />
-        {errors.title && (
-          <p className="mt-1 text-sm text-destructive">{errors.title.message}</p>
-        )}
-      </div>
+      </Field>
 
-      <div>
-        <label className={labelClassName}>{t(`${prefix}.description`)}</label>
-        <textarea
+      <Field label={t(`${prefix}.description`)} htmlFor={descriptionId}>
+        <Textarea
+          id={descriptionId}
           {...register("description")}
           placeholder={t(`${prefix}.descriptionPlaceholder`)}
-          rows={4}
-          className={`${inputClassName} resize-none`}
         />
-      </div>
+      </Field>
 
       {extraFields}
 
@@ -197,10 +192,9 @@ export default function TaskFormFields({
         )}
       />
 
-      <div>
-        <label className={labelClassName}>{t(`${prefix}.deadline`)}</label>
-        <input type="date" {...register("deadline")} className={inputClassName} />
-      </div>
+      <Field label={t(`${prefix}.deadline`)} htmlFor={deadlineId}>
+        <Input id={deadlineId} type="date" {...register("deadline")} />
+      </Field>
     </>
   );
 }

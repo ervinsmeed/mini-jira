@@ -67,7 +67,7 @@ type BoardItemProps = Pick<
   "currentBoard" | "onBoardSelect" | "onProjectMembers" | "onEditProject"
 > & {
   isCollapsed: boolean;
-  board: Doc<"boards">;
+  board: Doc<"boards"> & { taskCount?: number };
   isFavorite: boolean;
   showDeleteConfirm: Id<"boards"> | null;
   setShowDeleteConfirm: Dispatch<SetStateAction<Id<"boards"> | null>>;
@@ -658,6 +658,8 @@ function SortableBoardItem({
 
           <div className="text-[10px] opacity-70">
             {t(`editProjectModal.${board.status ?? "active"}`)}
+            {board.taskCount !== undefined &&
+              ` · ${t("sidebar.taskCount", { count: board.taskCount })}`}
           </div>
         </div>
       </button>

@@ -1,0 +1,18 @@
+@use "mixins" as *;
+
+@layer components {
+  .input {
+    @include control;
+  }
+
+  .textarea {
+    @include control;
+    resize: vertical;
+  }
+
+  .select {
+    @include control;
+    width: auto;
+    cursor: pointer;
+  }
+}

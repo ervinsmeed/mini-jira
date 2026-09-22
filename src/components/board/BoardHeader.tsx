@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { UserButton } from "@clerk/clerk-react";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import type { BoardFiltersState, SortBy } from "../../hooks/useBoardFilters";
-import SelectField from "../ui/SelectField";
+import { Button, Input, Select } from "../ui/kit";
 import BoardFilters from "./BoardFilters";
 import RecentTasksMenu from "./RecentTasksMenu";
 
@@ -50,22 +50,24 @@ export default function BoardHeader({
 
       <div className="flex flex-wrap items-center gap-3">
         {canLoadMoreMembers && (
-          <button type="button" onClick={onLoadMoreMembers}>
+          <Button variant="ghost" size="sm" onClick={onLoadMoreMembers}>
             {t("members.loadMore")}
-          </button>
+          </Button>
         )}
         <RecentTasksMenu onTaskClick={onTaskClick} />
-        <input
-          type="text"
+        <Input
+          type="search"
           value={filters.searchQuery}
           onChange={(event) => filters.setSearchQuery(event.target.value)}
           placeholder={t("board.searchTasks")}
-          className="w-56 rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary"
+          aria-label={t("board.searchTasks")}
+          className="w-56"
         />
-        <SelectField
+        <Select
           value={filters.sortBy}
           onChange={(event) => filters.setSortBy(event.target.value as SortBy)}
-          data={[
+          aria-label={t("board.manualOrder")}
+          options={[
             { label: t("board.manualOrder"), value: "manual" },
             { label: t("board.sortTitle"), value: "title" },
             { label: t("board.sortDeadline"), value: "deadline" },
@@ -90,15 +92,10 @@ export default function BoardHeader({
           setPriorityFilter={filters.setPriorityFilter}
         />
         {canCreateTask && (
-          <button
-            type="button"
-            onClick={onCreateTask}
-            className="flex shrink-0 items-center gap-2 rounded-full bg-primary px-4 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            disabled={pending}
-          >
+          <Button onClick={onCreateTask} disabled={pending}>
             <Plus className="size-4" />
-            <span>{t("board.addTask")}</span>
-          </button>
+            {t("board.addTask")}
+          </Button>
         )}
         <UserButton />
       </div>
