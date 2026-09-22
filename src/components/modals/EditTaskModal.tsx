@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { useMutation, useQuery } from "convex/react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -40,6 +41,12 @@ type Subtask = {
   completed: boolean;
 };
 
+type EditTaskFormValues = {
+  title: string;
+  description: string;
+  deadline: string;
+};
+
 type EditTaskModalProps = {
   canUpdate: boolean;
   task: Doc<"tasks">;
@@ -61,16 +68,24 @@ export default function EditTaskModal({
   const { t } = useTranslation();
   const { pending, run } = useAction();
 
-  const [title, setTitle] = useState(task.title);
-  const [description, setDescription] = useState(task.description || "");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<EditTaskFormValues>({
+    defaultValues: {
+      title: task.title,
+      description: task.description ?? "",
+      deadline: task.deadline ? toDateInput(task.deadline) : "",
+    },
+  });
+
   const [priority, setPriority] = useState(task.priority || "medium");
 
   const [storyPoints, setStoryPoints] = useState(
     task.storyPoints ? String(task.storyPoints) : "none",
   );
-  const [deadline, setDeadline] = useState(
-    task.deadline ? toDateInput(task.deadline) : "",
-  );
+
   const [subtasks, setSubtasks] = useState<Subtask[]>(() =>
     task.subtasks?.length
       ? task.subtasks.map((subtask) => ({ ...subtask }))
@@ -157,11 +172,8 @@ export default function EditTaskModal({
     );
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!canUpdate) return;
-
-    if (!title.trim() || !columnId) return;
+  const onSubmit = async (values: EditTaskFormValues) => {
+    if (!canUpdate || !columnId) return;
 
     const validSubtasks = subtasks
       .filter((subtask) => subtask.text.trim())
@@ -173,15 +185,17 @@ export default function EditTaskModal({
     await run(async () => {
       await updateTask({
         id: task._id,
-        title: title.trim(),
-        description: description.trim(),
+        title: values.title.trim(),
+        description: values.description.trim(),
         priority,
         storyPoints:
           storyPoints === "none"
             ? null
             : (Number(storyPoints) as 1 | 2 | 3 | 5 | 8 | 13 | 21),
 
-        deadline: deadline ? new Date(`${deadline}T23:59:59`).getTime() : null,
+        deadline: values.deadline
+          ? new Date(`${values.deadline}T23:59:59`).getTime()
+          : null,
 
         subtasks: validSubtasks,
         columnId,
@@ -191,7 +205,6 @@ export default function EditTaskModal({
       toast.success(t("editTask.updated"));
     });
   };
-
   return (
     <Dialog
       open={true}
@@ -207,7 +220,7 @@ export default function EditTaskModal({
             {t("editTask.title")}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="mt-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-2">
           <fieldset disabled={pending} className="contents">
             <fieldset disabled={!canUpdate} className="min-w-0 space-y-6">
               <div>
@@ -217,12 +230,17 @@ export default function EditTaskModal({
 
                 <input
                   type="text"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
+                  {...register("title", {
+                    validate: (value) => value.trim() !== "",
+                  })}
                   placeholder={t("editTask.titlePlaceholder")}
                   className="w-full rounded-md border border-border bg-input px-3 py-2 text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-ring"
-                  required
                 />
+                {errors.title && (
+                  <p className="mt-1 text-sm text-destructive">
+                    {t("errors.VALIDATION_FAILED")}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -231,8 +249,7 @@ export default function EditTaskModal({
                 </label>
 
                 <textarea
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
+                  {...register("description")}
                   placeholder={t("editTask.descriptionPlaceholder")}
                   rows={4}
                   className="w-full resize-none rounded-md border border-border bg-input px-3 py-2 text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-ring"
@@ -243,7 +260,6 @@ export default function EditTaskModal({
                 <label className="mb-2 block text-sm font-medium text-foreground">
                   {t("editTask.subtasks")}
                 </label>
-
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -323,11 +339,9 @@ export default function EditTaskModal({
                 <label className="mb-2 block text-sm font-medium text-foreground">
                   {t("editTask.deadline")}
                 </label>
-
                 <input
                   type="date"
-                  value={deadline}
-                  onChange={(event) => setDeadline(event.target.value)}
+                  {...register("deadline")}
                   className="w-full rounded-md border border-border bg-input px-3 py-2 text-foreground transition focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
