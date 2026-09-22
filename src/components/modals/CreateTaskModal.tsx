@@ -1,32 +1,13 @@
-import { useAction } from "../../hooks/useAction";
-import { getColumnLabel } from "../../lib/columnLabel";
-import { useState, type FormEvent } from "react";
-import TaskPriorityField from "./TaskPriorityField";
+import { useState } from "react";
+import { Controller, FormProvider, useForm, useWatch } from "react-hook-form";
 import { useMutation, usePaginatedQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import SortableSubTask from "./SortableSubTask";
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "react-i18next";
-import TaskStoryPointsField from "./TaskStoryPointsField";
-import { actionError } from "../../lib/actionError";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
+import { toast } from "sonner";
 
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { api } from "../../../convex/_generated/api";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import { useAction } from "../../hooks/useAction";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog";
-
 import {
   Select,
   SelectContent,
@@ -34,18 +15,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import TaskFormFields from "./TaskFormFields";
+import {
+  cleanSubtasks,
+  fromDateInput,
+  getEmptyTaskFormValues,
+  resolveColumnId,
+  toStoryPoints,
+  type TaskFormValues,
+} from "./taskForm";
 
-import { toast } from "sonner";
+type CreateTaskFormValues = TaskFormValues & {
+  taskType: "task" | "epic";
+  epicId: Id<"tasks"> | "";
+  assigneeId: Id<"users"> | "";
+};
 
-type Priority = "high" | "medium" | "low";
-type StoryPoints = 1 | 2 | 3 | 5 | 8 | 13 | 21;
-
-interface CreateTaskModalProps {
+type CreateTaskModalProps = {
   isOpen: boolean;
   onClose: () => void;
   boardId: Id<"boards">;
   columns?: Doc<"columns">[];
-}
+};
+
+const getDefaultValues = (): CreateTaskFormValues => ({
+  ...getEmptyTaskFormValues(),
+  taskType: "task",
+  epicId: "",
+  assigneeId: "",
+});
+
+const labelClassName = "mb-2 block text-sm font-medium text-foreground";
+const selectTriggerClassName =
+  "w-full min-w-0 border-border bg-input text-foreground";
+const selectContentClassName =
+  "border-border bg-popover text-popover-foreground";
 
 export default function CreateTaskModal({
   isOpen,
@@ -56,581 +60,271 @@ export default function CreateTaskModal({
   const { t } = useTranslation();
   const { pending, run } = useAction();
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<Priority>("medium");
-  const [assigneeId, setAssigneeId] = useState<Id<"users"> | "">("");
-  const [taskType, setTaskType] = useState<"epic" | "task">("task");
-  const [epicId, setEpicId] = useState<Id<"tasks"> | "">("");
-
-  const [storyPoints, setStoryPoints] = useState<StoryPoints>(1);
-  const [deadline, setDeadline] = useState("");
-
-  const [subtasks, setSubtasks] = useState(["", ""]);
-  const [columnId, setColumnId] = useState<Id<"columns"> | "">("");
-  const [selectedTemplateId, setSelectedTemplateId] = useState<
-    Id<"taskTemplates"> | ""
-  >("");
-
+  const [selectedTemplateId, setSelectedTemplateId] = useState<Id<"taskTemplates"> | "">("");
   const [templateName, setTemplateName] = useState("");
-  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+
+  const form = useForm<CreateTaskFormValues>({ defaultValues: getDefaultValues() });
+  const taskType = useWatch({ control: form.control, name: "taskType" });
 
   const createTask = useMutation(api.tasks.create);
   const createTemplate = useMutation(api.taskTemplates.create);
   const removeTemplate = useMutation(api.taskTemplates.remove);
 
-  const {
-    results: taskTemplates,
-    status: templateStatus,
-    loadMore: loadTemplates,
-  } = usePaginatedQuery(
-    api.tasks.templatesPage,
-    isOpen ? { boardId } : "skip",
-    { initialNumItems: 30 },
-  );
-  const {
-    results: projectMembers,
-    status: memberStatus,
-    loadMore: loadMembers,
-  } = usePaginatedQuery(
-    api.boardMembers.projectMembersPage,
-    isOpen ? { boardId } : "skip",
-    { initialNumItems: 30 },
-  );
-  const {
-    results: epics,
-    status: epicStatus,
-    loadMore: loadEpics,
-  } = usePaginatedQuery(api.tasks.epics, isOpen ? { boardId } : "skip", {
+  const queryArgs = isOpen ? { boardId } : "skip";
+  const templates = usePaginatedQuery(api.tasks.templatesPage, queryArgs, {
+    initialNumItems: 30,
+  });
+  const members = usePaginatedQuery(api.boardMembers.projectMembersPage, queryArgs, {
+    initialNumItems: 30,
+  });
+  const epics = usePaginatedQuery(api.tasks.epics, queryArgs, {
     initialNumItems: 30,
   });
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
-  const effectiveColumnId = columns.some((column) => column._id === columnId)
-    ? columnId
-    : (columns[0]?._id ?? "");
   const handleTemplateSelect = (templateId: string) => {
-    if (templateId === "none") {
-      setSelectedTemplateId("");
-      return;
-    }
-
-    const template = taskTemplates.find(
-      (currentTemplate) => currentTemplate._id === templateId,
-    );
-
+    const template = templates.results.find((item) => item._id === templateId);
+    setSelectedTemplateId(template?._id ?? "");
     if (!template) return;
 
-    setSelectedTemplateId(template._id);
-    setTitle(template.title ?? "");
-    setDescription(template.description ?? "");
-    setPriority(template.priority ?? "medium");
-    setStoryPoints(template.storyPoints ?? 1);
+    form.setValue("title", template.title ?? "");
+    form.setValue("description", template.description ?? "");
+    form.setValue("priority", template.priority ?? "medium");
+    form.setValue("storyPoints", String(template.storyPoints ?? 1));
   };
 
   const handleSaveTemplate = async () => {
+    const name = templateName.trim();
+    if (!name) {
+      toast.error(t("createTask.templateNameRequired"));
+      return;
+    }
+
+    const values = form.getValues();
     await run(async () => {
-      const trimmedTemplateName = templateName.trim();
-
-      if (!trimmedTemplateName) {
-        toast.error(
-          t("createTask.templateNameRequired", {
-            defaultValue: "Enter a template name",
-          }),
-        );
-
-        return;
-      }
-
-      setIsSavingTemplate(true);
-
-      try {
-        const createdTemplate = await createTemplate({
-          boardId,
-          name: trimmedTemplateName,
-          title: title.trim() || undefined,
-          description: description.trim() || undefined,
-          priority,
-          storyPoints,
-        });
-
-        setTemplateName("");
-
-        if (createdTemplate) {
-          setSelectedTemplateId(createdTemplate._id);
-        }
-
-        toast.success(
-          t("createTask.templateCreated", {
-            defaultValue: "Template created",
-          }),
-        );
-      } catch (error) {
-        toast.error(actionError(error, t));
-      } finally {
-        setIsSavingTemplate(false);
-      }
+      const created = await createTemplate({
+        boardId,
+        name,
+        title: values.title.trim() || undefined,
+        description: values.description.trim() || undefined,
+        priority: values.priority,
+        storyPoints: toStoryPoints(values.storyPoints) ?? undefined,
+      });
+      setTemplateName("");
+      if (created) setSelectedTemplateId(created._id);
+      toast.success(t("createTask.templateCreated"));
     });
   };
 
   const handleDeleteTemplate = async () => {
+    if (!selectedTemplateId) return;
+    if (!window.confirm(t("createTask.deleteTemplateQuestion"))) return;
+
     await run(async () => {
-      if (!selectedTemplateId) return;
-
-      const confirmed = window.confirm(
-        t("createTask.deleteTemplateQuestion", {
-          defaultValue: "Delete selected template?",
-        }),
-      );
-
-      if (!confirmed) return;
-
-      try {
-        await removeTemplate({
-          id: selectedTemplateId,
-        });
-
-        setSelectedTemplateId("");
-
-        toast.success(
-          t("createTask.templateDeleted", {
-            defaultValue: "Template deleted",
-          }),
-        );
-      } catch (error) {
-        toast.error(actionError(error, t));
-      }
+      await removeTemplate({ id: selectedTemplateId });
+      setSelectedTemplateId("");
+      toast.success(t("createTask.templateDeleted"));
     });
   };
-  const handleAddSubtask = () => {
-    setSubtasks([...subtasks, ""]);
-  };
 
-  const handleRemoveSubtask = (index: number) => {
-    setSubtasks(subtasks.filter((_, i) => i !== index));
-  };
-
-  const handleSubtaskChange = (index: number, value: string) => {
-    const updated = subtasks.map((subtask, i) =>
-      i === index ? value : subtask,
-    );
-
-    setSubtasks(updated);
-  };
-
-  const handleDragEnd = (e: DragEndEvent) => {
-    const { active, over } = e;
-
-    if (!over || active.id === over.id) {
-      return;
-    }
-
-    const oldIndex = subtasks.findIndex((_, i) => `subtask-${i}` === active.id);
-
-    const newIndex = subtasks.findIndex((_, i) => `subtask-${i}` === over.id);
-
-    if (oldIndex === -1 || newIndex === -1) {
-      return;
-    }
-
-    setSubtasks(arrayMove(subtasks, oldIndex, newIndex));
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!title.trim() || !effectiveColumnId) {
-      return;
-    }
-
-    const validSubtasks = subtasks
-      .filter((subtask) => subtask.trim())
-      .map((text) => ({
-        text: text.trim(),
-        completed: false,
-      }));
+  const onSubmit = async (values: CreateTaskFormValues) => {
+    const columnId = resolveColumnId(columns, values.columnId);
+    if (!columnId) return;
 
     await run(async () => {
       await createTask({
-        title: title.trim(),
-        description: description.trim(),
-        priority,
-        assigneeId: assigneeId || undefined,
-        taskType,
-        epicId: taskType === "task" ? epicId || undefined : undefined,
-        storyPoints,
-        deadline: deadline
-          ? new Date(`${deadline}T23:59:59`).getTime()
-          : undefined,
-        subtasks: validSubtasks,
-        columnId: effectiveColumnId,
         boardId,
+        columnId,
+        title: values.title.trim(),
+        description: values.description.trim(),
+        priority: values.priority,
+        storyPoints: toStoryPoints(values.storyPoints) ?? undefined,
+        deadline: fromDateInput(values.deadline) ?? undefined,
+        subtasks: cleanSubtasks(values.subtasks),
+        taskType: values.taskType,
+        epicId: values.taskType === "task" ? values.epicId || undefined : undefined,
+        assigneeId: values.assigneeId || undefined,
       });
-
-      setTitle("");
-      setDescription("");
-      setPriority("medium");
-      setAssigneeId("");
-      setTaskType("task");
-      setEpicId("");
-      setStoryPoints(1);
-      setDeadline("");
-      setSubtasks(["", ""]);
-      setColumnId(columns[0]?._id ?? "");
-
+      form.reset(getDefaultValues());
+      setSelectedTemplateId("");
       onClose();
-
       toast.success(t("createTask.created"));
     });
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[calc(100%-2rem)] min-w-0 max-w-lg sm:max-w-lg max-h-[min(600px,calc(100dvh-2rem))] overflow-y-auto rounded-xl border shadow-lg transition-colors bg-background border-border text-foreground">
-        <DialogHeader>
-          <DialogTitle className="min-w-0 pr-6 text-lg! font-semibold wrap-anywhere">
-            {t("createTask.title")}
-          </DialogTitle>
-        </DialogHeader>
-        {memberStatus === "CanLoadMore" && (
-          <button type="button" onClick={() => loadMembers(30)}>
+  const extraFields = (
+    <>
+      <div>
+        <label className={labelClassName}>
+          {t("createTask.type")}
+          <span className="block text-xs font-normal opacity-70">
+            {t("hints.epic")}
+          </span>
+        </label>
+        <Controller
+          control={form.control}
+          name="taskType"
+          render={({ field }) => (
+            <Select
+              value={field.value}
+              onValueChange={(value) => {
+                field.onChange(value);
+                if (value === "epic") form.setValue("epicId", "");
+              }}
+            >
+              <SelectTrigger className={selectTriggerClassName}>
+                <SelectValue placeholder={t("createTask.selectType")} />
+              </SelectTrigger>
+              <SelectContent className={selectContentClassName}>
+                <SelectItem value="task">{t("createTask.task")}</SelectItem>
+                <SelectItem value="epic">{t("createTask.epic")}</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </div>
+
+      {taskType === "task" && (
+        <div>
+          <label className={labelClassName}>{t("createTask.epic")}</label>
+          <Controller
+            control={form.control}
+            name="epicId"
+            render={({ field }) => (
+              <Select
+                value={field.value || "none"}
+                onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
+              >
+                <SelectTrigger className={selectTriggerClassName}>
+                  <SelectValue placeholder={t("createTask.selectEpic")} />
+                </SelectTrigger>
+                <SelectContent className={selectContentClassName}>
+                  <SelectItem value="none">{t("createTask.noEpic")}</SelectItem>
+                  {epics.results.map((epic) => (
+                    <SelectItem key={epic._id} value={epic._id}>
+                      {epic.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {epics.status === "CanLoadMore" && (
+            <button type="button" onClick={() => epics.loadMore(30)} className="mt-2 text-sm text-primary">
+              {t("pagination.loadMore")}
+            </button>
+          )}
+        </div>
+      )}
+
+      <div>
+        <label className={labelClassName}>{t("createTask.assignee")}</label>
+        <Controller
+          control={form.control}
+          name="assigneeId"
+          render={({ field }) => (
+            <Select
+              value={field.value || "unassigned"}
+              onValueChange={(value) =>
+                field.onChange(value === "unassigned" ? "" : value)
+              }
+            >
+              <SelectTrigger className={selectTriggerClassName}>
+                <SelectValue placeholder={t("createTask.selectAssignee")} />
+              </SelectTrigger>
+              <SelectContent className={selectContentClassName}>
+                <SelectItem value="unassigned">{t("unassigned")}</SelectItem>
+                {members.results.map((member) => (
+                  <SelectItem key={member._id} value={member._id}>
+                    {member.name || member.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {members.status === "CanLoadMore" && (
+          <button type="button" onClick={() => members.loadMore(30)} className="mt-2 text-sm text-primary">
             {t("members.loadMore")}
           </button>
         )}
+      </div>
+    </>
+  );
 
-        <form
-          onSubmit={handleSubmit}
-          className="min-w-0 space-y-6 mt-2 [&>*]:min-w-0"
-        >
-          <fieldset disabled={pending} className="contents">
-            <div className="min-w-0 rounded-lg border p-3 sm:p-4 border-border bg-muted/50">
-              <label className="mb-2 block text-sm font-medium text-foreground">
-                {templateStatus === "CanLoadMore" && (
-                  <button type="button" onClick={() => loadTemplates(30)}>
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-h-[min(600px,calc(100dvh-2rem))] w-[calc(100%-2rem)] min-w-0 max-w-lg overflow-y-auto rounded-xl border border-border bg-background text-foreground shadow-lg transition-colors sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="min-w-0 pr-6 text-lg font-semibold">
+            {t("createTask.title")}
+          </DialogTitle>
+        </DialogHeader>
+
+        <FormProvider {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="mt-2 min-w-0">
+            <fieldset disabled={pending} className="min-w-0 space-y-6">
+              <div className="min-w-0 rounded-lg border border-border bg-muted/50 p-3 sm:p-4">
+                <label className={labelClassName}>{t("createTask.template")}</label>
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
+                  <select
+                    value={selectedTemplateId || "none"}
+                    onChange={(event) => handleTemplateSelect(event.target.value)}
+                    className="w-full min-w-0 rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground sm:flex-1"
+                  >
+                    <option value="none">{t("createTask.noTemplate")}</option>
+                    {templates.results.map((template) => (
+                      <option key={template._id} value={template._id}>
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleDeleteTemplate}
+                    disabled={!selectedTemplateId}
+                    className="rounded-md border border-destructive/40 px-3 py-2 text-sm text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {t("createTask.deleteTemplate")}
+                  </button>
+                </div>
+                {templates.status === "CanLoadMore" && (
+                  <button type="button" onClick={() => templates.loadMore(30)} className="mt-2 text-sm text-primary">
                     {t("pagination.loadMore")}
                   </button>
                 )}
-                {t("createTask.template", {
-                  defaultValue: "Task template",
-                })}
-              </label>
 
-              <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
-                <select
-                  value={selectedTemplateId || "none"}
-                  onChange={(event) => handleTemplateSelect(event.target.value)}
-                  className="min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none border-border bg-input text-foreground"
-                >
-                  <option value="none">
-                    {t("createTask.noTemplate", {
-                      defaultValue: "Without template",
-                    })}
-                  </option>
-
-                  {taskTemplates.map((template) => (
-                    <option key={template._id} value={template._id}>
-                      {template.name}
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  type="button"
-                  onClick={handleDeleteTemplate}
-                  disabled={!selectedTemplateId}
-                  className="min-w-0 max-w-full whitespace-normal wrap-anywhere rounded-md border px-3 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 border-destructive/40 text-destructive hover:bg-destructive/10"
-                >
-                  {t("createTask.deleteTemplate", {
-                    defaultValue: "Delete",
-                  })}
-                </button>
-              </div>
-
-              <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
-                <input
-                  type="text"
-                  value={templateName}
-                  onChange={(event) => setTemplateName(event.target.value)}
-                  placeholder={t("createTask.templateNamePlaceholder", {
-                    defaultValue: "Template name, e.g. Bug",
-                  })}
-                  className="min-w-0 w-full sm:w-auto sm:flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 border-border bg-input text-foreground placeholder:text-muted-foreground focus:ring-ring"
-                />
-
-                <button
-                  type="button"
-                  onClick={handleSaveTemplate}
-                  disabled={isSavingTemplate}
-                  className="min-w-0 max-w-full whitespace-normal wrap-anywhere rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSavingTemplate
-                    ? t("createTask.savingTemplate", {
-                        defaultValue: "Saving...",
-                      })
-                    : t("createTask.saveTemplate", {
-                        defaultValue: "Save template",
-                      })}
-                </button>
-              </div>
-
-              <p className="mt-2 text-xs text-muted-foreground">
-                {t("createTask.templateHint", {
-                  defaultValue:
-                    "The template saves the current title, description, priority and Story Points.",
-                })}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2 text-foreground">
-                {t("createTask.taskTitle")}
-              </label>
-
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={t("createTask.titlePlaceholder")}
-                className="min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition bg-input border-border text-foreground placeholder:text-muted-foreground focus:ring-ring"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-foreground">
-                {t("createTask.description")}
-              </label>
-
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={t("createTask.descriptionPlaceholder")}
-                rows={4}
-                className="min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition resize-none bg-input border-border text-foreground placeholder:text-muted-foreground focus:ring-ring"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-foreground">
-                {t("createTask.type")}
-                <span className="block text-xs font-normal opacity-70">
-                  {t("hints.epic")}
-                </span>
-              </label>
-
-              <Select
-                value={taskType}
-                onValueChange={(value) => {
-                  const newType = value as "epic" | "task";
-
-                  setTaskType(newType);
-
-                  if (newType === "epic") {
-                    setEpicId("");
-                  }
-                }}
-              >
-                <SelectTrigger className="min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors bg-input border-border text-foreground">
-                  <SelectValue placeholder={t("createTask.selectType")} />
-                </SelectTrigger>
-
-                <SelectContent
-                  position="popper"
-                  className="max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors bg-popover border-border text-popover-foreground"
-                >
-                  <SelectItem value="task">{t("createTask.task")}</SelectItem>
-                  <SelectItem value="epic">{t("createTask.epic")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {taskType === "task" && epicStatus === "CanLoadMore" && (
-              <button type="button" onClick={() => loadEpics(30)}>
-                {t("pagination.loadMore")}
-              </button>
-            )}
-            {taskType === "task" && (
-              <div>
-                <label className="block text-sm font-medium mb-2 text-foreground">
-                  {t("createTask.epic")}
-                </label>
-
-                <Select
-                  value={epicId || "none"}
-                  onValueChange={(value) =>
-                    setEpicId(value === "none" ? "" : (value as Id<"tasks">))
-                  }
-                >
-                  <SelectTrigger className="min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors bg-input border-border text-foreground">
-                    <SelectValue placeholder={t("createTask.selectEpic")} />
-                  </SelectTrigger>
-
-                  <SelectContent
-                    position="popper"
-                    className="max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors bg-popover border-border text-popover-foreground"
+                <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row">
+                  <input
+                    type="text"
+                    value={templateName}
+                    onChange={(event) => setTemplateName(event.target.value)}
+                    placeholder={t("createTask.templateNamePlaceholder")}
+                    className="w-full min-w-0 rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground sm:flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveTemplate}
+                    className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
                   >
-                    <SelectItem value="none">
-                      {t("createTask.noEpic")}
-                    </SelectItem>
-
-                    {epics.map((epic) => (
-                      <SelectItem key={epic._id} value={epic._id}>
-                        {epic.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-foreground">
-                {t("createTask.subtasks")}
-              </label>
-
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <div className="space-y-3">
-                  <SortableContext
-                    items={subtasks.map((_, i) => `subtask-${i}`)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {subtasks.map((subtask, index) => (
-                      <SortableSubTask
-                        key={index}
-                        text={subtask}
-                        index={index}
-                        placeholder={t("createTask.subtaskPlaceholder")}
-                        onRemove={handleRemoveSubtask}
-                        onChange={handleSubtaskChange}
-                      />
-                    ))}
-                  </SortableContext>
-
-                  <div className="mt-3">
-                    <button
-                      type="button"
-                      onClick={handleAddSubtask}
-                      className="min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 border-2 border-dashed rounded-md font-medium transition border-border text-foreground hover:bg-muted"
-                    >
-                      + {t("createTask.addSubtask")}
-                    </button>
-                  </div>
+                    {pending ? t("createTask.savingTemplate") : t("createTask.saveTemplate")}
+                  </button>
                 </div>
-              </DndContext>
-            </div>
-
-            <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
-              <TaskPriorityField
-                value={priority}
-                onChange={setPriority}
-                label={t("createTask.priority")}
-                placeholder={t("createTask.selectPriority")}
-              />
-              <div>
-                <label className="block text-sm font-medium mb-2 text-foreground">
-                  {t("createTask.column")}
-                </label>
-                <Select
-                  value={effectiveColumnId}
-                  onValueChange={(value) => setColumnId(value as Id<"columns">)}
-                >
-                  <SelectTrigger className="min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors bg-input border-border text-foreground">
-                    <SelectValue
-                      placeholder={t("createTask.selectColumn")}
-                      className="w-full"
-                    />
-                  </SelectTrigger>
-
-                  <SelectContent
-                    position="popper"
-                    className="max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors bg-popover border-border text-popover-foreground"
-                  >
-                    {columns.map((column) => (
-                      <SelectItem key={column._id} value={column._id}>
-                        {getColumnLabel(column.name, t)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {t("createTask.templateHint")}
+                </p>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2 text-foreground">
-                {t("createTask.assignee")}
-              </label>
 
-              <Select
-                value={assigneeId || "unassigned"}
-                onValueChange={(value) =>
-                  setAssigneeId(
-                    value === "unassigned" ? "" : (value as Id<"users">),
-                  )
-                }
+              <TaskFormFields mode="create" columns={columns} extraFields={extraFields} />
+
+              <button
+                type="submit"
+                className="w-full rounded-lg bg-primary px-3 py-2 text-primary-foreground transition hover:bg-primary/90"
               >
-                <SelectTrigger className="min-w-0 max-w-full w-full data-[size=default]:h-auto min-h-8 whitespace-normal [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:line-clamp-none [&>[data-slot=select-value]]:wrap-anywhere transition-colors bg-input border-border text-foreground">
-                  <SelectValue placeholder={t("createTask.selectAssignee")} />
-                </SelectTrigger>
-
-                <SelectContent
-                  position="popper"
-                  className="max-w-[calc(100vw-2rem)] w-[var(--radix-select-trigger-width)] [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:wrap-anywhere [&_[data-slot=select-item]>span]:min-w-0 transition-colors bg-popover border-border text-popover-foreground"
-                >
-                  <SelectItem value="unassigned">{t("unassigned")}</SelectItem>
-
-                  {projectMembers.map(
-                    (member: {
-                      _id: Id<"users">;
-                      name: string;
-                      email: string;
-                      roleId: Id<"roles"> | null;
-                      isOwner: boolean;
-                    }) => (
-                      <SelectItem key={member._id} value={member._id}>
-                        {member.name || member.email}
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <TaskStoryPointsField
-              value={String(storyPoints)}
-              onChange={(value) => setStoryPoints(Number(value) as StoryPoints)}
-              label={t("createTask.storyPoints")}
-              placeholder={t("createTask.selectStoryPoints")}
-            />
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-foreground">
-                {t("createTask.deadline")}
-              </label>
-
-              <input
-                type="date"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-                className="min-w-0 max-w-full w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 transition bg-input border-border text-foreground focus:ring-ring"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={pending}
-              className="min-w-0 max-w-full w-full whitespace-normal wrap-anywhere px-3 py-2 rounded-lg transition focus:outline-none focus:ring-2 bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-ring"
-            >
-              {t("createTask.create")}
-            </button>
-          </fieldset>
-        </form>
+                {t("createTask.create")}
+              </button>
+            </fieldset>
+          </form>
+        </FormProvider>
       </DialogContent>
     </Dialog>
   );

@@ -215,6 +215,9 @@ i18n
             deadline: "Deadline",
             titlePlaceholder: "e.g. Prepare a mockup",
           },
+          taskForm: {
+            titleRequired: "Enter a task title",
+          },
           createTask: {
             created: "New task added",
             title: "Add New Task",
@@ -600,6 +603,9 @@ i18n
             noActivity: "Действий пока нет",
             actions: "Действия с задачей",
             close: "Закрыть задачу",
+          },
+          taskForm: {
+            titleRequired: "Введите название задачи",
           },
           createTask: {
             created: "Новая задача добавлена",
