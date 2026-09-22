@@ -46,7 +46,7 @@ export default function TaskModal({ task: initialTask, onClose }: TaskModalProps
   const can = (permission: string) =>
     Boolean(
       access?.isOwner ||
-        access?.permissions.some((value) => value === permission),
+        access?.permissions.some((value: string) => value === permission),
     );
   const canUpdate = can("task.update");
   const canDelete = can("task.delete");
