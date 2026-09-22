@@ -9,6 +9,8 @@ import RolesModal from "../modals/RolesModal";
 import Sidebar from "../workspace/Sidebar";
 import Board from "../board/Board";
 import { useUiStore } from "../../store/uiStore";
+import { paths, useAppRoute } from "../../hooks/useAppRoute";
+import { Navigate, Route, Routes } from "react-router-dom";
 import CreateBoardModal from "../modals/CreateBoardModal";
 import CreateWorkspaceModal from "../modals/CreateWorkspaceModal";
 import EditProjectModal from "../modals/EditProjectModal";
@@ -23,12 +25,9 @@ const AUTO_LOAD_LIMIT = 100;
 
 export default function AuthenticatedApp() {
   const { t } = useTranslation();
-  const currentBoardId = useUiStore((state) => state.currentBoardId);
   const currentWorkspaceId = useUiStore((state) => state.currentWorkspaceId);
-  const selectBoard = useUiStore((state) => state.selectBoard);
   const selectWorkspace = useUiStore((state) => state.selectWorkspace);
-  const currentView = useUiStore((state) => state.currentView);
-  const setView = useUiStore((state) => state.setView);
+  const { navigate, projectId, openBoard } = useAppRoute();
   const [editingWorkspace, setEditingWorkspace] =
     useState<Doc<"workspaces"> | null>(null);
   const [editingProject, setEditingProject] = useState<Doc<"boards"> | null>(
@@ -123,7 +122,20 @@ export default function AuthenticatedApp() {
   }, [user, createUser, t]);
 
   const displayBoard =
-    boards.find((board) => board._id === currentBoardId) ?? boards[0] ?? null;
+    boards.find((board) => board._id === projectId) ?? boards[0] ?? null;
+
+  useEffect(() => {
+    const isUnknownProject =
+      projectId !== null &&
+      boardListStatus === "Exhausted" &&
+      !boards.some((board) => board._id === projectId);
+
+    if (isUnknownProject) {
+      navigate(boards[0] ? paths.project(boards[0]._id) : paths.home, {
+        replace: true,
+      });
+    }
+  }, [projectId, boardListStatus, boards, navigate]);
 
   const projectAccess = useQuery(
     api.boards.getCurrentAccess,
@@ -183,19 +195,24 @@ export default function AuthenticatedApp() {
     setIsCreateWorkspaceModalOpen(true);
   };
 
+  const changeWorkspace = (workspaceId: Id<"workspaces"> | null) => {
+    selectWorkspace(workspaceId);
+    openBoard(null);
+  };
+
   const handleBoardCreated = (board: Doc<"boards">) => {
-    selectBoard(board._id);
+    openBoard(board._id);
   };
 
   const handleWorkspaceCreated = (workspace: Doc<"workspaces">) => {
-    selectWorkspace(workspace._id);
+    changeWorkspace(workspace._id);
   };
 
   const handleBoardSelect = (board: Doc<"boards"> | null) => {
-    selectBoard(board?._id ?? null);
+    openBoard(board?._id ?? null);
   };
   const handleWorkspaceSelect = (workspace: Doc<"workspaces">) => {
-    selectWorkspace(workspace._id);
+    changeWorkspace(workspace._id);
   };
   const handleEditWorkspace = (workspace: Doc<"workspaces">) => {
     setEditingWorkspace(workspace);
@@ -206,7 +223,7 @@ export default function AuthenticatedApp() {
   };
 
   const handleProjectUpdated = (updatedProject: Doc<"boards">) => {
-    selectBoard(updatedProject._id);
+    openBoard(updatedProject._id);
   };
   const handleProjectMembers = (project: Doc<"boards">) => {
     setMembersProject(project);
@@ -227,7 +244,7 @@ export default function AuthenticatedApp() {
       id: workspaceId,
     });
 
-    selectWorkspace(remainingWorkspaces[0]?._id ?? null);
+    changeWorkspace(remainingWorkspaces[0]?._id ?? null);
     setEditingWorkspace(null);
   };
 
@@ -279,21 +296,38 @@ export default function AuthenticatedApp() {
             </div>
           }
         >
-          {currentView === "profile" ? (
-            <Profile onBack={() => setView("board")} />
-          ) : currentView === "analytics" && displayBoard ? (
-            <ProjectAnalytics
-              board={displayBoard}
-              can={canProject}
-              onBack={() => setView("board")}
+          <Routes>
+            <Route
+              path={paths.profile}
+              element={
+                <Profile onBack={() => openBoard(displayBoard?._id ?? null)} />
+              }
             />
-          ) : (
-            <Board
-              key={displayBoard?._id ?? "no-board"}
-              board={displayBoard}
-              can={canProject}
+            <Route
+              path="/projects/:projectId/analytics"
+              element={
+                displayBoard ? (
+                  <ProjectAnalytics
+                    board={displayBoard}
+                    can={canProject}
+                    onBack={() => openBoard(displayBoard._id)}
+                  />
+                ) : (
+                  <Navigate to={paths.home} replace />
+                )
+              }
             />
-          )}
+            <Route
+              path="*"
+              element={
+                <Board
+                  key={displayBoard?._id ?? "no-board"}
+                  board={displayBoard}
+                  can={canProject}
+                />
+              }
+            />
+          </Routes>
         </Suspense>
       </div>
 

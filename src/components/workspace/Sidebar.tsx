@@ -38,6 +38,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { SignOutButton } from "@clerk/clerk-react";
 import { useUiStore } from "../../store/uiStore";
+import { useAppRoute, type View } from "../../hooks/useAppRoute";
 
 type SidebarProps = {
   currentBoard: Doc<"boards"> | null;
@@ -95,8 +96,9 @@ export default function Sidebar({
   canViewAnalytics,
   can,
 }: SidebarProps) {
-  const currentView = useUiStore((state) => state.currentView);
-  const onViewChange = useUiStore((state) => state.setView);
+  const { currentView, openView } = useAppRoute();
+  const onViewChange = (view: View) =>
+    openView(view, currentBoard?._id ?? null);
   const theme = useUiStore((state) => state.theme);
   const onThemeToggle = useUiStore((state) => state.toggleTheme);
   const isCollapsed = useUiStore((state) => state.sidebarCollapsed);

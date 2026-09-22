@@ -20,7 +20,7 @@ export default function AuthPage() {
         </p>
       </div>
       <div className="p-4 border border-border rounded-xl">
-        <SignIn />
+        <SignIn routing="hash" />
       </div>
     </div>
   );
