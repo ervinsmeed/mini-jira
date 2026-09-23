@@ -1,7 +1,11 @@
 .content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   width: calc(100% - 2rem);
   max-height: min(640px, calc(100dvh - 2rem));
   overflow-y: auto;
+  overscroll-behavior: contain;
   overflow-wrap: anywhere;
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) * 1.4);
@@ -17,12 +21,21 @@
   max-width: 40rem;
 }
 
+/* Sticky header keeps the title and the close button reachable
+   while the modal body scrolls. */
 .header {
+  position: sticky;
+  top: -1rem;
+  z-index: 1;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   min-width: 0;
+  margin: -1rem -1rem 0;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--card);
 }
 
 .title {
@@ -37,4 +50,21 @@
   flex-shrink: 0;
   align-items: center;
   gap: 0.25rem;
+}
+
+/* On phones the dialog takes the whole screen: there is no room
+   for a centered window, and a full-screen sheet is easier to use. */
+@media (max-width: 640px) {
+  .content {
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    translate: none;
+    transform: none;
+    border: none;
+    border-radius: 0;
+  }
 }

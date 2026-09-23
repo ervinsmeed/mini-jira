@@ -183,7 +183,7 @@ export default function CreateTaskModal({
         />
       </div>
 
-      {taskType === "task" && (
+      {taskType === "task" && epics.results.length > 0 && (
         <div>
           <label className={labelClassName}>{t("createTask.epic")}</label>
           <Controller

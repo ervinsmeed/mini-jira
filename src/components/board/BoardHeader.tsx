@@ -36,7 +36,7 @@ export default function BoardHeader({
   const { t } = useTranslation();
 
   return (
-    <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b border-border bg-sidebar/70 p-6 backdrop-blur-md transition-colors">
+    <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-sidebar/70 p-4 backdrop-blur-md sm:gap-4 sm:p-6 transition-colors">
       <div className="min-w-0">
         <h1 className="break-words text-2xl font-bold text-foreground transition-colors">
           {board.name}
@@ -48,7 +48,7 @@ export default function BoardHeader({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
         {canLoadMoreMembers && (
           <Button variant="ghost" size="sm" onClick={onLoadMoreMembers}>
             {t("members.loadMore")}
@@ -61,7 +61,7 @@ export default function BoardHeader({
           onChange={(event) => filters.setSearchQuery(event.target.value)}
           placeholder={t("board.searchTasks")}
           aria-label={t("board.searchTasks")}
-          className="w-56"
+          className="w-full sm:w-56"
         />
         <Select
           value={filters.sortBy}
